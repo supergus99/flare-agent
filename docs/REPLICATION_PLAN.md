@@ -141,4 +141,6 @@ Expand **contact_submissions** to match the existing columns (company, units, se
 
 **Phase 2 is implemented:** D1 migration `003_phase2_reports.sql` (reports, report_versions, expanded contact_submissions), Worker `POST /api/assessments`, `GET /report?hash=`, Queue consumer `generate_report` (stub HTML → R2), Pages `assessment.html` and success/report links. See SETUP.md Section 8.
 
-**Phase 3 is implemented:** D1 migration `004_phase3_email_admin.sql` (email_logs), Resend for welcome + report-ready emails (queue `send_welcome_email`, `send_approved_report`), admin login (JWT + password hash with salt), GET admin submissions/payments/reports, POST approve report, Pages `admin.html`. See SETUP.md Section 9. Next: **Phase 4** (dashboard, domain, template parity).
+**Phase 3 is implemented:** D1 migration `004_phase3_email_admin.sql` (email_logs), Resend for welcome + report-ready emails (queue `send_welcome_email`, `send_approved_report`), admin login (JWT + password hash with salt), GET admin submissions/payments/reports, POST approve report, Pages `admin.html`. See SETUP.md Section 9.
+
+**Phase 4 is implemented:** GET /api/admin/stats (counts), admin UI dashboard with stat cards (Submissions, Payments, Reports, Pending review), improved report HTML template (sections, table), SETUP.md Section 10 (custom domain steps, report template note). Calendly/other integrations left for later.

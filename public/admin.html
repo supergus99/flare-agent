@@ -18,6 +18,10 @@
     .tabs button.active { background: #0969da; color: #fff; }
     .error { color: #cf2222; margin-top: 0.5rem; }
     .hidden { display: none; }
+    .dashboard { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card { background: #f6f8fa; padding: 0.75rem 1rem; border-radius: 8px; min-width: 7rem; }
+    .stat-card .num { font-size: 1.5rem; font-weight: 600; color: #333; }
+    .stat-card .label { font-size: 0.8rem; color: #666; }
   </style>
 </head>
 <body>
@@ -33,6 +37,12 @@
 
   <div id="admin-panel" class="hidden">
     <button type="button" id="logout-btn">Sign out</button>
+    <div id="dashboard" class="dashboard">
+      <div class="stat-card"><span class="num" id="stat-submissions">–</span><br><span class="label">Submissions</span></div>
+      <div class="stat-card"><span class="num" id="stat-payments">–</span><br><span class="label">Payments</span></div>
+      <div class="stat-card"><span class="num" id="stat-reports">–</span><br><span class="label">Reports</span></div>
+      <div class="stat-card"><span class="num" id="stat-pending">–</span><br><span class="label">Pending review</span></div>
+    </div>
     <div class="tabs">
       <button type="button" data-tab="submissions" class="active">Submissions</button>
       <button type="button" data-tab="payments">Payments</button>
@@ -126,6 +136,7 @@
           const res = await fetch(WORKER_URL + '/api/admin/submissions?limit=100', { headers: authHeaders() });
           if (res.status === 401) { setToken(null); showLogin(); return; }
           const data = await res.json();
+          loadStats();
           const tbody = document.getElementById('submissions-tbody');
           tbody.innerHTML = (data.data || []).map(function (r) {
             return '<tr><td>' + r.id + '</td><td>' + escapeHtml(r.name || '') + '</td><td>' + escapeHtml(r.email || '') + '</td><td>' + escapeHtml(r.company || '') + '</td><td>' + escapeHtml(r.service || '') + '</td><td>' + escapeHtml(r.submitted_at || '') + '</td><td>' + escapeHtml(r.status || '') + '</td></tr>';
@@ -134,6 +145,7 @@
           const res = await fetch(WORKER_URL + '/api/admin/payments?limit=100', { headers: authHeaders() });
           if (res.status === 401) { setToken(null); showLogin(); return; }
           const data = await res.json();
+          loadStats();
           const tbody = document.getElementById('payments-tbody');
           tbody.innerHTML = (data.data || []).map(function (r) {
             return '<tr><td>' + r.id + '</td><td>' + escapeHtml((r.transaction_id || '').slice(0, 24)) + '</td><td>' + escapeHtml(r.service_type || '') + '</td><td>' + (r.amount / 100) + ' ' + (r.currency || '') + '</td><td>' + escapeHtml(r.customer_email || '') + '</td><td>' + escapeHtml(r.payment_status || '') + '</td><td>' + escapeHtml(r.created_at || '') + '</td></tr>';
@@ -142,6 +154,7 @@
           const res = await fetch(WORKER_URL + '/api/admin/reports?limit=100', { headers: authHeaders() });
           if (res.status === 401) { setToken(null); showLogin(); return; }
           const data = await res.json();
+          loadStats();
           const tbody = document.getElementById('reports-tbody');
           tbody.innerHTML = (data.data || []).map(function (r) {
             const approveBtn = (r.status === 'pending_review' || r.status === 'approved') && r.status !== 'sent'
@@ -166,8 +179,21 @@
         return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
       }
 
+      async function loadStats() {
+        try {
+          const res = await fetch(WORKER_URL + '/api/admin/stats', { headers: authHeaders() });
+          if (res.status !== 200) return;
+          const data = await res.json();
+          document.getElementById('stat-submissions').textContent = data.submissions ?? '–';
+          document.getElementById('stat-payments').textContent = data.payments ?? '–';
+          document.getElementById('stat-reports').textContent = data.reports ?? '–';
+          document.getElementById('stat-pending').textContent = data.reports_pending_review ?? '–';
+        } catch (_) {}
+      }
+
       if (getToken()) {
         showPanel();
+        loadStats();
         loadTab('submissions');
       } else {
         showLogin();

@@ -94,9 +94,10 @@ export async function verifyJwt(secret, token) {
  * @returns {Promise<string>}
  */
 export async function hashAdminPassword(salt, password) {
+  const s = (salt || "").trim();
   const buf = await crypto.subtle.digest(
     "SHA-256",
-    encoder.encode(salt + password)
+    encoder.encode(s + password)
   );
   return Array.from(new Uint8Array(buf))
     .map((b) => b.toString(16).padStart(2, "0"))

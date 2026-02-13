@@ -157,3 +157,15 @@ GitHub Actions will run and deploy **flare-worker** to Cloudflare. Check the **A
    - **POST /api/admin/reports/:id/approve** – set report status to `approved` and enqueue `send_approved_report`.
 
 5. **Admin UI:** Open **/admin.html** on your Pages site. Sign in with your admin username and password; view submissions, payments, and reports; click **Approve & send email** on a report to send the report link to the customer.
+
+---
+
+## 10. Phase 4 – Dashboard and polish
+
+1. **Admin dashboard:** The admin UI now shows a **stats bar** (Submissions, Payments, Reports, Pending review) at the top. The Worker exposes **GET /api/admin/stats** (auth required), which returns counts from D1. No extra setup.
+
+2. **Custom domain (optional):**
+   - **Pages:** Cloudflare Dashboard → Workers & Pages → your Pages project → **Custom domains** → Add (e.g. `flare.example.com`). Add the CNAME or A/AAAA records at your DNS provider as shown.
+   - **Worker:** Workers & Pages → flare-worker → **Triggers** → **Custom Domains** → Add (e.g. `api.flare.example.com`). Then set **WORKER_PUBLIC_URL** and **SUCCESS_BASE_URL** to use these URLs so Stripe redirects and links point to your domain.
+
+3. **Report template:** The generated report HTML (in the queue consumer) uses a structured template (Executive summary, Contact & plan, Your notes). To add AI-generated content, extend `handleGenerateReport` in `src/index.js`: call OpenAI or Workers AI with the submission data, then inject the result into the HTML before uploading to R2.
