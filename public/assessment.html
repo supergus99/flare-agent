@@ -20,8 +20,10 @@
   </style>
 </head>
 <body>
-  <h1>Security assessment</h1>
-  <p>Complete this form so we can generate your report. If you paid via Stripe, use the link from your confirmation email (it includes your secure access code).</p>
+  <div id="assessment-heading">
+    <h1>Security assessment</h1>
+    <p>Complete this form so we can generate your report. If you paid via Stripe, use the link from your confirmation email (it includes your secure access code).</p>
+  </div>
 
   <div id="hash-warning" class="hash-warning" style="display: none;">
     No access code in the URL. If you have a link from your payment confirmation, use that. You can still submit without a code; your submission will be saved but not linked to a payment.
@@ -29,22 +31,7 @@
 
   <form id="assessment-form">
     <input type="hidden" id="access_hash" name="access_hash" value="">
-
-    <label for="company_name">Company name *</label>
-    <input type="text" id="company_name" name="company_name" required placeholder="Your company">
-
-    <label for="contact_name">Your name *</label>
-    <input type="text" id="contact_name" name="contact_name" required placeholder="Full name">
-
-    <label for="email">Email *</label>
-    <input type="email" id="email" name="email" required placeholder="you@example.com">
-
-    <label for="role">Role (optional)</label>
-    <input type="text" id="role" name="role" placeholder="e.g. Operations Manager">
-
-    <label for="message">Additional notes (optional)</label>
-    <textarea id="message" name="message" placeholder="Any specific concerns or context..."></textarea>
-
+    <div id="assessment-fields"></div>
     <button type="submit" id="btn">Submit assessment</button>
   </form>
 
@@ -57,14 +44,11 @@
 
       const params = new URLSearchParams(window.location.search);
       const hash = params.get('hash') || params.get('access_hash') || '';
-      document.getElementById('access_hash').value = hash;
-      if (!hash) {
-        document.getElementById('hash-warning').style.display = 'block';
-      }
-
       const form = document.getElementById('assessment-form');
       const btn = document.getElementById('btn');
       const messageEl = document.getElementById('message-el');
+      const fieldsContainer = document.getElementById('assessment-fields');
+      const headingEl = document.getElementById('assessment-heading');
 
       function showMessage(text, isError) {
         messageEl.textContent = text;
@@ -72,20 +56,65 @@
         messageEl.style.display = 'block';
       }
 
+      function renderFormFromConfig(config) {
+        if (!config || !config.fields || !config.fields.length) return;
+        headingEl.innerHTML = '<h1>' + (config.title || 'Security assessment') + '</h1><p>' + (config.intro || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>';
+        document.getElementById('hash-warning').textContent = config.hashWarning || document.getElementById('hash-warning').textContent;
+        btn.textContent = config.submitLabel || 'Submit assessment';
+        const sorted = config.fields.slice().sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
+        fieldsContainer.innerHTML = sorted.map(function (f) {
+          const id = 'field_' + (f.name || '').replace(/\s/g, '_');
+          const required = f.required ? ' required' : '';
+          if ((f.type || 'text') === 'textarea') {
+            return '<label for="' + id + '">' + (f.label || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</label><textarea id="' + id + '" name="' + (f.name || '').replace(/"/g, '&quot;') + '"' + required + ' placeholder="' + (f.placeholder || '').replace(/"/g, '&quot;') + '"></textarea>';
+          }
+          return '<label for="' + id + '">' + (f.label || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</label><input type="' + (f.type || 'text') + '" id="' + id + '" name="' + (f.name || '').replace(/"/g, '&quot;') + '"' + required + ' placeholder="' + (f.placeholder || '').replace(/"/g, '&quot;') + '">';
+        }).join('');
+      }
+
+      function buildPayload() {
+        const payload = { access_hash: document.getElementById('access_hash').value.trim() || undefined };
+        const inputs = form.querySelectorAll('input[name], textarea[name]');
+        inputs.forEach(function (el) {
+          if (el.name && el.name !== 'access_hash') payload[el.name] = el.value.trim();
+        });
+        return payload;
+      }
+
+      var defaultConfig = {
+        title: 'Security assessment',
+        intro: 'Complete this form so we can generate your report. If you paid via Stripe, use the link from your confirmation email (it includes your secure access code).',
+        hashWarning: 'No access code in the URL. If you have a link from your payment confirmation, use that. You can still submit without a code; your submission will be saved but not linked to a payment.',
+        submitLabel: 'Submit assessment',
+        fields: [
+          { name: 'company_name', label: 'Company name *', type: 'text', required: true, placeholder: 'Your company', order: 1 },
+          { name: 'contact_name', label: 'Your name *', type: 'text', required: true, placeholder: 'Full name', order: 2 },
+          { name: 'email', label: 'Email *', type: 'email', required: true, placeholder: 'you@example.com', order: 3 },
+          { name: 'role', label: 'Role (optional)', type: 'text', required: false, placeholder: 'e.g. Operations Manager', order: 4 },
+          { name: 'message', label: 'Additional notes (optional)', type: 'textarea', required: false, placeholder: 'Any specific concerns or context...', order: 5 }
+        ]
+      };
+      renderFormFromConfig(defaultConfig);
+      fetch(WORKER_URL + '/api/assessment-template')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.ok && data.data && data.data.fields && data.data.fields.length) renderFormFromConfig(data.data);
+        })
+        .catch(function () {});
+
+      document.getElementById('access_hash').value = hash;
+      if (!hash) document.getElementById('hash-warning').style.display = 'block';
+
       form.addEventListener('submit', async function (e) {
         e.preventDefault();
         btn.disabled = true;
         messageEl.style.display = 'none';
-
-        const payload = {
-          access_hash: document.getElementById('access_hash').value.trim() || undefined,
-          company_name: document.getElementById('company_name').value.trim(),
-          contact_name: document.getElementById('contact_name').value.trim(),
-          email: document.getElementById('email').value.trim(),
-          role: document.getElementById('role').value.trim() || undefined,
-          message: document.getElementById('message').value.trim() || undefined,
-        };
-
+        const payload = buildPayload();
+        if (!payload.email) {
+          showMessage('Email is required', true);
+          btn.disabled = false;
+          return;
+        }
         try {
           const res = await fetch(WORKER_URL + '/api/assessments', {
             method: 'POST',

@@ -84,6 +84,7 @@
         <li class="nav-item"><button type="button" class="nav-link active" data-tab="submissions">Submissions</button></li>
         <li class="nav-item"><button type="button" class="nav-link" data-tab="payments">Payments</button></li>
         <li class="nav-item"><button type="button" class="nav-link" data-tab="reports">Reports</button></li>
+        <li class="nav-item"><button type="button" class="nav-link" data-tab="templates">Templates</button></li>
       </ul>
 
       <div id="tab-submissions" class="tab-content">
@@ -114,6 +115,44 @@
             </thead>
             <tbody id="reports-tbody"></tbody>
           </table>
+        </div>
+      </div>
+      <div id="tab-templates" class="tab-content d-none">
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-light"><h2 class="h6 mb-0">Assessment form template</h2></div>
+          <div class="card-body">
+            <p class="text-muted small">Edit title, intro, and form fields. Field names (company_name, contact_name, email, role, message) must stay the same for submissions to work.</p>
+            <div class="mb-3">
+              <label class="form-label">Title</label>
+              <input type="text" id="tpl-assessment-title" class="form-control" placeholder="Security assessment">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Intro text</label>
+              <textarea id="tpl-assessment-intro" class="form-control" rows="2" placeholder="Complete this form..."></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Hash warning (no access code)</label>
+              <input type="text" id="tpl-assessment-hash-warning" class="form-control" placeholder="No access code in the URL...">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Submit button label</label>
+              <input type="text" id="tpl-assessment-submit-label" class="form-control" placeholder="Submit assessment">
+            </div>
+            <div id="tpl-assessment-fields-container"></div>
+            <button type="button" id="tpl-assessment-save" class="btn btn-primary">Save assessment template</button>
+            <span id="tpl-assessment-message" class="ms-2 text-muted small"></span>
+          </div>
+        </div>
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-light"><h2 class="h6 mb-0">Report HTML template</h2></div>
+          <div class="card-body">
+            <p class="text-muted small">Use placeholders: <code>{{name}}</code> <code>{{company}}</code> <code>{{email}}</code> <code>{{service}}</code> <code>{{message}}</code> <code>{{report_date}}</code>. Leave empty to use built-in template.</p>
+            <textarea id="tpl-report-body" class="form-control font-monospace" rows="18" placeholder="<!DOCTYPE html>..."></textarea>
+            <div class="mt-2">
+              <button type="button" id="tpl-report-save" class="btn btn-primary">Save report template</button>
+              <span id="tpl-report-message" class="ms-2 text-muted small"></span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -236,6 +275,27 @@
                 .catch(function (e) { alert(e.message); });
             });
           });
+        } else if (tab === 'templates') {
+          const aRes = await fetch(WORKER_URL + '/api/admin/assessment-template', { headers: authHeaders() });
+          if (aRes.status === 401) { setToken(null); showLogin(); return; }
+          const aData = await aRes.json();
+          const a = aData.data || {};
+          document.getElementById('tpl-assessment-title').value = a.title || '';
+          document.getElementById('tpl-assessment-intro').value = a.intro || '';
+          document.getElementById('tpl-assessment-hash-warning').value = a.hashWarning || '';
+          document.getElementById('tpl-assessment-submit-label').value = a.submitLabel || 'Submit assessment';
+          const fields = (a.fields || []).slice().sort(function (x, y) { return (x.order || 0) - (y.order || 0); });
+          const container = document.getElementById('tpl-assessment-fields-container');
+          container.innerHTML = '<table class="table table-sm"><thead><tr><th>Name</th><th>Label</th><th>Type</th><th>Required</th><th>Placeholder</th></tr></thead><tbody id="tpl-assessment-fields-tbody"></tbody></table>';
+          const tbody = document.getElementById('tpl-assessment-fields-tbody');
+          tbody.innerHTML = fields.map(function (f, i) {
+            return '<tr><td><input type="text" class="form-control form-control-sm tpl-field-name" value="' + escapeHtml(f.name || '') + '" readonly></td><td><input type="text" class="form-control form-control-sm tpl-field-label" value="' + escapeHtml(f.label || '') + '"></td><td><input type="text" class="form-control form-control-sm tpl-field-type" value="' + escapeHtml(f.type || 'text') + '" placeholder="text|email|textarea"></td><td><select class="form-select form-select-sm tpl-field-required"><option value="true"' + (f.required ? ' selected' : '') + '>Yes</option><option value="false"' + (!f.required ? ' selected' : '') + '>No</option></select></td><td><input type="text" class="form-control form-control-sm tpl-field-placeholder" value="' + escapeHtml(f.placeholder || '') + '"></td></tr>';
+          }).join('');
+          const rRes = await fetch(WORKER_URL + '/api/admin/report-template', { headers: authHeaders() });
+          if (rRes.status === 401) return;
+          const rData = await rRes.json();
+          const reportBody = (rData.data != null && rData.data !== '') ? rData.data : (rData.defaultBody || '');
+          document.getElementById('tpl-report-body').value = reportBody;
         }
       }
 
@@ -255,6 +315,50 @@
           document.getElementById('stat-pending').textContent = data.reports_pending_review ?? '–';
         } catch (_) {}
       }
+
+      document.getElementById('tpl-assessment-save').addEventListener('click', async function () {
+        const msg = document.getElementById('tpl-assessment-message');
+        msg.textContent = 'Saving...';
+        const tbody = document.getElementById('tpl-assessment-fields-tbody');
+        const rows = tbody ? tbody.querySelectorAll('tr') : [];
+        const fields = Array.from(rows).map(function (row, i) {
+          return {
+            name: (row.querySelector('.tpl-field-name') && row.querySelector('.tpl-field-name').value) || ('field_' + i),
+            label: (row.querySelector('.tpl-field-label') && row.querySelector('.tpl-field-label').value) || '',
+            type: (row.querySelector('.tpl-field-type') && row.querySelector('.tpl-field-type').value) || 'text',
+            required: (row.querySelector('.tpl-field-required') && row.querySelector('.tpl-field-required').value) === 'true',
+            placeholder: (row.querySelector('.tpl-field-placeholder') && row.querySelector('.tpl-field-placeholder').value) || '',
+            order: i + 1
+          };
+        });
+        const formConfig = {
+          title: document.getElementById('tpl-assessment-title').value || 'Security assessment',
+          intro: document.getElementById('tpl-assessment-intro').value || '',
+          hashWarning: document.getElementById('tpl-assessment-hash-warning').value || '',
+          submitLabel: document.getElementById('tpl-assessment-submit-label').value || 'Submit assessment',
+          fields: fields
+        };
+        try {
+          const res = await fetch(WORKER_URL + '/api/admin/assessment-template', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ form_config: formConfig }) });
+          const data = await res.json();
+          msg.textContent = res.ok ? 'Saved.' : (data.error || 'Failed');
+        } catch (e) {
+          msg.textContent = e.message || 'Error';
+        }
+      });
+
+      document.getElementById('tpl-report-save').addEventListener('click', async function () {
+        const msg = document.getElementById('tpl-report-message');
+        msg.textContent = 'Saving...';
+        const body = document.getElementById('tpl-report-body').value;
+        try {
+          const res = await fetch(WORKER_URL + '/api/admin/report-template', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ body: body }) });
+          const data = await res.json();
+          msg.textContent = res.ok ? 'Saved.' : (data.error || 'Failed');
+        } catch (e) {
+          msg.textContent = e.message || 'Error';
+        }
+      });
 
       if (getToken()) {
         showPanel();

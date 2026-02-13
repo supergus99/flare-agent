@@ -10,8 +10,8 @@ import { signJwt, verifyJwt, hashAdminPassword } from "./auth.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
 function json(body, status = 200, headers = {}) {
@@ -27,6 +27,22 @@ function randomHex(bytes = 32) {
   return Array.from(arr)
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
+}
+
+function getDefaultAssessmentConfig() {
+  return {
+    title: "Security assessment",
+    intro: "Complete this form so we can generate your report. If you paid via Stripe, use the link from your confirmation email (it includes your secure access code).",
+    hashWarning: "No access code in the URL. If you have a link from your payment confirmation, use that. You can still submit without a code; your submission will be saved but not linked to a payment.",
+    submitLabel: "Submit assessment",
+    fields: [
+      { name: "company_name", label: "Company name *", type: "text", required: true, placeholder: "Your company", order: 1 },
+      { name: "contact_name", label: "Your name *", type: "text", required: true, placeholder: "Full name", order: 2 },
+      { name: "email", label: "Email *", type: "email", required: true, placeholder: "you@example.com", order: 3 },
+      { name: "role", label: "Role (optional)", type: "text", required: false, placeholder: "e.g. Operations Manager", order: 4 },
+      { name: "message", label: "Additional notes (optional)", type: "textarea", required: false, placeholder: "Any specific concerns or context...", order: 5 },
+    ],
+  };
 }
 
 /**
@@ -436,6 +452,17 @@ export default {
       return json({ ok: false, error: "POST only or DB not configured" }, 405);
     }
 
+    // ---------- Public: assessment form template (for assessment page) ----------
+    if (url.pathname === "/api/assessment-template" && request.method === "GET" && env.DB) {
+      try {
+        const row = await env.DB.prepare("SELECT form_config FROM assessment_template WHERE id = 1 LIMIT 1").first();
+        const formConfig = row?.form_config ? JSON.parse(row.form_config) : getDefaultAssessmentConfig();
+        return json({ ok: true, data: formConfig });
+      } catch (e) {
+        return json({ ok: true, data: getDefaultAssessmentConfig() });
+      }
+    }
+
     // ---------- Phase 2: Report view by hash ----------
     if (url.pathname === "/report" && request.method === "GET" && env.DB) {
       const hash = url.searchParams.get("hash") ?? url.searchParams.get("h") ?? "";
@@ -605,6 +632,58 @@ export default {
       }
     }
 
+    if (url.pathname === "/api/admin/assessment-template" && env.DB) {
+      const admin = await requireAdmin(request, env);
+      if (!admin) return json({ error: "Unauthorized" }, 401);
+      if (request.method === "GET") {
+        try {
+          const row = await env.DB.prepare("SELECT form_config, updated_at FROM assessment_template WHERE id = 1 LIMIT 1").first();
+          const formConfig = row?.form_config ? JSON.parse(row.form_config) : getDefaultAssessmentConfig();
+          return json({ ok: true, data: formConfig, updated_at: row?.updated_at ?? null });
+        } catch (e) {
+          return json({ ok: true, data: getDefaultAssessmentConfig() });
+        }
+      }
+      if (request.method === "PUT") {
+        try {
+          const body = await request.json();
+          const formConfig = typeof body.form_config === "object" ? body.form_config : (body.data ? body.data : getDefaultAssessmentConfig());
+          const configStr = JSON.stringify(formConfig);
+          await env.DB.prepare("INSERT INTO assessment_template (id, form_config, updated_at) VALUES (1, ?, datetime('now')) ON CONFLICT(id) DO UPDATE SET form_config = excluded.form_config, updated_at = datetime('now')").bind(configStr).run();
+          return json({ ok: true, message: "Assessment template saved" });
+        } catch (e) {
+          return json({ error: e.message }, 500);
+        }
+      }
+      return json({ error: "Method not allowed" }, 405);
+    }
+
+    if (url.pathname === "/api/admin/report-template" && env.DB) {
+      const admin = await requireAdmin(request, env);
+      if (!admin) return json({ error: "Unauthorized" }, 401);
+      if (request.method === "GET") {
+        try {
+          const row = await env.DB.prepare("SELECT body, updated_at FROM report_templates WHERE id = 1 LIMIT 1").first();
+          const body = row?.body ?? null;
+          const defaultBody = body == null || body === "" ? getDefaultReportTemplateBody() : null;
+          return json({ ok: true, data: body, defaultBody, updated_at: row?.updated_at ?? null });
+        } catch (e) {
+          return json({ ok: true, data: null, defaultBody: null });
+        }
+      }
+      if (request.method === "PUT") {
+        try {
+          const body = await request.json();
+          const templateBody = typeof body.body === "string" ? body.body : (body.data != null ? String(body.data) : null);
+          await env.DB.prepare("INSERT INTO report_templates (id, name, body, updated_at) VALUES (1, 'default', ?, datetime('now')) ON CONFLICT(id) DO UPDATE SET body = excluded.body, updated_at = datetime('now')").bind(templateBody || null).run();
+          return json({ ok: true, message: "Report template saved" });
+        } catch (e) {
+          return json({ error: e.message }, 500);
+        }
+      }
+      return json({ error: "Method not allowed" }, 405);
+    }
+
     const reportApproveMatch = url.pathname.match(/^\/api\/admin\/reports\/(\d+)\/approve$/);
     if (reportApproveMatch && request.method === "POST" && env.DB) {
       const admin = await requireAdmin(request, env);
@@ -703,8 +782,22 @@ async function handleGenerateReport(env, body) {
 
   let htmlContent = "";
   try {
-    const data = typeof submission.assessment_data === "string" ? JSON.parse(submission.assessment_data || "{}") : (submission.assessment_data || {});
-    htmlContent = buildStubReportHtml(submission, data);
+    const templateRow = await env.DB.prepare("SELECT body FROM report_templates WHERE id = 1 AND body IS NOT NULL AND body != '' LIMIT 1").first();
+    if (templateRow?.body) {
+      const data = typeof submission.assessment_data === "string" ? JSON.parse(submission.assessment_data || "{}") : (submission.assessment_data || {});
+      const message = submission.message || (data.describe_concerns || "");
+      htmlContent = applyReportTemplate(templateRow.body, {
+        name: submission.name || submission.email || "Customer",
+        company: submission.company || "—",
+        email: submission.email || "—",
+        service: submission.service || "—",
+        message,
+        report_date: new Date().toISOString().slice(0, 10),
+      });
+    } else {
+      const data = typeof submission.assessment_data === "string" ? JSON.parse(submission.assessment_data || "{}") : (submission.assessment_data || {});
+      htmlContent = buildStubReportHtml(submission, data);
+    }
   } catch (_) {
     htmlContent = buildStubReportHtml(submission, {});
   }
@@ -807,6 +900,59 @@ async function handleSendApprovedReport(env, body) {
       await env.DB.prepare("UPDATE reports SET status = 'sent', updated_at = datetime('now') WHERE id = ?").bind(reportId).run();
     }
   } catch (_) {}
+}
+
+function applyReportTemplate(templateBody, vars) {
+  let out = templateBody;
+  for (const [key, value] of Object.entries(vars)) {
+    out = out.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), escapeHtml(String(value ?? "")));
+  }
+  return out;
+}
+
+/** Default report HTML with placeholders: {{name}}, {{company}}, {{email}}, {{service}}, {{message}}, {{report_date}} */
+function getDefaultReportTemplateBody() {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Security Assessment Report – Flare</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; max-width: 42rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; color: #1a1a1a; }
+    h1 { font-size: 1.5rem; color: #111; border-bottom: 2px solid #0969da; padding-bottom: 0.5rem; }
+    .meta { color: #666; font-size: 0.875rem; margin-bottom: 1.5rem; }
+    .section { margin-top: 1.5rem; }
+    .section h2 { font-size: 1rem; color: #333; margin-bottom: 0.5rem; }
+    .section p { margin: 0.25rem 0; }
+    table.info { width: 100%; border-collapse: collapse; }
+    table.info td { padding: 0.35rem 0; border-bottom: 1px solid #eee; }
+    table.info td:first-child { font-weight: 500; width: 8rem; color: #555; }
+    .footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #eee; color: #888; font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+  <h1>Security Assessment Report</h1>
+  <p class="meta">Generated {{report_date}} by Flare.</p>
+  <div class="section">
+    <h2>Executive summary</h2>
+    <p>This report is based on your assessment submission. Below are the details we have on file.</p>
+  </div>
+  <div class="section">
+    <h2>Contact &amp; plan</h2>
+    <table class="info">
+      <tr><td>Name</td><td>{{name}}</td></tr>
+      <tr><td>Company</td><td>{{company}}</td></tr>
+      <tr><td>Email</td><td>{{email}}</td></tr>
+      <tr><td>Plan</td><td>{{service}}</td></tr>
+    </table>
+  </div>
+  <div class="section"><h2>Your notes</h2><p>{{message}}</p></div>
+  <div class="footer">
+    <p>Report generated on {{report_date}}. Flare.</p>
+  </div>
+</body>
+</html>`;
 }
 
 function buildStubReportHtml(submission, data) {

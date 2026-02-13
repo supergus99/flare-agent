@@ -169,3 +169,16 @@ GitHub Actions will run and deploy **flare-worker** to Cloudflare. Check the **A
    - **Worker:** Workers & Pages → flare-worker → **Triggers** → **Custom Domains** → Add (e.g. `api.flare.example.com`). Then set **WORKER_PUBLIC_URL** and **SUCCESS_BASE_URL** to use these URLs so Stripe redirects and links point to your domain.
 
 3. **Report template:** The generated report HTML (in the queue consumer) uses a structured template (Executive summary, Contact & plan, Your notes). To add AI-generated content, extend `handleGenerateReport` in `src/index.js`: call OpenAI or Workers AI with the submission data, then inject the result into the HTML before uploading to R2.
+
+---
+
+## 11. Phase 5 – Editable templates (admin)
+
+1. **Run migration:** `npx wrangler d1 execute flare-db --remote --file=./migrations/005_templates.sql`  
+   This creates `assessment_template` (one row with form config JSON) and `report_templates` (one row for the report HTML). The assessment form config is seeded with the current fields; the report template body is left empty (Worker uses the built-in template until you save one from admin).
+
+2. **Admin → Templates tab:** After logging in, open the **Templates** tab. You can:
+   - **Assessment form template:** Edit title, intro, hash warning, submit label, and each field’s label, type, required, placeholder. Field **names** (e.g. `company_name`, `contact_name`, `email`, `role`, `message`) must not be changed so submissions still map correctly.
+   - **Report HTML template:** Edit the full HTML. Use placeholders `{{name}}`, `{{company}}`, `{{email}}`, `{{service}}`, `{{message}}`, `{{report_date}}`. If you clear and save, the Worker falls back to the built-in report HTML.
+
+3. **Public API:** `GET /api/assessment-template` (no auth) returns the current assessment form config so the assessment page can render the form from it. The assessment page falls back to a default config if the request fails.
