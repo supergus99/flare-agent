@@ -1609,6 +1609,45 @@
 </script>
 <script>
 (function() {
+  function toggleConditionals() {
+    var websiteField = document.getElementById('website_stack_field');
+    var websiteYes = document.getElementById('website_yes');
+    if (websiteField && websiteYes) {
+      if (websiteYes.checked) websiteField.classList.add('show');
+      else websiteField.classList.remove('show');
+    }
+    var incidentField = document.getElementById('incident_details_field');
+    var pastIncidents = document.querySelectorAll('input[name="past_incidents[]"]:not(#incident_none)');
+    if (incidentField && pastIncidents.length) {
+      var anyChecked = Array.prototype.some.call(pastIncidents, function(cb) { return cb.checked; });
+      if (anyChecked) incidentField.classList.add('show');
+      else incidentField.classList.remove('show');
+    }
+  }
+  function initConditionals() {
+    var websiteYes = document.getElementById('website_yes');
+    var websiteNo = document.getElementById('website_no');
+    if (websiteYes && websiteNo) {
+      websiteYes.addEventListener('change', toggleConditionals);
+      websiteNo.addEventListener('change', toggleConditionals);
+    }
+    document.querySelectorAll('input[name="past_incidents[]"]').forEach(function(cb) {
+      cb.addEventListener('change', function() {
+        var incidentNone = document.getElementById('incident_none');
+        if (incidentNone && incidentNone.checked) {
+          document.querySelectorAll('input[name="past_incidents[]"]:not(#incident_none)').forEach(function(c) { c.checked = false; });
+        }
+        toggleConditionals();
+      });
+    });
+    toggleConditionals();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initConditionals);
+  else initConditionals();
+})();
+</script>
+<script>
+(function() {
   var codeInput = document.getElementById('verification_code');
   var accessHashEl = document.getElementById('access_hash');
   var params = new URLSearchParams(window.location.search);

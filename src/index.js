@@ -1038,6 +1038,9 @@ function getDefaultReportTemplateBodyFlare() {
   <style>
     :root, [data-theme="dark"] { --bg: #0a0a0b; --bg-card: #111113; --text: #e4e4e7; --muted: #71717a; --accent: #22d3ee; --border: rgba(255,255,255,0.06); --pill-low: #10b981; --pill-mod: #f59e0b; --pill-high: #f97316; --pill-crit: #ef4444; }
     [data-theme="light"] { --bg: #f4f4f5; --bg-card: #ffffff; --text: #18181b; --muted: #71717a; --accent: #0891b2; --border: rgba(0,0,0,0.08); --pill-low: #059669; --pill-mod: #d97706; --pill-high: #ea580c; --pill-crit: #dc2626; }
+    [data-theme="light"] body, [data-theme="light"] .report { background: #f4f4f5; }
+    [data-theme="light"] .card, [data-theme="light"] section.card { background: #ffffff; }
+    [data-theme="light"] .kpi { background: #f4f4f5; }
     html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: 'Outfit', system-ui, sans-serif; line-height: 1.55; }
     .report { max-width: 960px; margin: 32px auto 64px; padding: 0 16px; }
     .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
