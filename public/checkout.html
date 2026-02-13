@@ -45,6 +45,8 @@
     .message { padding: 0.85rem 1rem; border-radius: 10px; font-size: 0.9rem; margin-top: 1rem; display: none; }
     .message.success { background: rgba(52, 211, 153, 0.15); color: var(--success); border: 1px solid rgba(52, 211, 153, 0.3); }
     .message.error { background: rgba(248, 113, 113, 0.12); color: var(--error); border: 1px solid rgba(248, 113, 113, 0.3); }
+    .product-line { font-size: 0.95rem; color: var(--text-muted); margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+    .product-line strong { color: var(--text); }
     .footer { padding: 2rem 1.5rem; border-top: 1px solid var(--border); text-align: center; }
     .footer a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; }
     .footer a:hover { color: var(--accent); }
@@ -61,17 +63,13 @@
 
   <div class="container">
     <p class="page-label">Checkout</p>
-    <h1 class="page-title">Choose your plan</h1>
-    <p class="page-desc">Complete payment securely with Stripe. You’ll receive a confirmation and a link to your assessment.</p>
+    <h1 class="page-title">Get your report</h1>
+    <p class="page-desc">Risk analysis &amp; action plan. Complete payment securely with Stripe; you’ll receive a confirmation and a link to your assessment.</p>
 
     <div class="card">
+      <p class="product-line"><strong>Risk Analysis &amp; Action Plan</strong> — €599 or $599 (choose currency below)</p>
       <form id="checkout-form">
-        <label class="form-label" for="service_type">Plan</label>
-        <select id="service_type" name="service_type" required>
-          <option value="core">Risk Visibility Report (€249 / $249)</option>
-          <option value="protect">Risk Analysis & Action Plan (€599 / $599)</option>
-          <option value="assure">Guided Risk Review (€999 / $999)</option>
-        </select>
+        <input type="hidden" id="service_type" name="service_type" value="protect">
 
         <label class="form-label" for="currency">Currency</label>
         <select id="currency" name="currency">

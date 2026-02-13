@@ -260,6 +260,28 @@
     .cta-box p { color: var(--text-muted); margin: 0 0 1.5rem; }
     .cta-box .btn { margin: 0 0.25rem; }
 
+    /* Product offer */
+    #offer {
+      text-align: center;
+      padding: 4rem 1.5rem;
+    }
+    .offer-box {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 3rem 2rem;
+      max-width: 40rem;
+      margin: 0 auto;
+      text-align: left;
+    }
+    .offer-box h2 { font-size: 1.6rem; margin: 0 0 1rem; text-align: center; }
+    .offer-box .offer-desc { color: var(--text-muted); font-size: 1rem; margin: 0 0 1.5rem; text-align: center; line-height: 1.65; }
+    .offer-list { list-style: none; padding: 0; margin: 0 0 2rem; }
+    .offer-list li { position: relative; padding-left: 1.5rem; margin-bottom: 0.85rem; color: var(--text); font-size: 0.98rem; }
+    .offer-list li::before { content: ''; position: absolute; left: 0; top: 0.45em; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+    .offer-cta { display: block; text-align: center; }
+    .offer-cta .btn { margin: 0; }
+
     /* Footer */
     footer {
       padding: 3rem 1.5rem 2rem;
@@ -282,11 +304,11 @@
   <nav class="nav" id="nav">
     <a href="#" class="nav-logo">Flare<span>.</span></a>
     <div class="nav-links">
-      <a href="#features">Features</a>
+      <a href="#offer">Product</a>
       <a href="#how">How it works</a>
       <a href="#cta">Get started</a>
       <a href="/contact.html">Contact</a>
-      <a href="/checkout.html" class="nav-cta">Checkout</a>
+      <a href="/checkout.html" class="nav-cta">Get your report</a>
     </div>
   </nav>
 
@@ -308,10 +330,27 @@
     </div>
   </header>
 
+  <section id="offer">
+    <p class="section-label">Product</p>
+    <div class="offer-box">
+      <h2>Risk analysis &amp; action plan</h2>
+      <p class="offer-desc">One report with everything you need to understand your exposure and act on it. Powered by AI, tailored to your context.</p>
+      <ul class="offer-list">
+        <li><strong>Risk visibility</strong> — Clear view of exposure across access, data, and operations.</li>
+        <li><strong>Prioritized action plan</strong> — Concrete next steps so you know what to fix first.</li>
+        <li><strong>Structured report</strong> — Findings and recommendations generated from your assessment.</li>
+        <li><strong>Secure link</strong> — Access your report anytime via the link we send by email.</li>
+      </ul>
+      <p class="offer-cta">
+        <a href="/checkout.html" class="btn btn-primary">Get your report</a>
+      </p>
+    </div>
+  </section>
+
   <section id="features">
     <p class="section-label">What you get</p>
     <h2 class="section-title">Assessment and report, end to end</h2>
-    <p class="section-desc">Choose a plan, complete a short assessment, and receive a clear report with findings and next steps.</p>
+    <p class="section-desc">Complete a short assessment and receive a clear report with findings and next steps.</p>
     <div class="features-grid">
       <div class="feature-card">
         <div class="feature-icon">◇</div>
@@ -339,21 +378,21 @@
       <div class="step">
         <span class="step-num">1</span>
         <div>
-          <h3>Choose a plan</h3>
-          <p>Pick the tier that fits—from a one-off visibility report to a guided review with a call.</p>
+          <h3>Get your report</h3>
+          <p>Pay securely and receive a link to complete your assessment.</p>
         </div>
       </div>
       <div class="step">
         <span class="step-num">2</span>
         <div>
           <h3>Complete the assessment</h3>
-          <p>Answer a short set of questions about your operations. We use the same link from your payment confirmation.</p>
+          <p>Answer a short set of questions about your context. Use the link from your confirmation email.</p>
         </div>
       </div>
       <div class="step">
         <span class="step-num">3</span>
         <div>
-          <h3>Get your report</h3>
+          <h3>Receive your report</h3>
           <p>We generate your report and send you a secure link. Review online or save it for later.</p>
         </div>
       </div>
@@ -363,8 +402,8 @@
   <section id="cta">
     <div class="cta-box">
       <h2>Ready to see your risk clearly?</h2>
-      <p>Start with a one-off report or go deeper with a guided review.</p>
-      <a href="/checkout.html" class="btn btn-primary">Go to checkout</a>
+      <p>Get your risk analysis and action plan in one report.</p>
+      <a href="/checkout.html" class="btn btn-primary">Get your report</a>
       <a href="/contact.html" class="btn btn-ghost">Contact us</a>
     </div>
   </section>
