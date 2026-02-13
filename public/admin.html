@@ -362,7 +362,7 @@
           return;
         }
         // Prevent the assessment script from fetching and replacing the doc (which would reload the preview)
-        body = body.replace(/<body(\s[^>]*)?>/i, '<body$1><div class="flare-preview-badge" style="background:#fff3cd;color:#856404;padding:.5rem 1rem;font-size:.9rem;margin-bottom:1rem;border-radius:6px;">Preview only – form does not submit.</div><script>window.FLARE_PREVIEW=true;</script>');
+        body = body.replace(/<body(\s[^>]*)?>/i, '<body$1><div class="flare-preview-badge" style="background:#fff3cd;color:#856404;padding:.5rem 1rem;font-size:.9rem;margin-bottom:1rem;border-radius:6px;">Preview only – form does not submit.</div><script>window.FLARE_PREVIEW=true;</scr' + 'ipt>');
         const w = window.open('', '_blank');
         w.document.write(body);
         w.document.close();
