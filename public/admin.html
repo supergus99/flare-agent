@@ -139,8 +139,11 @@
               <input type="text" id="tpl-assessment-submit-label" class="form-control" placeholder="Submit assessment">
             </div>
             <div id="tpl-assessment-fields-container"></div>
-            <button type="button" id="tpl-assessment-save" class="btn btn-primary">Save assessment template</button>
-            <span id="tpl-assessment-message" class="ms-2 text-muted small"></span>
+            <div class="mt-2">
+              <button type="button" id="tpl-assessment-preview" class="btn btn-outline-secondary">Preview</button>
+              <button type="button" id="tpl-assessment-save" class="btn btn-primary">Save assessment template</button>
+              <span id="tpl-assessment-message" class="ms-2 text-muted small"></span>
+            </div>
           </div>
         </div>
         <div class="card border-0 shadow-sm">
@@ -149,6 +152,7 @@
             <p class="text-muted small">Use placeholders: <code>{{name}}</code> <code>{{company}}</code> <code>{{email}}</code> <code>{{service}}</code> <code>{{message}}</code> <code>{{report_date}}</code>. Leave empty to use built-in template.</p>
             <textarea id="tpl-report-body" class="form-control font-monospace" rows="18" placeholder="<!DOCTYPE html>..."></textarea>
             <div class="mt-2">
+              <button type="button" id="tpl-report-preview" class="btn btn-outline-secondary">Preview</button>
               <button type="button" id="tpl-report-save" class="btn btn-primary">Save report template</button>
               <span id="tpl-report-message" class="ms-2 text-muted small"></span>
             </div>
@@ -358,6 +362,55 @@
         } catch (e) {
           msg.textContent = e.message || 'Error';
         }
+      });
+
+      function escapeHtmlPreview(s) {
+        if (s == null) return '';
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
+      document.getElementById('tpl-assessment-preview').addEventListener('click', function () {
+        const tbody = document.getElementById('tpl-assessment-fields-tbody');
+        const rows = tbody ? tbody.querySelectorAll('tr') : [];
+        const fields = Array.from(rows).map(function (row, i) {
+          return {
+            name: (row.querySelector('.tpl-field-name') && row.querySelector('.tpl-field-name').value) || ('field_' + i),
+            label: (row.querySelector('.tpl-field-label') && row.querySelector('.tpl-field-label').value) || '',
+            type: (row.querySelector('.tpl-field-type') && row.querySelector('.tpl-field-type').value) || 'text',
+            required: (row.querySelector('.tpl-field-required') && row.querySelector('.tpl-field-required').value) === 'true',
+            placeholder: (row.querySelector('.tpl-field-placeholder') && row.querySelector('.tpl-field-placeholder').value) || '',
+            order: i + 1
+          };
+        });
+        const title = document.getElementById('tpl-assessment-title').value || 'Security assessment';
+        const intro = document.getElementById('tpl-assessment-intro').value || '';
+        const submitLabel = document.getElementById('tpl-assessment-submit-label').value || 'Submit assessment';
+        const sorted = fields.slice().sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
+        const fieldsHtml = sorted.map(function (f) {
+          const id = 'preview_' + (f.name || '').replace(/\s/g, '_');
+          const req = f.required ? ' required' : '';
+          if ((f.type || 'text') === 'textarea') {
+            return '<label for="' + id + '">' + escapeHtmlPreview(f.label) + '</label><textarea id="' + id + '" name="' + escapeHtmlPreview(f.name) + '"' + req + ' placeholder="' + escapeHtmlPreview(f.placeholder) + '"></textarea>';
+          }
+          return '<label for="' + id + '">' + escapeHtmlPreview(f.label) + '</label><input type="' + escapeHtmlPreview(f.type || 'text') + '" id="' + id + '" name="' + escapeHtmlPreview(f.name) + '"' + req + ' placeholder="' + escapeHtmlPreview(f.placeholder) + '">';
+        }).join('');
+        const html = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Assessment preview</title><style>body{font-family:system-ui,sans-serif;max-width:32rem;margin:2rem auto;padding:0 1rem;}h1{color:#333;}label{display:block;margin-top:.75rem;font-weight:500;}input,textarea{width:100%;padding:.5rem;margin-top:.25rem;box-sizing:border-box;}textarea{min-height:4rem;resize:vertical;}button{margin-top:1rem;padding:.6rem 1.2rem;background:#0969da;color:#fff;border:none;border-radius:6px;cursor:pointer;}.preview-badge{background:#fff3cd;color:#856404;padding:.35rem .5rem;font-size:.85rem;margin-bottom:1rem;border-radius:4px;}</style></head><body><div class="preview-badge">Preview only – form does not submit</div><h1>' + escapeHtmlPreview(title) + '</h1><p>' + escapeHtmlPreview(intro) + '</p><form id="preview-form">' + fieldsHtml + '<button type="button" onclick="alert(\'Preview only.\')">' + escapeHtmlPreview(submitLabel) + '</button></form></body></html>';
+        const w = window.open('', '_blank');
+        w.document.write(html);
+        w.document.close();
+      });
+
+      document.getElementById('tpl-report-preview').addEventListener('click', function () {
+        let body = document.getElementById('tpl-report-body').value;
+        if (!body || !body.trim()) {
+          alert('Enter report HTML to preview, or save the default first.');
+          return;
+        }
+        const sample = { name: 'Jane Doe', company: 'Acme Ltd', email: 'jane@acme.example', service: 'Risk Analysis & Action Plan', message: 'Sample notes for preview.', report_date: new Date().toISOString().slice(0, 10) };
+        body = body.replace(/\{\{name\}\}/g, escapeHtmlPreview(sample.name)).replace(/\{\{company\}\}/g, escapeHtmlPreview(sample.company)).replace(/\{\{email\}\}/g, escapeHtmlPreview(sample.email)).replace(/\{\{service\}\}/g, escapeHtmlPreview(sample.service)).replace(/\{\{message\}\}/g, escapeHtmlPreview(sample.message)).replace(/\{\{report_date\}\}/g, escapeHtmlPreview(sample.report_date));
+        const w = window.open('', '_blank');
+        w.document.write(body);
+        w.document.close();
       });
 
       if (getToken()) {
