@@ -133,7 +133,11 @@
         <div class="card border-0 shadow-sm">
           <div class="card-header bg-light"><h2 class="h6 mb-0">Assessment HTML template</h2></div>
           <div class="card-body">
-            <p class="text-muted small">Full HTML of the assessment page. When set, the public assessment page will load this instead of the default form. Preview opens the template in a new tab.</p>
+            <p class="text-muted small">Full HTML of the assessment page. When set, the public assessment page will load this instead of the default form. Use <strong>Load full template</strong> to load the 10-section Flare assessment, then edit and save. Preview opens the template in a new tab.</p>
+            <div class="mb-2">
+              <button type="button" id="tpl-assessment-load-full" class="btn btn-outline-primary btn-sm">Load full assessment template</button>
+              <span id="tpl-assessment-load-message" class="ms-2 text-muted small"></span>
+            </div>
             <textarea id="tpl-assessment-body" class="form-control font-monospace" rows="18" placeholder="<!DOCTYPE html>..."></textarea>
             <div class="mt-2">
               <button type="button" id="tpl-assessment-preview" class="btn btn-outline-secondary">Preview</button>
@@ -295,6 +299,31 @@
         } catch (_) {}
       }
 
+      document.getElementById('tpl-assessment-load-full').addEventListener('click', async function () {
+        const msg = document.getElementById('tpl-assessment-load-message');
+        msg.textContent = 'Loading...';
+        try {
+          let html = null;
+          try {
+            const sameOrigin = window.location.origin + '/templates/assessment-full.html';
+            const r = await fetch(sameOrigin);
+            if (r.ok) html = await r.text();
+          } catch (_) {}
+          if (!html) {
+            const r = await fetch(WORKER_URL + '/api/admin/assessment-template-full', { headers: authHeaders() });
+            if (r.ok) html = await r.text();
+          }
+          if (html && html.trim()) {
+            document.getElementById('tpl-assessment-body').value = html;
+            msg.textContent = 'Loaded. Edit and click Save to use as the live template.';
+          } else {
+            msg.textContent = 'Not found. Add public/templates/assessment-full.html to your Flare project (copy from assessment-flare.html in the STR repo) or configure ASSESSMENT_FULL_TEMPLATE_URL in the Worker.';
+          }
+        } catch (e) {
+          msg.textContent = e.message || 'Load failed.';
+        }
+      });
+
       document.getElementById('tpl-assessment-save').addEventListener('click', async function () {
         const msg = document.getElementById('tpl-assessment-message');
         msg.textContent = 'Saving...';
@@ -327,11 +356,13 @@
       }
 
       document.getElementById('tpl-assessment-preview').addEventListener('click', function () {
-        const body = document.getElementById('tpl-assessment-body').value;
+        let body = document.getElementById('tpl-assessment-body').value;
         if (!body || !body.trim()) {
           alert('Enter assessment HTML to preview.');
           return;
         }
+        // Prevent the assessment script from fetching and replacing the doc (which would reload the preview)
+        body = body.replace(/<body(\s[^>]*)?>/i, '<body$1><div class="flare-preview-badge" style="background:#fff3cd;color:#856404;padding:.5rem 1rem;font-size:.9rem;margin-bottom:1rem;border-radius:6px;">Preview only – form does not submit.</div><script>window.FLARE_PREVIEW=true;</script>');
         const w = window.open('', '_blank');
         w.document.write(body);
         w.document.close();
