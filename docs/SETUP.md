@@ -60,10 +60,11 @@ GitHub Actions will run and deploy **flare-worker** to Cloudflare. Check the **A
 
 ---
 
-## 5. Queues (when you add it)
+## 5. Queues (flare-jobs)
 
-- Create queue: **flare-jobs**
-- Add producer/consumer bindings in `wrangler.toml`
+1. **Create the queue:** Cloudflare Dashboard → **Workers & Pages** → **Queues** → **Create Queue** → name: **flare-jobs**. Create.
+2. **Binding** is already in `wrangler.toml` (producer `JOBS` + consumer). Deploy (push to main or `npx wrangler deploy`).
+3. **Test:** GET `https://flare-worker.gusmao-ricardo.workers.dev/queue` → `{"queue":"ok",...}`. POST to `/queue` (no body needed) to send a test message; the consumer will process it.
 
 ---
 

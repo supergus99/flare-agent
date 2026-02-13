@@ -17,3 +17,13 @@ database_id = "4cdf2868-c471-4005-9231-226c3289549f"
 [[r2_buckets]]
 binding = "REPORTS"
 bucket_name = "flare-reports"
+
+# Queues – create queue "flare-jobs" in Dashboard (Workers & Pages > Queues) first
+[[queues.producers]]
+queue = "flare-jobs"
+binding = "JOBS"
+
+[[queues.consumers]]
+queue = "flare-jobs"
+max_batch_size = 1
+max_batch_timeout = 30
