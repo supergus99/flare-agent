@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact – Flare</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 32rem; margin: 2rem auto; padding: 0 1rem; }
+    h1 { color: #333; }
+    label { display: block; margin-top: 1rem; font-weight: 500; }
+    input, textarea { width: 100%; padding: 0.5rem; margin-top: 0.25rem; box-sizing: border-box; }
+    button { margin-top: 1.25rem; padding: 0.5rem 1rem; cursor: pointer; }
+    .message { margin-top: 1rem; padding: 0.75rem; border-radius: 6px; }
+    .message.success { background: #dafbe1; color: #116329; }
+    .message.error { background: #ffebe9; color: #cf2222; }
+    a { color: #0969da; }
+  </style>
+</head>
+<body>
+  <h1>Contact</h1>
+  <p>Submit the form below. It’s sent to the Worker and saved in D1.</p>
+
+  <form id="contact-form">
+    <label for="email">Email *</label>
+    <input type="email" id="email" name="email" required>
+
+    <label for="name">Name</label>
+    <input type="text" id="name" name="name">
+
+    <button type="submit">Submit</button>
+  </form>
+
+  <div id="message" class="message" style="display: none;" role="status"></div>
+
+  <p style="margin-top: 2rem;"><a href="/">Back to Flare</a></p>
+
+  <script>
+    const API = "https://flare-worker.gusmao-ricardo.workers.dev";
+    const form = document.getElementById("contact-form");
+    const messageEl = document.getElementById("message");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      messageEl.style.display = "none";
+      messageEl.className = "message";
+      const email = form.email.value.trim();
+      const name = form.name.value.trim();
+      try {
+        const res = await fetch(API + "/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, name }),
+        });
+        const data = await res.json();
+        messageEl.style.display = "block";
+        if (data.ok) {
+          messageEl.textContent = "Saved. Thanks!";
+          messageEl.classList.add("success");
+          form.reset();
+        } else {
+          messageEl.textContent = data.error || "Something went wrong.";
+          messageEl.classList.add("error");
+        }
+      } catch (err) {
+        messageEl.style.display = "block";
+        messageEl.textContent = "Network error: " + err.message;
+        messageEl.classList.add("error");
+      }
+    });
+  </script>
+</body>
+</html>
