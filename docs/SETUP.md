@@ -30,11 +30,25 @@ GitHub Actions will run and deploy **flare-worker** to Cloudflare. Check the **A
 
 ---
 
-## 3. D1 (when you add it)
+## 3. D1 (database)
 
-- Create: `npx wrangler d1 create flare-db`
-- Add to `wrangler.toml`: `[[d1_databases]]` with `binding = "DB"`, `database_name = "flare-db"`, `database_id = "<id>"`
-- Migrations: `migrations/001_initial.sql` then `npx wrangler d1 execute flare-db --remote --file=./migrations/001_initial.sql`
+1. **Create the database** (from the flare repo, with Node/Wrangler installed):
+   ```bash
+   cd ~/projects/flare
+   npx wrangler d1 create flare-db
+   ```
+   Copy the **database_id** from the output.
+
+2. **Bind D1 to the Worker:** In `wrangler.toml`, uncomment the `[[d1_databases]]` block and replace `YOUR_D1_DATABASE_ID` with the id from step 1.
+
+3. **Run the migration** (creates `contact_submissions` table):
+   ```bash
+   npx wrangler d1 execute flare-db --remote --file=./migrations/001_initial.sql
+   ```
+
+4. **Deploy:** Commit and push; CI will deploy with D1. Or run `npx wrangler deploy` locally.
+
+5. **Test:** Open `https://flare-worker.<your-subdomain>.workers.dev/db` – you should see `{"d1":"ok","submissions_count":0}`.
 
 ---
 
