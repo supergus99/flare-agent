@@ -357,13 +357,16 @@
       document.getElementById('tpl-assessment-save').addEventListener('click', async function () {
         const msg = document.getElementById('tpl-assessment-message');
         msg.textContent = 'Saving...';
+        msg.classList.remove('text-danger');
         const body = document.getElementById('tpl-assessment-body').value;
         try {
           const res = await fetch(WORKER_URL + '/api/admin/assessment-template', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ body: body }) });
           const data = await res.json();
           msg.textContent = res.ok ? 'Saved.' : (data.error || 'Failed');
+          if (!res.ok) msg.classList.add('text-danger');
         } catch (e) {
           msg.textContent = e.message || 'Error';
+          msg.classList.add('text-danger');
         }
       });
 

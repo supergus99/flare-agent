@@ -721,6 +721,14 @@ export default {
               await env.DB.prepare("INSERT INTO assessment_template (id, form_config, updated_at) VALUES (1, ?, datetime('now')) ON CONFLICT(id) DO UPDATE SET form_config = excluded.form_config, updated_at = datetime('now')").bind(configStr).run();
             }
           } catch (colErr) {
+            const errMsg = String(colErr?.message || colErr || "").toLowerCase();
+            if (errMsg.includes("no such column") && errMsg.includes("body")) {
+              return json({
+                ok: false,
+                error: "Assessment HTML could not be saved: the database is missing the 'body' column. Run this migration in your Flare project: npx wrangler d1 execute flare-db --remote --file=./migrations/006_assessment_template_body.sql",
+              }, 503);
+            }
+            if (templateBody !== null) throw colErr;
             await env.DB.prepare("INSERT INTO assessment_template (id, form_config, updated_at) VALUES (1, ?, datetime('now')) ON CONFLICT(id) DO UPDATE SET form_config = excluded.form_config, updated_at = datetime('now')").bind(configStr).run();
           }
           return json({ ok: true, message: "Assessment template saved" });
@@ -1026,8 +1034,10 @@ function getDefaultReportTemplateBodyFlare() {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('flare_theme') || 'dark');</script>
   <style>
-    :root { --bg: #0a0a0b; --bg-card: #111113; --text: #e4e4e7; --muted: #71717a; --accent: #22d3ee; --border: rgba(255,255,255,0.06); --pill-low: #10b981; --pill-mod: #f59e0b; --pill-high: #f97316; --pill-crit: #ef4444; }
+    :root, [data-theme="dark"] { --bg: #0a0a0b; --bg-card: #111113; --text: #e4e4e7; --muted: #71717a; --accent: #22d3ee; --border: rgba(255,255,255,0.06); --pill-low: #10b981; --pill-mod: #f59e0b; --pill-high: #f97316; --pill-crit: #ef4444; }
+    [data-theme="light"] { --bg: #f4f4f5; --bg-card: #ffffff; --text: #18181b; --muted: #71717a; --accent: #0891b2; --border: rgba(0,0,0,0.08); --pill-low: #059669; --pill-mod: #d97706; --pill-high: #ea580c; --pill-crit: #dc2626; }
     html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: 'Outfit', system-ui, sans-serif; line-height: 1.55; }
     .report { max-width: 960px; margin: 32px auto 64px; padding: 0 16px; }
     .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
@@ -1057,9 +1067,12 @@ function getDefaultReportTemplateBodyFlare() {
 </head>
 <body>
   <div class="report">
-    <header class="report-header">
-      <h1>Security & Operations Risk Assessment Report</h1>
-      <p class="subtitle">Generated from assessment data · Flare · getflare.net</p>
+    <header class="report-header" style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px;">
+      <div>
+        <h1>Security & Operations Risk Assessment Report</h1>
+        <p class="subtitle">Generated from assessment data · Flare · getflare.net</p>
+      </div>
+      <button type="button" id="theme-toggle" aria-label="Toggle dark/light mode" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); color: #fff; padding: 0.4rem 0.75rem; border-radius: 8px; cursor: pointer; font-size: 0.875rem; font-family: inherit; white-space: nowrap;">Dark</button>
     </header>
     <section class="card">
       <div class="section-title"><h2>1) Report Metadata</h2></div>
@@ -1218,6 +1231,21 @@ function getDefaultReportTemplateBodyFlare() {
       <ul><li>Recent Incidents, Concerns, Comments: {{message}}</li></ul>
     </section>
   </div>
+  <script>
+  (function() {
+    var toggle = document.getElementById('theme-toggle');
+    if (toggle) {
+      function updateLabel() { toggle.textContent = (document.documentElement.getAttribute('data-theme') === 'light') ? 'Light' : 'Dark'; }
+      updateLabel();
+      toggle.addEventListener('click', function() {
+        var next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', next);
+        try { localStorage.setItem('flare_theme', next); } catch(e) {}
+        updateLabel();
+      });
+    }
+  })();
+  </script>
 </body>
 </html>`;
 }
