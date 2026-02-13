@@ -48,8 +48,9 @@
       transition: background .3s;
     }
     .nav.scrolled { background: rgba(10,10,11,0.9); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
-    .nav-logo { font-weight: 700; font-size: 1.25rem; letter-spacing: -0.02em; color: var(--text); text-decoration: none; }
-    .nav-logo span { color: var(--accent); }
+    .nav-logo { font-weight: 700; font-size: 1.25rem; letter-spacing: -0.02em; text-decoration: none; display: inline-flex; align-items: baseline; }
+    .nav-logo-word { background: linear-gradient(135deg, var(--flare-orange), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .nav-logo-dot { color: var(--accent); }
     .nav-links { display: flex; gap: 1.5rem; align-items: center; }
     .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color .2s; }
     .nav-links a:hover { color: var(--accent); }
@@ -361,8 +362,9 @@
       margin: 0 auto;
     }
     .footer-grid { display: flex; flex-wrap: wrap; gap: 2rem; justify-content: space-between; align-items: center; }
-    .footer-logo { font-weight: 700; font-size: 1.1rem; color: var(--text); text-decoration: none; }
-    .footer-logo span { color: var(--accent); }
+    .footer-logo { font-weight: 700; font-size: 1.1rem; text-decoration: none; display: inline-flex; align-items: baseline; }
+    .footer-logo .nav-logo-word { background: linear-gradient(135deg, var(--flare-orange), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .footer-logo .nav-logo-dot { color: var(--accent); }
     .footer-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
     .footer-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; }
     .footer-links a:hover { color: var(--accent); }
@@ -373,7 +375,7 @@
 </head>
 <body>
   <nav class="nav" id="nav">
-    <a href="#" class="nav-logo">Flare<span>.</span></a>
+    <a href="#" class="nav-logo"><span class="nav-logo-word">Flare</span><span class="nav-logo-dot">.</span></a>
     <div class="nav-links">
       <a href="#mission">Mission</a>
       <a href="#offer">Your report</a>
@@ -524,7 +526,7 @@
 
   <footer>
     <div class="footer-grid">
-      <a href="#" class="footer-logo">Flare<span>.</span></a>
+      <a href="#" class="footer-logo"><span class="nav-logo-word">Flare</span><span class="nav-logo-dot">.</span></a>
       <div class="footer-links">
         <a href="#mission">Mission</a>
         <a href="#offer">Your report</a>
