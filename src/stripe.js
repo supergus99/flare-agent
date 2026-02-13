@@ -11,7 +11,7 @@ export const TIER_NAMES = {
 
 const TIERS = {
   core: { price_cents: 24900, price_usd_cents: 24900 },
-  protect: { price_cents: 59900, price_usd_cents: 59900 },
+  protect: { price_cents: 8900, price_usd_cents: 8900 }, /* launch campaign 89€ / $89 */
   assure: { price_cents: 99900, price_usd_cents: 99900 },
 };
 
