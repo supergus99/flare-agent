@@ -169,17 +169,40 @@
       animation: fade-up 0.8s ease-out 0.1s both;
     }
     .hero h1 .flare-word { background: linear-gradient(135deg, var(--flare-orange), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    .hero p {
-      font-size: 1.15rem;
+    .hero-tagline {
+      font-size: 1.1rem;
       color: #d4d4d8;
       margin: 0 0 2rem;
-      max-width: 32rem;
+      max-width: 28rem;
       margin-left: auto;
       margin-right: auto;
       animation: fade-up 0.8s ease-out 0.2s both;
       text-shadow: 0 0 24px rgba(10, 10, 11, 0.6);
     }
     .hero-btns { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; animation: fade-up 0.8s ease-out 0.3s both; }
+
+    /* Intro – moved hero message */
+    .intro-block {
+      text-align: center;
+      padding: 3.5rem 1.5rem;
+      max-width: 40rem;
+      margin: 0 auto;
+    }
+    .intro-heading {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin: 0 0 1rem;
+    }
+    .intro-text {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin: 0;
+    }
+    .intro-text strong { color: var(--text); }
     .btn {
       display: inline-flex;
       align-items: center;
@@ -217,24 +240,34 @@
     .section-title { font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 600; letter-spacing: -0.02em; margin: 0 0 1rem; }
     .section-desc { color: var(--text-muted); font-size: 1.05rem; max-width: 36rem; margin: 0 0 2.5rem; }
 
-    /* Features */
+    /* Features – 4 in a row on wide, 2x2 on medium, 1 col on small */
     #features { padding-top: 4rem; }
     .features-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.5rem;
+      gap: 1.25rem;
+      grid-template-columns: 1fr;
+      align-items: stretch;
+    }
+    @media (min-width: 36rem) {
+      .features-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (min-width: 62rem) {
+      .features-grid { grid-template-columns: repeat(4, 1fr); }
     }
     .feature-card {
       background: var(--bg-elevated);
       border: 1px solid var(--border);
       border-radius: 16px;
-      padding: 1.75rem;
+      padding: 1.5rem 1.25rem;
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
       transition: border-color .25s, box-shadow .25s;
     }
     .feature-card:hover { border-color: rgba(34, 211, 238, 0.25); box-shadow: 0 0 40px rgba(34, 211, 238, 0.06); }
-    .feature-icon { width: 2.5rem; height: 2.5rem; border-radius: 10px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 1.25rem; margin-bottom: 1rem; }
-    .feature-card h3 { font-size: 1.1rem; font-weight: 600; margin: 0 0 0.5rem; }
-    .feature-card p { color: var(--text-muted); font-size: 0.95rem; margin: 0; }
+    .feature-icon { width: 2.25rem; height: 2.25rem; border-radius: 10px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; margin-bottom: 0.85rem; flex-shrink: 0; }
+    .feature-card h3 { font-size: 1.05rem; font-weight: 600; margin: 0 0 0.4rem; }
+    .feature-card p { color: var(--text-muted); font-size: 0.9rem; margin: 0; line-height: 1.5; }
 
     /* How it works */
     #how { background: var(--bg-elevated); }
@@ -359,15 +392,20 @@
       <div class="flare-orb flare-orb-3"></div>
     </div>
     <div class="hero-content">
-      <div class="hero-badge">Security for micro &amp; small businesses</div>
-      <h1>Security that makes sense.<br>For the smallest business.</h1>
-      <p>You care about your business—but when it comes to cybersecurity, everything feels confusing, expensive, or full of jargon. We’re here to change that. One clear report: what’s wrong, what to do first, and step-by-step directions so you can do it yourself. <strong>Time, not money.</strong></p>
+      <div class="hero-badge">Security × AI</div>
+      <h1>See risk clearly.<br>Act with <span class="flare-word">Flare</span>.</h1>
+      <p class="hero-tagline">One report. Your risks, in order—and the steps to fix them yourself.</p>
       <div class="hero-btns">
         <a href="/checkout.html" class="btn btn-primary">Get your report</a>
-        <a href="#mission" class="btn btn-ghost">Our mission</a>
+        <a href="#intro" class="btn btn-ghost">Find out more</a>
       </div>
     </div>
   </header>
+
+  <section id="intro" class="intro-block">
+    <p class="intro-heading">For everyone who cares about their business</p>
+    <p class="intro-text">You care about your business. Cybersecurity? It feels like another world—confusing, pricey, full of acronyms. We cut through the noise: one report that spells out your risks, puts them in order, and shows you exactly how to fix things yourself. <strong>Invest time, not a fortune.</strong></p>
+  </section>
 
   <section id="mission">
     <p class="section-label">Why we exist</p>
@@ -396,21 +434,21 @@
       </div>
     </div>
     <div class="mission-statement">
-      <p><strong>Our mission:</strong> make security available to everyone. We focus on <strong>behaviors</strong>, <strong>small tweaks</strong>, and <strong>free tools</strong> that make a real difference—so you protect your business by spending <strong>time</strong>, not money.</p>
+      <p><strong>We’re here to change that.</strong> Our focus: <strong>behaviors</strong>, <strong>tweaks</strong>, and <strong>free tools</strong> that actually move the needle—so you protect what you’ve built by spending time, not cash.</p>
     </div>
   </section>
 
   <section id="offer">
     <p class="section-label">Your report</p>
     <div class="offer-box">
-      <h2>What’s wrong. What to do first. How to do it yourself.</h2>
-      <p class="offer-desc">One report, in plain language. No jargon. We show you your main risks, what to fix first, and—importantly—the <strong>steps or directions</strong> so you can do it yourself. We recommend behaviours, tweaks, and <strong>free tools</strong> that make a real difference. Protect your business by spending <strong>time</strong>, not money.</p>
+      <h2>Risks. Priorities. Then the how-to.</h2>
+      <p class="offer-desc">One report, written so you can use it. We highlight your main gaps, put them in order, and give you the <strong>steps</strong>—so you can do the work yourself. We lean on free tools and simple habits, not big spend. Your report lives behind a secure link we send by email.</p>
       <ul class="offer-list">
-        <li><strong>What’s wrong</strong> — Clear view of your main risks, explained simply.</li>
-        <li><strong>What to do first</strong> — Prioritized so you know where to start.</li>
-        <li><strong>How to DIY</strong> — Step-by-step directions so you can do it yourself, without buying expensive tools.</li>
-        <li><strong>Free tools &amp; behaviours</strong> — We point you to free options and simple changes that help.</li>
-        <li><strong>Secure link</strong> — Access your report anytime via the link we send by email.</li>
+        <li><strong>Where you’re exposed</strong> — Your main risks, in plain language.</li>
+        <li><strong>Where to start</strong> — A clear order so you’re not guessing.</li>
+        <li><strong>The how-to</strong> — Directions you can follow yourself; no expensive tools required.</li>
+        <li><strong>Free options first</strong> — We point to free tools and small changes that help.</li>
+        <li><strong>Yours to keep</strong> — Access the report anytime via the link we send.</li>
       </ul>
       <p class="offer-cta">
         <a href="/checkout.html" class="btn btn-primary">Get your report</a>
@@ -420,56 +458,56 @@
 
   <section id="features">
     <p class="section-label">What you get</p>
-    <h2 class="section-title">A report that works for micro and small businesses</h2>
-    <p class="section-desc">Plain language. Priorities. DIY steps. No audits or expensive tools required.</p>
+    <h2 class="section-title">Built for teams without a security team</h2>
+    <p class="section-desc">No audits, no enterprise software. Just clarity and a path you can walk yourself.</p>
     <div class="features-grid">
       <div class="feature-card">
         <div class="feature-icon">◇</div>
-        <h3>No jargon</h3>
-        <p>We explain things clearly. You’ll understand what’s wrong and why it matters.</p>
+        <h3>Plain English</h3>
+        <p>We skip the acronyms. You’ll see what matters and why.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">▸</div>
-        <h3>What to do first</h3>
-        <p>Prioritized list so you’re not overwhelmed. Fix the most important things first.</p>
+        <h3>First things first</h3>
+        <p>Prioritized so you know where to focus without getting lost.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">◈</div>
-        <h3>DIY steps &amp; directions</h3>
-        <p>We give you the how—step-by-step directions so you can do it yourself.</p>
+        <h3>You do the doing</h3>
+        <p>We give you the steps; you run them. No consultants required.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">◆</div>
-        <h3>Time, not money</h3>
-        <p>Behaviours, tweaks, and free tools. Protect your business without a big budget.</p>
+        <h3>Small budget, real impact</h3>
+        <p>Free tools and simple tweaks. Protect more by spending time, not cash.</p>
       </div>
     </div>
   </section>
 
   <section id="how">
     <p class="section-label">How it works</p>
-    <h2 class="section-title">Three steps to your report</h2>
-    <p class="section-desc">Pay once, complete a short assessment, and get your report by email—with a secure link to view anytime.</p>
+    <h2 class="section-title">Three steps to clarity</h2>
+    <p class="section-desc">Pay once, answer a short set of questions, and we’ll send your report by email with a link you can keep.</p>
     <div class="steps">
       <div class="step">
         <span class="step-num">1</span>
         <div>
           <h3>Get your report</h3>
-          <p>Pay securely and receive a link to complete your assessment.</p>
+          <p>Pay securely and we’ll send you a link to the assessment.</p>
         </div>
       </div>
       <div class="step">
         <span class="step-num">2</span>
         <div>
           <h3>Complete the assessment</h3>
-          <p>Answer a short set of questions about your business. Use the link from your confirmation email.</p>
+          <p>Short questions about your setup. Use the link from your confirmation email.</p>
         </div>
       </div>
       <div class="step">
         <span class="step-num">3</span>
         <div>
           <h3>Receive your report</h3>
-          <p>We generate your report and send you a secure link. You’ll see what’s wrong, what to do first, and how to do it yourself.</p>
+          <p>We build your report and send the link. Open it anytime—risks, order, and how-to in one place.</p>
         </div>
       </div>
     </div>
@@ -477,8 +515,8 @@
 
   <section id="cta">
     <div class="cta-box">
-      <h2>Security for everyone</h2>
-      <p>Get a clear report: what’s wrong, what to fix first, and step-by-step directions to do it yourself. Time, not money.</p>
+      <h2>Ready to see where you stand?</h2>
+      <p>One report. Plain language. Your next steps—and the directions to follow them.</p>
       <a href="/checkout.html" class="btn btn-primary">Get your report</a>
       <a href="/contact.html" class="btn btn-ghost">Contact us</a>
     </div>
