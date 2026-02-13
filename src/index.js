@@ -780,26 +780,15 @@ async function handleGenerateReport(env, body) {
   ).bind(report.id, nextVersion).first();
   const versionId = versionInsert?.id;
 
+  const data = typeof submission.assessment_data === "string" ? JSON.parse(submission.assessment_data || "{}") : (submission.assessment_data || {});
+  const reportVars = buildReportVars(submission, data);
   let htmlContent = "";
   try {
     const templateRow = await env.DB.prepare("SELECT body FROM report_templates WHERE id = 1 AND body IS NOT NULL AND body != '' LIMIT 1").first();
-    if (templateRow?.body) {
-      const data = typeof submission.assessment_data === "string" ? JSON.parse(submission.assessment_data || "{}") : (submission.assessment_data || {});
-      const message = submission.message || (data.describe_concerns || "");
-      htmlContent = applyReportTemplate(templateRow.body, {
-        name: submission.name || submission.email || "Customer",
-        company: submission.company || "—",
-        email: submission.email || "—",
-        service: submission.service || "—",
-        message,
-        report_date: new Date().toISOString().slice(0, 10),
-      });
-    } else {
-      const data = typeof submission.assessment_data === "string" ? JSON.parse(submission.assessment_data || "{}") : (submission.assessment_data || {});
-      htmlContent = buildStubReportHtml(submission, data);
-    }
+    const templateBody = templateRow?.body ? templateRow.body : getDefaultReportTemplateBody();
+    htmlContent = applyReportTemplate(templateBody, reportVars);
   } catch (_) {
-    htmlContent = buildStubReportHtml(submission, {});
+    htmlContent = applyReportTemplate(getDefaultReportTemplateBody(), reportVars);
   }
 
   const r2Key = `reports/${report.id}/v${nextVersion}.html`;
@@ -910,46 +899,235 @@ function applyReportTemplate(templateBody, vars) {
   return out;
 }
 
-/** Default report HTML with placeholders: {{name}}, {{company}}, {{email}}, {{service}}, {{message}}, {{report_date}} */
+function buildReportVars(submission, data) {
+  const d = data || {};
+  const arr = (v) => (Array.isArray(v) ? v : v ? [v] : []);
+  const join = (v) => arr(v).join(", ") || "—";
+  const str = (v) => (v != null && String(v).trim() !== "" ? String(v).trim() : "—");
+  const unitsTotal = d.units_total != null ? String(d.units_total) : "";
+  const unitsRange = unitsTotal || "—";
+  const countries = join(d.regions_operated);
+  return {
+    name: str(submission.name) !== "—" ? str(submission.name) : str(submission.email) || "Customer",
+    company: str(submission.company),
+    email: str(submission.email),
+    role: str(d.role),
+    service: str(submission.service),
+    message: str(submission.message) !== "—" ? str(submission.message) : str(d.describe_concerns),
+    report_date: new Date().toISOString().slice(0, 10),
+    website_url: str(d.website_url || d.website),
+    website_href: (d.website_url || d.website) && String(d.website_url || d.website).trim() ? String(d.website_url || d.website).trim() : "#",
+    units_range: unitsRange,
+    countries: countries,
+    language: str(d.language) || "—",
+  };
+}
+
+/** Full report template (STR structure) with Flare styling. Placeholders: {{name}}, {{company}}, {{email}}, {{role}}, {{service}}, {{message}}, {{report_date}}, {{website_url}}, {{units_range}}, {{countries}}, {{language}} */
 function getDefaultReportTemplateBody() {
+  return getDefaultReportTemplateBodyFlare();
+}
+function getDefaultReportTemplateBodyFlare() {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Security Assessment Report – Flare</title>
+  <title>Security & Operations Risk Assessment Report – Flare</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: system-ui, -apple-system, sans-serif; max-width: 42rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; color: #1a1a1a; }
-    h1 { font-size: 1.5rem; color: #111; border-bottom: 2px solid #0969da; padding-bottom: 0.5rem; }
-    .meta { color: #666; font-size: 0.875rem; margin-bottom: 1.5rem; }
-    .section { margin-top: 1.5rem; }
-    .section h2 { font-size: 1rem; color: #333; margin-bottom: 0.5rem; }
-    .section p { margin: 0.25rem 0; }
-    table.info { width: 100%; border-collapse: collapse; }
-    table.info td { padding: 0.35rem 0; border-bottom: 1px solid #eee; }
-    table.info td:first-child { font-weight: 500; width: 8rem; color: #555; }
-    .footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #eee; color: #888; font-size: 0.8rem; }
+    :root { --bg: #0a0a0b; --bg-card: #111113; --text: #e4e4e7; --muted: #71717a; --accent: #22d3ee; --border: rgba(255,255,255,0.06); --pill-low: #10b981; --pill-mod: #f59e0b; --pill-high: #f97316; --pill-crit: #ef4444; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: 'Outfit', system-ui, sans-serif; line-height: 1.55; }
+    .report { max-width: 960px; margin: 32px auto 64px; padding: 0 16px; }
+    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    .report-header { background: linear-gradient(135deg, #0e7490 0%, #0891b2 50%, #22d3ee 100%); color: #fff; padding: 28px 24px; border-radius: 14px; margin-bottom: 18px; }
+    .report-header h1 { margin: 0 0 8px; font-size: 26px; font-weight: 700; }
+    .report-header .subtitle { margin: 0; color: rgba(255,255,255,0.9); font-size: 14px; }
+    h2 { font-size: 20px; margin: 0 0 12px; color: var(--text); }
+    h3 { font-size: 16px; margin: 18px 0 8px; color: var(--accent); }
+    p { margin: 8px 0; }
+    ul { margin: 8px 0 8px 20px; }
+    .meta-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 20px; }
+    .kv { display: grid; grid-template-columns: 160px 1fr; gap: 12px; }
+    .kv label { color: var(--muted); font-weight: 600; font-size: 0.9rem; }
+    .pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; color: #fff; background: var(--muted); }
+    .pill.low, .pill.Low { background: var(--pill-low); }
+    .pill.moderate, .pill.Moderate { background: var(--pill-mod); }
+    .pill.high, .pill.High { background: var(--pill-high); }
+    .pill.critical, .pill.Critical { background: var(--pill-crit); }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .kpi { display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: var(--bg); }
+    .kpi small, .muted { color: var(--muted); }
+    .section-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    a { color: var(--accent); }
+    @media (max-width: 720px) { .meta-grid, .grid-2, .kv { grid-template-columns: 1fr; } }
+    @media print { body { background: #fff; color: #111; } .card, .report-header { box-shadow: none; } .pill { print-color-adjust: exact; } }
   </style>
 </head>
 <body>
-  <h1>Security Assessment Report</h1>
-  <p class="meta">Generated {{report_date}} by Flare.</p>
-  <div class="section">
-    <h2>Executive summary</h2>
-    <p>This report is based on your assessment submission. Below are the details we have on file.</p>
-  </div>
-  <div class="section">
-    <h2>Contact &amp; plan</h2>
-    <table class="info">
-      <tr><td>Name</td><td>{{name}}</td></tr>
-      <tr><td>Company</td><td>{{company}}</td></tr>
-      <tr><td>Email</td><td>{{email}}</td></tr>
-      <tr><td>Plan</td><td>{{service}}</td></tr>
-    </table>
-  </div>
-  <div class="section"><h2>Your notes</h2><p>{{message}}</p></div>
-  <div class="footer">
-    <p>Report generated on {{report_date}}. Flare.</p>
+  <div class="report">
+    <header class="report-header">
+      <h1>Security & Operations Risk Assessment Report</h1>
+      <p class="subtitle">Generated from assessment data · Flare · getflare.net</p>
+    </header>
+    <section class="card">
+      <div class="section-title"><h2>1) Report Metadata</h2></div>
+      <div class="meta-grid">
+        <div class="kv"><label>Company</label><div>{{company}}</div></div>
+        <div class="kv"><label>Website</label><div><a href="{{website_href}}" target="_blank" rel="noopener">{{website_url}}</a></div></div>
+        <div class="kv"><label>Prepared for</label><div>{{name}} — {{role}}</div></div>
+        <div class="kv"><label>Prepared by</label><div>Flare</div></div>
+        <div class="kv"><label>Assessment Date</label><div>{{report_date}}</div></div>
+        <div class="kv"><label>Scope</label><div>{{units_range}} units across {{countries}}</div></div>
+        <div class="kv"><label>Language/Locale</label><div>{{language}}</div></div>
+      </div>
+    </section>
+    <section class="card">
+      <div class="section-title"><h2>2) Executive Summary</h2><span class="pill">Overall Risk: [Low | Moderate | High | Critical]</span></div>
+      <h3>Top 5 Findings</h3>
+      <ul>
+        <li>[Finding #1 — short impact statement]</li>
+        <li>[Finding #2]</li>
+        <li>[Finding #3]</li>
+        <li>[Finding #4]</li>
+        <li>[Finding #5]</li>
+      </ul>
+      <h3>Priority Recommendations (0–90 days)</h3>
+      <ul>
+        <li>[Action 1 — 0–30 days] &rarr; Impact: [High/Med/Low]</li>
+        <li>[Action 2 — 0–60 days] &rarr; Impact: [High/Med/Low]</li>
+        <li>[Action 3 — 0–90 days] &rarr; Impact: [High/Med/Low]</li>
+      </ul>
+      <div class="grid-2">
+        <div class="kpi"><div><strong>Estimated Budget Range</strong><br><small class="muted">[Notes on scope]</small></div><div>[Currency + range]</div></div>
+        <div class="kpi"><div><strong>Target Timeline</strong><br><small class="muted">[e.g. Core items within 90 days]</small></div><div>[Start date / cadence]</div></div>
+      </div>
+    </section>
+    <section class="card">
+      <h2>3) Environment Profile (From Assessment)</h2>
+      <p class="muted">Aligned to the assessment sections.</p>
+      <h3>3.1 Company Information</h3>
+      <ul>
+        <li>Company Name: {{company}}</li>
+        <li>Contact: {{name}} — {{email}}</li>
+        <li>Role: {{role}}</li>
+      </ul>
+      <h3>3.2 Access Control</h3>
+      <ul><li>Authentication Method(s): [Password / SSO / MFA / Biometric]</li><li>MFA Enabled: [Yes / No]</li><li>Password Policy: [Basic / Standard / Strong / None]</li><li>Access Review Frequency: [Quarterly / Semi-annual / Annual / Ad-hoc / Never]</li></ul>
+      <h3>3.3 Network Security</h3>
+      <ul><li>Firewall Solution: [Enterprise / SMB / Cloud-native / None]</li><li>VPN Usage: [Always / Sometimes / Never]</li><li>Network Segmentation: [Yes / Partial / No]</li><li>Intrusion Detection: [IDS/IPS / EDR / None]</li></ul>
+      <h3>3.4 Data Protection</h3>
+      <ul><li>Encryption at Rest: [Yes / Partial / No]</li><li>Encryption in Transit: [Yes / Partial / No]</li><li>Backup Frequency: [Daily / Weekly / Monthly / Never]</li><li>Backup Testing: [Regular / Occasional / Never]</li><li>Data Classification: [Yes / Partial / No]</li></ul>
+      <h3>3.5 Endpoint Security</h3>
+      <ul><li>Antivirus / EPP: [Enterprise / Consumer / None]</li><li>Endpoint Detection (EDR/XDR): [Yes / No]</li><li>Patch Management: [Automated / Manual / Ad-hoc / None]</li><li>Mobile Device Management: [Yes / Partial / No]</li></ul>
+      <h3>3.6 Security Monitoring</h3>
+      <ul><li>SIEM / Log Management: [SIEM / Cloud-native / Basic logs / None]</li><li>Log Retention: [90+ days / 30–90 / &lt;30 / None]</li><li>Incident Response Plan: [Yes, documented / Informal / No]</li><li>Vulnerability Scanning: [Regular / Occasional / Never]</li></ul>
+      <h3>3.7 Compliance &amp; Policies</h3>
+      <ul><li>Compliance Frameworks: [SOC 2 / ISO 27001 / HIPAA / PCI DSS / GDPR / None]</li><li>Security Policies: [Documented / Partial / None]</li><li>Security Training: [Regular / Annual / None]</li><li>Third-Party Risk Management: [Yes / Partial / No]</li></ul>
+      <h3>3.8 Additional Information</h3>
+      <ul><li>Recent Security Incidents: [Client free-text or "None reported"]</li><li>Security Concerns: {{message}}</li><li>Additional Comments: [Client free-text]</li></ul>
+    </section>
+    <section class="card">
+      <h2>4) Risk Scoring Framework</h2>
+      <p class="muted">Scale (0–5): 0=Not implemented, 1=Ad-hoc, 2=Basic, 3=Defined, 4=Managed, 5=Optimized. Risk: 0–1.4 Low &middot; 1.5–2.9 Moderate &middot; 3.0–3.9 High &middot; 4.0–5.0 Critical</p>
+      <div class="grid-2">
+        <div class="kpi"><div>Access Control: [x/5]</div><div><span class="pill">[Level]</span></div></div>
+        <div class="kpi"><div>Network Security: [x/5]</div><div><span class="pill">[Level]</span></div></div>
+        <div class="kpi"><div>Data Protection: [x/5]</div><div><span class="pill">[Level]</span></div></div>
+        <div class="kpi"><div>Endpoint Security: [x/5]</div><div><span class="pill">[Level]</span></div></div>
+        <div class="kpi"><div>Security Monitoring: [x/5]</div><div><span class="pill">[Level]</span></div></div>
+        <div class="kpi"><div>Compliance &amp; Policies: [x/5]</div><div><span class="pill">[Level]</span></div></div>
+      </div>
+      <div class="kpi" style="margin-top:12px;"><div><strong>Overall Risk Score (weighted): [x.xx/5]</strong></div><div><span class="pill">[Overall Level]</span></div></div>
+    </section>
+    <section class="card">
+      <h2>5) Key Findings &amp; Gaps (Evidence-Based)</h2>
+      <h3>5.1 Access Control</h3>
+      <ul><li><strong>Strengths:</strong> [List strengths]</li><li><strong>Gaps:</strong> [List gaps]</li><li><strong>Impact:</strong> [Operational / Security / Compliance]</li><li><strong>Evidence:</strong> [Quote assessment Section 3.2]</li><li><strong>Risk Rating:</strong> <span class="pill">[Level]</span></li><li><strong>Remediation:</strong> <ul><li>[Action 1]</li><li>[Action 2]</li></ul></li></ul>
+      <h3>5.2 Network Security</h3>
+      <ul><li><strong>Strengths:</strong> [List strengths]</li><li><strong>Gaps:</strong> [List gaps]</li><li><strong>Impact:</strong> [Impact type]</li><li><strong>Evidence:</strong> [Quote Section 3.3]</li><li><strong>Risk Rating:</strong> <span class="pill">[Level]</span></li><li><strong>Remediation:</strong> <ul><li>[Content]</li></ul></li></ul>
+      <h3>5.3 Data Protection</h3>
+      <ul><li><strong>Strengths:</strong> [List strengths]</li><li><strong>Gaps:</strong> [List gaps]</li><li><strong>Risk Rating:</strong> <span class="pill">[Level]</span></li><li><strong>Remediation:</strong> <ul><li>[Content]</li></ul></li></ul>
+      <h3>5.4 Endpoint Security</h3>
+      <ul><li><strong>Strengths:</strong> [List strengths]</li><li><strong>Gaps:</strong> [List gaps]</li><li><strong>Risk Rating:</strong> <span class="pill">[Level]</span></li><li><strong>Remediation:</strong> <ul><li>[Content]</li></ul></li></ul>
+      <h3>5.5 Security Monitoring</h3>
+      <ul><li><strong>Strengths:</strong> [List strengths]</li><li><strong>Gaps:</strong> [List gaps]</li><li><strong>Risk Rating:</strong> <span class="pill">[Level]</span></li><li><strong>Remediation:</strong> <ul><li>[Content]</li></ul></li></ul>
+      <h3>5.6 Compliance &amp; Policies</h3>
+      <ul><li><strong>Strengths:</strong> [List strengths]</li><li><strong>Gaps:</strong> [List gaps]</li><li><strong>Risk Rating:</strong> <span class="pill">[Level]</span></li><li><strong>Remediation:</strong> <ul><li>[Content]</li></ul></li></ul>
+    </section>
+    <section class="card">
+      <h2>6) Prioritized Action Plan</h2>
+      <h3>6.1 Quick Wins (0–30 days)</h3>
+      <ul><li>[Action 1] <div class="muted">Owner: [Role] &middot; Effort: [S/M/L] &middot; Cost: [$/$$/$$$] &middot; Impact: [High/Med/Low]</div></li><li>[Action 2] <div class="muted">Owner: [Role] &middot; Effort: [S/M/L] &middot; Cost: [$/$$/$$$]</div></li></ul>
+      <h3>6.2 Near-Term (31–90 days)</h3>
+      <ul><li>[Action 3] <div class="muted">Owner: [Role] &middot; Effort: [S/M/L] &middot; Impact: [High/Med/Low]</div></li></ul>
+      <h3>6.3 Mid-Term (3–6 months)</h3>
+      <ul><li>[Action 4] <div class="muted">Owner: [Role] &middot; Effort: [S/M/L]</div></li></ul>
+      <h3>6.4 Long-Term (6–12 months)</h3>
+      <ul><li>[Action 5] <div class="muted">Owner: [Role] &middot; Effort: [S/M/L]</div></li></ul>
+    </section>
+    <section class="card">
+      <h2>7) Policy, Process, and Controls Upgrades</h2>
+      <ul>
+        <li>Access Control Policy: [Adopt/Update] — MFA mandate, SSO, least privilege, quarterly reviews</li>
+        <li>Joiner-Mover-Leaver (JML) SOP: [Define/Automate] — provisioning, offboarding SLA</li>
+        <li>Password Management SOP: [Deploy/Enforce] — enterprise password manager, shared vault policy</li>
+        <li>Data Retention &amp; DSAR SOP: [Define/Document] — timelines per regime, purge workflow</li>
+        <li>Backup &amp; Recovery: [Document/Test] — RPO/RTO targets, encryption, restoration drills</li>
+        <li>Incident Response Plan: [Create/Refine] — triage, comms, vendor escalation, forensics</li>
+        <li>Vendor Risk Management: [Implement] — DPAs, security review cadence, incident clauses</li>
+        <li>PCI/Security for Payments: [Scope reduction/SAQ] — tokenization, 3DS, AVS/CVV enforcement</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>8) Monitoring, Metrics, and Alerts</h2>
+      <ul>
+        <li>IAM — MFA Coverage: [Current %] &rarr; Target: [Target %]</li>
+        <li>IAM — Shared Credentials: [Current count] &rarr; Target: 0</li>
+        <li>Data — DSAR SLA: [Current days] &rarr; Target: [&le; days]</li>
+        <li>Payments — Chargeback Rate: [Current %] &rarr; Target: [Target %]</li>
+        <li>Ops — Backup Success Rate: [Current %] &rarr; Target: [Target %]</li>
+        <li>Operations — Incident MTTR: [Current] &rarr; Target: [Target]</li>
+        <li>Operations — Post-incident Reviews: [Current %] &rarr; Target: [Target % of P1/P2]</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>9) Tooling &amp; Integration Recommendations</h2>
+      <ul>
+        <li>IAM/SSO/MFA: [e.g. Okta / Entra ID / Google Workspace] — [fit notes]</li>
+        <li>Password Manager: [e.g. 1Password / LastPass Business / Bitwarden] — [deployment notes]</li>
+        <li>Payments/Fraud: [e.g. Stripe Radar, Adyen 3DS, Chargeback alerts] — [policy notes]</li>
+        <li>Data Protection: [DLP / encryption key mgmt / backup provider] — [notes]</li>
+        <li>Monitoring/Logging: [SIEM/logging choice] — [events to capture, alert routing]</li>
+        <li>Automation: [Webhook/Zapier/SCIM] — [JML/offboarding automation]</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>10) Assumptions, Constraints, and Data Quality</h2>
+      <ul><li>Missing or Unclear Inputs: [List fields not provided or "N/A"]</li><li>Assumptions Made: [List assumptions]</li><li>Confidence Level: [High/Medium/Low] — Reason: [Text]</li></ul>
+    </section>
+    <section class="card">
+      <h2>11) Appendix: Raw Assessment Responses</h2>
+      <p class="muted">Aligned to the assessment sections.</p>
+      <h3>Company Information</h3>
+      <ul><li>Company, Contact, Role: {{company}}, {{name}}, {{role}}</li></ul>
+      <h3>Access Control</h3>
+      <ul><li>Authentication, MFA, Password Policy, Access Review: [From assessment]</li></ul>
+      <h3>Network Security</h3>
+      <ul><li>Firewall, VPN, Segmentation, Intrusion Detection: [From assessment]</li></ul>
+      <h3>Data Protection</h3>
+      <ul><li>Encryption, Backups, Data Classification: [From assessment]</li></ul>
+      <h3>Endpoint Security</h3>
+      <ul><li>Antivirus, EDR, Patch Management, MDM: [From assessment]</li></ul>
+      <h3>Security Monitoring</h3>
+      <ul><li>SIEM, Log Retention, Incident Response, Vuln Scanning: [From assessment]</li></ul>
+      <h3>Compliance &amp; Policies</h3>
+      <ul><li>Frameworks, Policies, Training, Third-Party Risk: [From assessment]</li></ul>
+      <h3>Additional Information</h3>
+      <ul><li>Recent Incidents, Concerns, Comments: {{message}}</li></ul>
+    </section>
   </div>
 </body>
 </html>`;
