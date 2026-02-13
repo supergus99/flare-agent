@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flare</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; }
+    h1 { color: #333; }
+    a { color: #0969da; }
+    .endpoints { background: #f6f8fa; padding: 1rem; border-radius: 8px; margin-top: 1.5rem; }
+    .endpoints code { font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <h1>Flare</h1>
+  <p>Static site on Cloudflare Pages. API and workers run separately.</p>
+  <div class="endpoints">
+    <p><strong>Worker endpoints:</strong></p>
+    <ul>
+      <li><a href="https://flare-worker.gusmao-ricardo.workers.dev/" target="_blank" rel="noopener">Health</a></li>
+      <li><a href="https://flare-worker.gusmao-ricardo.workers.dev/db" target="_blank" rel="noopener">D1</a></li>
+      <li><a href="https://flare-worker.gusmao-ricardo.workers.dev/r2" target="_blank" rel="noopener">R2</a></li>
+      <li><a href="https://flare-worker.gusmao-ricardo.workers.dev/queue" target="_blank" rel="noopener">Queue</a></li>
+    </ul>
+  </div>
+</body>
+</html>

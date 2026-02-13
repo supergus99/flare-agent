@@ -68,6 +68,20 @@ GitHub Actions will run and deploy **flare-worker** to Cloudflare. Check the **A
 
 ---
 
-## 6. Pages (optional)
+## 6. Pages (static site)
 
-- **Cloudflare: Pages** → Connect to Git → select **flare** repo, branch **main**, build output as needed.
+1. **Static files** are in the **`public/`** folder (`index.html`, `404.html`). Commit and push so the repo has them.
+
+2. **Create the Pages project:** Cloudflare Dashboard → **Workers & Pages** → **Pages** → **Create project** → **Connect to Git**.
+
+3. **Select the flare repo** (e.g. `supergus99/flare-agent`) and click **Begin setup**.
+
+4. **Build settings:**
+   - **Production branch:** `main`
+   - **Framework preset:** None
+   - **Build command:** leave **empty**
+   - **Build output directory:** `public`
+
+5. **Save and Deploy.** Pages will deploy the contents of `public/` on every push to `main`.
+
+6. **URL:** You’ll get a URL like `https://flare-agent.pages.dev` (or the project name you chose). Open it to see the Flare landing page with links to the Worker endpoints.
