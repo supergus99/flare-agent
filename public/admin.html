@@ -80,6 +80,35 @@
         </div>
       </div>
 
+      <!-- Purchases & revenue by day (same as STR admin dashboard) -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-light d-flex flex-wrap align-items-center justify-content-between gap-2">
+          <div>
+            <h5 class="mb-0 fw-bold">Purchases &amp; revenue by day</h5>
+            <small class="text-muted">Completed payments — select a month and switch between count and revenue</small>
+          </div>
+          <div class="d-flex align-items-center gap-3 flex-wrap">
+            <div class="d-flex align-items-center gap-1">
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="chart-prev" aria-label="Previous month">‹</button>
+              <span class="text-nowrap fw-semibold" id="chart-month-label" style="min-width: 120px; text-align: center;">—</span>
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="chart-next" aria-label="Next month" disabled>›</button>
+            </div>
+            <div class="btn-group btn-group-sm" role="group" aria-label="Chart metric">
+              <input type="radio" class="btn-check" name="chartMetric" id="chartMetricPurchases" value="purchases" checked>
+              <label class="btn btn-outline-primary" for="chartMetricPurchases">Purchases</label>
+              <input type="radio" class="btn-check" name="chartMetric" id="chartMetricRevenue" value="revenue">
+              <label class="btn btn-outline-primary" for="chartMetricRevenue">Revenue</label>
+            </div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="position: relative; height: 280px;">
+            <canvas id="purchasesRevenueChart" aria-label="Daily purchases or revenue chart"></canvas>
+          </div>
+          <p class="text-muted small mb-0 mt-2">Default month is the current one; use arrows to compare past months.</p>
+        </div>
+      </div>
+
       <ul class="nav nav-tabs mb-3" role="tablist">
         <li class="nav-item"><button type="button" class="nav-link active" data-tab="submissions">Submissions</button></li>
         <li class="nav-item"><button type="button" class="nav-link" data-tab="payments">Payments</button></li>
@@ -151,6 +180,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <script>
     (function () {
       if (!window.FLARE_WORKER_URL && /^(www\.)?getflare\.net$/.test(window.location.hostname)) window.FLARE_WORKER_URL = 'https://api.getflare.net';
@@ -374,6 +404,7 @@
           alert('Enter report HTML to preview, or load the Templates tab again to use the built-in template.');
           return;
         }
+        body = body.replace(/<body(\s[^>]*)?>/i, '<body$1><div class="flare-preview-badge" style="background:#fff3cd;color:#856404;padding:.5rem 1rem;font-size:.9rem;margin-bottom:1rem;border-radius:6px;">Preview only – report template.</div>');
         const sample = { name: 'Jane Doe', company: 'Acme Ltd', email: 'jane@acme.example', role: 'Operations Manager', service: 'Risk Analysis & Action Plan', message: 'Sample notes for preview.', report_date: new Date().toISOString().slice(0, 10), website_url: 'https://acme.example', website_href: 'https://acme.example', units_range: '10–50', countries: 'US, CA', language: 'en' };
         body = body.replace(/\{\{name\}\}/g, escapeHtmlPreview(sample.name)).replace(/\{\{company\}\}/g, escapeHtmlPreview(sample.company)).replace(/\{\{email\}\}/g, escapeHtmlPreview(sample.email)).replace(/\{\{role\}\}/g, escapeHtmlPreview(sample.role)).replace(/\{\{service\}\}/g, escapeHtmlPreview(sample.service)).replace(/\{\{message\}\}/g, escapeHtmlPreview(sample.message)).replace(/\{\{report_date\}\}/g, escapeHtmlPreview(sample.report_date)).replace(/\{\{website_url\}\}/g, escapeHtmlPreview(sample.website_url)).replace(/\{\{website_href\}\}/g, escapeHtmlPreview(sample.website_href)).replace(/\{\{units_range\}\}/g, escapeHtmlPreview(sample.units_range)).replace(/\{\{countries\}\}/g, escapeHtmlPreview(sample.countries)).replace(/\{\{language\}\}/g, escapeHtmlPreview(sample.language));
         const w = window.open('', '_blank');
@@ -385,6 +416,81 @@
         showPanel();
         loadStats();
         loadTab('submissions');
+        (function initPurchasesRevenueChart() {
+          var canvas = document.getElementById('purchasesRevenueChart');
+          if (!canvas || typeof Chart === 'undefined') return;
+          var currentMonth = new Date();
+          function toYYYYMM(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+          var chart = null;
+          var cachedData = null;
+          function getMetric() {
+            var r = document.querySelector('input[name="chartMetric"]:checked');
+            return r ? r.value : 'purchases';
+          }
+          function applyMetric() {
+            if (!chart || !cachedData) return;
+            var metric = getMetric();
+            var label = metric === 'purchases' ? 'Purchases' : 'Revenue ($)';
+            var data = metric === 'purchases' ? cachedData.purchases : cachedData.revenue;
+            var color = metric === 'purchases' ? 'rgba(99, 102, 241, 0.6)' : 'rgba(16, 185, 129, 0.6)';
+            var border = metric === 'purchases' ? 'rgb(99, 102, 241)' : 'rgb(16, 185, 129)';
+            chart.data.datasets[0] = { label: label, data: data, backgroundColor: color, borderColor: border, borderWidth: 1 };
+            chart.options.scales.y.ticks.stepSize = metric === 'purchases' ? 1 : undefined;
+            chart.update();
+          }
+          function loadMonth(YYYYMM) {
+            fetch(WORKER_URL + '/api/admin/chart-data?month=' + encodeURIComponent(YYYYMM), { headers: authHeaders() })
+              .then(function(r) { return r.json(); })
+              .then(function(data) {
+                if (data.error || !data.ok) return;
+                cachedData = data;
+                var labelEl = document.getElementById('chart-month-label');
+                if (labelEl) labelEl.textContent = data.monthLabel || YYYYMM;
+                var nextBtn = document.getElementById('chart-next');
+                if (nextBtn) nextBtn.disabled = (YYYYMM === toYYYYMM(new Date()));
+                var metric = getMetric();
+                var label = metric === 'purchases' ? 'Purchases' : 'Revenue ($)';
+                var values = metric === 'purchases' ? data.purchases : data.revenue;
+                var color = metric === 'purchases' ? 'rgba(99, 102, 241, 0.6)' : 'rgba(16, 185, 129, 0.6)';
+                var border = metric === 'purchases' ? 'rgb(99, 102, 241)' : 'rgb(16, 185, 129)';
+                if (!chart) {
+                  chart = new Chart(canvas, {
+                    type: 'bar',
+                    data: { labels: data.labels, datasets: [{ label: label, data: values, backgroundColor: color, borderColor: border, borderWidth: 1 }] },
+                    options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: { legend: { display: false } },
+                      scales: { x: { title: { display: true, text: 'Day of month' } }, y: { beginAtZero: true, ticks: { stepSize: metric === 'purchases' ? 1 : undefined } } }
+                    }
+                  });
+                } else {
+                  chart.data.labels = data.labels;
+                  chart.data.datasets[0].label = label;
+                  chart.data.datasets[0].data = values;
+                  chart.data.datasets[0].backgroundColor = color;
+                  chart.data.datasets[0].borderColor = border;
+                  chart.options.scales.y.ticks.stepSize = metric === 'purchases' ? 1 : undefined;
+                  chart.update();
+                }
+              })
+              .catch(function() {});
+          }
+          var prevBtn = document.getElementById('chart-prev');
+          var nextBtn = document.getElementById('chart-next');
+          if (prevBtn) prevBtn.addEventListener('click', function() {
+            currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
+            loadMonth(toYYYYMM(currentMonth));
+          });
+          if (nextBtn) nextBtn.addEventListener('click', function() {
+            currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
+            loadMonth(toYYYYMM(currentMonth));
+          });
+          document.querySelectorAll('input[name="chartMetric"]').forEach(function(el) {
+            el.addEventListener('change', applyMetric);
+          });
+          loadMonth(toYYYYMM(currentMonth));
+        })();
       } else {
         showLogin();
       }

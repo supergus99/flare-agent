@@ -648,6 +648,45 @@ export default {
       }
     }
 
+    if (url.pathname === "/api/admin/chart-data" && request.method === "GET" && env.DB) {
+      const admin = await requireAdmin(request, env);
+      if (!admin) return json({ error: "Unauthorized" }, 401);
+      let month = url.searchParams.get("month") || "";
+      if (!/^\d{4}-\d{2}$/.test(month)) {
+        const now = new Date();
+        month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      }
+      const first = `${month}-01`;
+      const year = parseInt(month.slice(0, 4), 10);
+      const monthIndex = parseInt(month.slice(5, 7), 10) - 1;
+      const nextMonthDate = new Date(year, monthIndex + 1, 1);
+      const nextMonth = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, "0")}-01`;
+      const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+      const monthLabel = new Date(year, monthIndex).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+      try {
+        const rows = await env.DB.prepare(
+          `SELECT cast(strftime('%d', created_at) as integer) as day, COUNT(*) as cnt, COALESCE(SUM(amount), 0) / 100.0 as rev
+           FROM payments WHERE payment_status = 'completed' AND created_at >= ? AND created_at < ?
+           GROUP BY day ORDER BY day`
+        ).bind(first, nextMonth).all();
+        const byDay = {};
+        for (const r of rows.results || []) {
+          byDay[r.day] = { purchases: r.cnt | 0, revenue: Math.round((r.rev || 0) * 100) / 100 };
+        }
+        const labels = [];
+        const purchases = [];
+        const revenue = [];
+        for (let d = 1; d <= lastDay; d++) {
+          labels.push(String(d));
+          purchases.push(byDay[d]?.purchases ?? 0);
+          revenue.push(byDay[d]?.revenue ?? 0);
+        }
+        return json({ ok: true, month, monthLabel, labels, purchases, revenue });
+      } catch (e) {
+        return json({ error: e.message }, 500);
+      }
+    }
+
     if (url.pathname === "/api/admin/assessment-template" && env.DB) {
       const admin = await requireAdmin(request, env);
       if (!admin) return json({ error: "Unauthorized" }, 401);
