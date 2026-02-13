@@ -455,7 +455,16 @@ export default {
     // ---------- Public: assessment form template (for assessment page) ----------
     if (url.pathname === "/api/assessment-template" && request.method === "GET" && env.DB) {
       try {
-        const row = await env.DB.prepare("SELECT form_config FROM assessment_template WHERE id = 1 LIMIT 1").first();
+        let row = null;
+        try {
+          row = await env.DB.prepare("SELECT form_config, body FROM assessment_template WHERE id = 1 LIMIT 1").first();
+        } catch (_) {
+          row = await env.DB.prepare("SELECT form_config FROM assessment_template WHERE id = 1 LIMIT 1").first();
+        }
+        const body = row?.body ?? null;
+        if (body != null && String(body).trim() !== "") {
+          return json({ ok: true, html: body });
+        }
         const formConfig = row?.form_config ? JSON.parse(row.form_config) : getDefaultAssessmentConfig();
         return json({ ok: true, data: formConfig });
       } catch (e) {
@@ -637,19 +646,36 @@ export default {
       if (!admin) return json({ error: "Unauthorized" }, 401);
       if (request.method === "GET") {
         try {
-          const row = await env.DB.prepare("SELECT form_config, updated_at FROM assessment_template WHERE id = 1 LIMIT 1").first();
+          let row = await env.DB.prepare("SELECT form_config, body, updated_at FROM assessment_template WHERE id = 1 LIMIT 1").first();
+          if (!row) row = await env.DB.prepare("SELECT form_config, updated_at FROM assessment_template WHERE id = 1 LIMIT 1").first();
           const formConfig = row?.form_config ? JSON.parse(row.form_config) : getDefaultAssessmentConfig();
-          return json({ ok: true, data: formConfig, updated_at: row?.updated_at ?? null });
+          const body = row?.body ?? null;
+          return json({ ok: true, data: formConfig, body: body, defaultBody: null, updated_at: row?.updated_at ?? null });
         } catch (e) {
-          return json({ ok: true, data: getDefaultAssessmentConfig() });
+          try {
+            const row = await env.DB.prepare("SELECT form_config, updated_at FROM assessment_template WHERE id = 1 LIMIT 1").first();
+            const formConfig = row?.form_config ? JSON.parse(row.form_config) : getDefaultAssessmentConfig();
+            return json({ ok: true, data: formConfig, body: null, defaultBody: null, updated_at: row?.updated_at ?? null });
+          } catch (e2) {
+            return json({ ok: true, data: getDefaultAssessmentConfig(), body: null, defaultBody: null });
+          }
         }
       }
       if (request.method === "PUT") {
         try {
-          const body = await request.json();
-          const formConfig = typeof body.form_config === "object" ? body.form_config : (body.data ? body.data : getDefaultAssessmentConfig());
+          const reqBody = await request.json();
+          const templateBody = typeof reqBody.body === "string" ? reqBody.body : null;
+          const formConfig = typeof reqBody.form_config === "object" ? reqBody.form_config : (reqBody.data ? reqBody.data : getDefaultAssessmentConfig());
           const configStr = JSON.stringify(formConfig);
-          await env.DB.prepare("INSERT INTO assessment_template (id, form_config, updated_at) VALUES (1, ?, datetime('now')) ON CONFLICT(id) DO UPDATE SET form_config = excluded.form_config, updated_at = datetime('now')").bind(configStr).run();
+          try {
+            if (templateBody !== null) {
+              await env.DB.prepare("INSERT INTO assessment_template (id, form_config, body, updated_at) VALUES (1, ?, ?, datetime('now')) ON CONFLICT(id) DO UPDATE SET form_config = excluded.form_config, body = excluded.body, updated_at = datetime('now')").bind(configStr, templateBody).run();
+            } else {
+              await env.DB.prepare("INSERT INTO assessment_template (id, form_config, updated_at) VALUES (1, ?, datetime('now')) ON CONFLICT(id) DO UPDATE SET form_config = excluded.form_config, updated_at = datetime('now')").bind(configStr).run();
+            }
+          } catch (colErr) {
+            await env.DB.prepare("INSERT INTO assessment_template (id, form_config, updated_at) VALUES (1, ?, datetime('now')) ON CONFLICT(id) DO UPDATE SET form_config = excluded.form_config, updated_at = datetime('now')").bind(configStr).run();
+          }
           return json({ ok: true, message: "Assessment template saved" });
         } catch (e) {
           return json({ error: e.message }, 500);
@@ -668,7 +694,7 @@ export default {
           const defaultBody = body == null || body === "" ? getDefaultReportTemplateBody() : null;
           return json({ ok: true, data: body, defaultBody, updated_at: row?.updated_at ?? null });
         } catch (e) {
-          return json({ ok: true, data: null, defaultBody: null });
+          return json({ ok: true, data: null, defaultBody: getDefaultReportTemplateBody() });
         }
       }
       if (request.method === "PUT") {
