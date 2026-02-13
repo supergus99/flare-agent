@@ -263,6 +263,7 @@ export default {
         const pagesBase = (env.SUCCESS_BASE_URL || request.headers.get("Origin") || url.origin).replace(/\/$/, "");
         const successUrl = `${workerBase}/api/success?session_id={CHECKOUT_SESSION_ID}`;
         const cancelUrl = `${pagesBase}/checkout.html?canceled=1`;
+        const locale = String(body.locale ?? "").trim().toLowerCase();
         const session = await createCheckoutSession(stripeKey, {
           successUrl,
           cancelUrl,
@@ -271,6 +272,7 @@ export default {
           customerEmail: body.customer_email?.trim() || undefined,
           customerName: body.customer_name?.trim() || undefined,
           customerCompany: body.customer_company?.trim() || undefined,
+          locale: locale === "pt" || locale === "pt-pt" ? "pt" : undefined,
         });
         return json({ ok: true, url: session.url, session_id: session.id });
       } catch (e) {
@@ -388,7 +390,10 @@ export default {
         }
         if (!payment) return json({ ok: false, error: "Payment not found" }, 404);
         const base = (env.SUCCESS_BASE_URL || request.headers.get("Origin") || url.origin).replace(/\/$/, "");
-        const redirectUrl = `${base}/success.html?hash=${encodeURIComponent(payment.access_hash)}`;
+        const metaLocale = session.metadata?.flare_locale || "";
+        const isPt = metaLocale === "pt" || metaLocale === "pt-pt";
+        const successPath = isPt ? "pt/success.html" : "success.html";
+        const redirectUrl = `${base}/${successPath}?hash=${encodeURIComponent(payment.access_hash)}`;
         return Response.redirect(redirectUrl, 302);
       } catch (e) {
         return json({ ok: false, error: e.message }, 500);
@@ -882,10 +887,15 @@ async function handleGenerateReport(env, body) {
   let htmlContent = "";
   try {
     const templateRow = await env.DB.prepare("SELECT body FROM report_templates WHERE id = 1 AND body IS NOT NULL AND body != '' LIMIT 1").first();
-    const templateBody = templateRow?.body ? templateRow.body : getDefaultReportTemplateBody();
+    const lang = (reportVars.language || "").toString().toLowerCase();
+    const isPt = lang === "pt" || lang === "pt-pt";
+    const defaultBody = isPt ? getDefaultReportTemplateBodyFlarePT() : getDefaultReportTemplateBody();
+    const templateBody = templateRow?.body ? templateRow.body : defaultBody;
     htmlContent = applyReportTemplate(templateBody, reportVars);
   } catch (_) {
-    htmlContent = applyReportTemplate(getDefaultReportTemplateBody(), reportVars);
+    const lang = (reportVars.language || "").toString().toLowerCase();
+    const isPt = lang === "pt" || lang === "pt-pt";
+    htmlContent = applyReportTemplate(isPt ? getDefaultReportTemplateBodyFlarePT() : getDefaultReportTemplateBody(), reportVars);
   }
 
   const r2Key = `reports/${report.id}/v${nextVersion}.html`;
@@ -1251,6 +1261,35 @@ function getDefaultReportTemplateBodyFlare() {
   </script>
 </body>
 </html>`;
+}
+
+/** Portuguese (PT) report template: same structure as Flare default with PT headings/labels. */
+function getDefaultReportTemplateBodyFlarePT() {
+  const en = getDefaultReportTemplateBodyFlare();
+  return en
+    .replace(/<title>Security & Operations Risk Assessment Report – Flare<\/title>/, "<title>Relatório de Avaliação de Riscos – Flare</title>")
+    .replace(/<html lang="en">/, "<html lang=\"pt-PT\">")
+    .replace(/Security & Operations Risk Assessment Report/g, "Relatório de Avaliação de Riscos de Segurança e Operações")
+    .replace(/Generated from assessment data/g, "Gerado a partir do questionário")
+    .replace(/>Report Metadata<\/h2>/, ">Metadados do relatório</h2>")
+    .replace(/<label>Company<\/label>/, "<label>Empresa</label>")
+    .replace(/<label>Prepared for<\/label>/, "<label>Preparado para</label>")
+    .replace(/<label>Prepared by<\/label>/, "<label>Preparado por</label>")
+    .replace(/<label>Assessment Date<\/label>/, "<label>Data do questionário</label>")
+    .replace(/<label>Scope<\/label>/, "<label>Âmbito</label>")
+    .replace(/<label>Language\/Locale<\/label>/, "<label>Idioma</label>")
+    .replace(/>Executive Summary<\/h2>/, ">Resumo executivo</h2>")
+    .replace(/>Environment Profile \(From Assessment\)<\/h2>/, ">Perfil do ambiente (questionário)</h2>")
+    .replace(/>Risk Scoring Framework<\/h2>/, ">Framework de pontuação de risco</h2>")
+    .replace(/>Key Findings &amp; Gaps \(Evidence-Based\)<\/h2>/, ">Principais conclusões e lacunas</h2>")
+    .replace(/>Prioritized Action Plan<\/h2>/, ">Plano de ação prioritizado</h2>")
+    .replace(/>Policy, Process, and Controls Upgrades<\/h2>/, ">Melhorias de políticas, processos e controlos</h2>")
+    .replace(/>Monitoring, Metrics, and Alerts<\/h2>/, ">Monitorização, métricas e alertas</h2>")
+    .replace(/>Tooling &amp; Integration Recommendations<\/h2>/, ">Recomendações de ferramentas e integração</h2>")
+    .replace(/>Assumptions, Constraints, and Data Quality<\/h2>/, ">Premissas, restrições e qualidade dos dados</h2>")
+    .replace(/>Appendix: Raw Assessment Responses<\/h2>/, ">Anexo: Respostas do questionário</h2>")
+    .replace(/>Dark<\/button>/, ">Escuro</button>")
+    .replace(/\? 'Light' : 'Dark'/, "? 'Claro' : 'Escuro'");
 }
 
 function buildStubReportHtml(submission, data) {

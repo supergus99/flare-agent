@@ -31,7 +31,7 @@ export function getServiceName(serviceType, short = false) {
 /**
  * Create Stripe Checkout Session. Stripe API expects application/x-www-form-urlencoded.
  * @param {string} stripeSecretKey
- * @param {{ successUrl: string, cancelUrl: string, serviceType: string, currency: string, customerEmail?: string, customerName?: string, customerCompany?: string, leadId?: number }} opts
+ * @param {{ successUrl: string, cancelUrl: string, serviceType: string, currency: string, customerEmail?: string, customerName?: string, customerCompany?: string, leadId?: number, locale?: string }} opts
  * @returns {Promise<{ url: string, id: string }>}
  */
 export async function createCheckoutSession(stripeSecretKey, opts) {
@@ -44,6 +44,7 @@ export async function createCheckoutSession(stripeSecretKey, opts) {
     customerName,
     customerCompany,
     leadId,
+    locale,
   } = opts;
   const amount = getAmountCents(serviceType, currency);
   const productName = getServiceName(serviceType);
@@ -60,6 +61,7 @@ export async function createCheckoutSession(stripeSecretKey, opts) {
     "metadata[customer_name]": customerName || "",
     "metadata[customer_email]": customerEmail || "",
     "metadata[customer_company]": customerCompany || "",
+    "metadata[flare_locale]": locale || "",
     "payment_intent_data[metadata][service_type]": serviceType,
     "payment_intent_data[metadata][customer_name]": customerName || "",
     "payment_intent_data[metadata][customer_email]": customerEmail || "",

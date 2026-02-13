@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout – Flare</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg: #0a0a0b; --bg-elevated: #111113; --text: #e4e4e7; --text-muted: #71717a; --accent: #22d3ee; --accent-soft: rgba(34,211,238,0.15); --flare-orange: #fb923c; --logo-dot: #22c55e; --border: rgba(255,255,255,0.06); --error: #f87171; --success: #34d399; }
+    * { box-sizing: border-box; } body { margin: 0; font-family: 'Outfit', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh; }
+    .nav { padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+    .nav-logo { font-weight: 700; font-size: 1.25rem; text-decoration: none; display: inline-flex; align-items: baseline; }
+    .nav-logo-word { background: linear-gradient(135deg, var(--flare-orange), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .nav-logo-dot { color: var(--logo-dot); }
+    .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; margin-left: 1.25rem; }
+    .nav-lang { margin-left: 0.25rem; }
+    .container { max-width: 28rem; margin: 0 auto; padding: 3rem 1.5rem; }
+    .page-label { font-family: monospace; font-size: 0.8rem; color: var(--accent); text-transform: uppercase; margin-bottom: 0.5rem; }
+    .page-title { font-size: 1.75rem; font-weight: 600; margin: 0 0 0.5rem; }
+    .page-desc { color: var(--text-muted); font-size: 0.95rem; margin: 0 0 2rem; }
+    .card { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; margin-bottom: 1.5rem; }
+    .form-label { display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 0.35rem; color: var(--text); }
+    input, select { width: 100%; padding: 0.65rem 0.85rem; font-family: inherit; font-size: 0.95rem; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); margin-bottom: 1rem; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.85rem 1.5rem; font-family: inherit; font-size: 0.95rem; font-weight: 600; border-radius: 10px; cursor: pointer; border: none; width: 100%; }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), #06b6d4); color: var(--bg); }
+    .btn-ghost { background: transparent; color: var(--text-muted); margin-top: 0.75rem; text-decoration: none; }
+    .message { padding: 0.85rem 1rem; border-radius: 10px; font-size: 0.9rem; margin-top: 1rem; display: none; }
+    .message.success { background: rgba(52,211,153,0.15); color: var(--success); }
+    .message.error { background: rgba(248,113,113,0.12); color: var(--error); }
+    .product-line { font-size: 0.95rem; color: var(--text-muted); margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+    .footer { padding: 2rem 1.5rem; border-top: 1px solid var(--border); text-align: center; }
+    .footer a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <a href="/pt/" class="nav-logo"><span class="nav-logo-word">Flare</span><span class="nav-logo-dot">.</span></a>
+    <div class="nav-links">
+      <a href="/pt/">Início</a>
+      <a href="/pt/contact.html">Contacto</a>
+      <span class="nav-lang"><a href="/checkout.html" aria-label="English">EN</a></span>
+    </div>
+  </nav>
+  <div class="container">
+    <p class="page-label">Checkout</p>
+    <h1 class="page-title">Obter o relatório</h1>
+    <p class="page-desc">Um relatório: o que está em risco, o que fazer primeiro e como fazer você mesmo. Pague em segurança com Stripe.</p>
+    <div class="card">
+      <p class="product-line"><strong>O seu relatório</strong> — 599 € ou 599 $ (escolha a moeda abaixo).</p>
+      <form id="checkout-form">
+        <input type="hidden" id="service_type" name="service_type" value="protect">
+        <label class="form-label" for="currency">Moeda</label>
+        <select id="currency" name="currency"><option value="eur">EUR</option><option value="usd">USD</option></select>
+        <label class="form-label" for="customer_name">Nome (opcional)</label>
+        <input type="text" id="customer_name" name="customer_name" placeholder="O seu nome">
+        <label class="form-label" for="customer_email">Email (opcional)</label>
+        <input type="email" id="customer_email" name="customer_email" placeholder="voce@exemplo.com">
+        <label class="form-label" for="customer_company">Empresa (opcional)</label>
+        <input type="text" id="customer_company" name="customer_company" placeholder="Nome da empresa">
+        <button type="submit" id="btn" class="btn btn-primary">Continuar para o pagamento</button>
+      </form>
+    </div>
+    <div id="message" class="message" role="status"></div>
+    <a href="/pt/" class="btn btn-ghost">← Voltar ao início</a>
+  </div>
+  <footer class="footer"><a href="/pt/">Flare</a> · <a href="/pt/contact.html">Contacto</a></footer>
+  <script>
+(function () {
+  var WORKER_URL = window.FLARE_WORKER_URL || 'https://flare-worker.gusmao-ricardo.workers.dev';
+  var form = document.getElementById('checkout-form');
+  var btn = document.getElementById('btn');
+  var messageEl = document.getElementById('message');
+  function showMessage(text, isError) {
+    messageEl.textContent = text;
+    messageEl.className = 'message ' + (isError ? 'error' : 'success');
+    messageEl.style.display = 'block';
+  }
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    btn.disabled = true;
+    messageEl.style.display = 'none';
+    var payload = {
+      service_type: document.getElementById('service_type').value,
+      currency: document.getElementById('currency').value,
+      customer_name: document.getElementById('customer_name').value.trim() || undefined,
+      customer_email: document.getElementById('customer_email').value.trim() || undefined,
+      customer_company: document.getElementById('customer_company').value.trim() || undefined,
+      locale: 'pt',
+    };
+    try {
+      var res = await fetch(WORKER_URL + '/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      var data = await res.json();
+      if (!res.ok) { showMessage(data.error || 'Checkout falhou', true); btn.disabled = false; return; }
+      if (data.url) { window.location.href = data.url; return; }
+      showMessage('URL não recebido', true);
+      btn.disabled = false;
+    } catch (err) { showMessage(err.message || 'Erro de rede', true); btn.disabled = false; }
+  });
+  if (new URLSearchParams(window.location.search).get('canceled') === '1') showMessage('Checkout cancelado. Pode tentar novamente.', false);
+})();
+  </script>
+</body>
+</html>

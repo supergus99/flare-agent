@@ -18,7 +18,10 @@
 (function () {
   if (!window.FLARE_WORKER_URL && /^(www\.)?getflare\.net$/.test(window.location.hostname)) window.FLARE_WORKER_URL = 'https://api.getflare.net';
   var WORKER_URL = window.FLARE_WORKER_URL || 'https://flare-worker.gusmao-ricardo.workers.dev';
-  var fullUrl = window.location.origin + '/templates/assessment-full.html';
+  var params = new URLSearchParams(window.location.search);
+  var lang = (params.get('lang') || '').toLowerCase();
+  var isPt = lang === 'pt' || lang === 'pt-pt';
+  var fullUrl = window.location.origin + (isPt ? '/templates/assessment-full-pt.html' : '/templates/assessment-full.html');
 
   function showFull() {
     fetch(fullUrl)
@@ -33,6 +36,10 @@
       });
   }
 
+  if (isPt) {
+    showFull();
+    return;
+  }
   fetch(WORKER_URL + '/api/assessment-template')
     .then(function (r) { return r.json(); })
     .then(function (data) {

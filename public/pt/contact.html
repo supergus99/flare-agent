@@ -1,28 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-PT">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Contact – Flare</title>
+  <title>Contacto – Flare</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg: #0a0a0b;
-      --bg-elevated: #111113;
-      --text: #e4e4e7;
-      --text-muted: #71717a;
-      --accent: #22d3ee;
-      --accent-soft: rgba(34, 211, 238, 0.15);
-      --flare-orange: #fb923c;
-      --logo-dot: #22c55e;
-      --border: rgba(255,255,255,0.06);
-      --error: #f87171;
-      --success: #34d399;
-    }
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
+    :root { --bg: #0a0a0b; --bg-elevated: #111113; --text: #e4e4e7; --text-muted: #71717a; --accent: #22d3ee; --accent-soft: rgba(34,211,238,0.15); --flare-orange: #fb923c; --logo-dot: #22c55e; --border: rgba(255,255,255,0.06); --error: #f87171; --success: #34d399; }
+    * { box-sizing: border-box; } html { scroll-behavior: smooth; }
     body { margin: 0; font-family: 'Outfit', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh; }
     .nav { padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
     .nav-logo { font-weight: 700; font-size: 1.25rem; letter-spacing: -0.02em; text-decoration: none; display: inline-flex; align-items: baseline; }
@@ -43,12 +30,12 @@
     input:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
     .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.85rem 1.5rem; font-family: inherit; font-size: 0.95rem; font-weight: 600; border-radius: 10px; cursor: pointer; border: none; transition: transform .2s, box-shadow .2s; width: 100%; }
     .btn:hover:not(:disabled) { transform: translateY(-2px); }
-    .btn-primary { background: linear-gradient(135deg, var(--accent), #06b6d4); color: var(--bg); box-shadow: 0 4px 24px rgba(34, 211, 238, 0.35); }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), #06b6d4); color: var(--bg); box-shadow: 0 4px 24px rgba(34,211,238,0.35); }
     .btn-ghost { background: transparent; color: var(--text-muted); margin-top: 0.75rem; text-decoration: none; display: inline-block; width: auto; }
     .btn-ghost:hover { color: var(--accent); }
     .message { padding: 0.85rem 1rem; border-radius: 10px; font-size: 0.9rem; margin-top: 1rem; display: none; }
-    .message.success { background: rgba(52, 211, 153, 0.15); color: var(--success); border: 1px solid rgba(52, 211, 153, 0.3); }
-    .message.error { background: rgba(248, 113, 113, 0.12); color: var(--error); border: 1px solid rgba(248, 113, 113, 0.3); }
+    .message.success { background: rgba(52,211,153,0.15); color: var(--success); border: 1px solid rgba(52,211,153,0.3); }
+    .message.error { background: rgba(248,113,113,0.12); color: var(--error); border: 1px solid rgba(248,113,113,0.3); }
     .footer { padding: 2rem 1.5rem; border-top: 1px solid var(--border); text-align: center; }
     .footer a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; }
     .footer a:hover { color: var(--accent); }
@@ -56,37 +43,37 @@
 </head>
 <body>
   <nav class="nav">
-    <a href="/" class="nav-logo"><span class="nav-logo-word">Flare</span><span class="nav-logo-dot">.</span></a>
+    <a href="/pt/" class="nav-logo"><span class="nav-logo-word">Flare</span><span class="nav-logo-dot">.</span></a>
     <div class="nav-links">
-      <a href="/">Home</a>
-      <a href="/checkout.html">Checkout</a>
-      <span class="nav-lang"><a href="/pt/contact.html" aria-label="Português">PT</a></span>
+      <a href="/pt/">Início</a>
+      <a href="/pt/checkout.html">Checkout</a>
+      <span class="nav-lang"><a href="/contact.html" aria-label="English">EN</a></span>
     </div>
   </nav>
 
   <div class="container">
-    <p class="page-label">Contact</p>
-    <h1 class="page-title">Get in touch</h1>
-    <p class="page-desc">Send us a message. We’ll get back to you as soon as we can.</p>
+    <p class="page-label">Contacto</p>
+    <h1 class="page-title">Fale connosco</h1>
+    <p class="page-desc">Envie-nos uma mensagem. Responderemos o mais breve possível.</p>
 
     <div class="card">
       <form id="contact-form">
         <label class="form-label" for="email">Email *</label>
-        <input type="email" id="email" name="email" required placeholder="you@example.com">
+        <input type="email" id="email" name="email" required placeholder="voce@exemplo.com">
 
-        <label class="form-label" for="name">Name</label>
-        <input type="text" id="name" name="name" placeholder="Your name">
+        <label class="form-label" for="name">Nome</label>
+        <input type="text" id="name" name="name" placeholder="O seu nome">
 
-        <button type="submit" class="btn btn-primary">Submit</button>
+        <button type="submit" class="btn btn-primary">Enviar</button>
       </form>
     </div>
 
     <div id="message" class="message" role="status"></div>
-    <a href="/" class="btn btn-ghost">← Back to home</a>
+    <a href="/pt/" class="btn btn-ghost">← Voltar ao início</a>
   </div>
 
   <footer class="footer">
-    <a href="/">Flare</a> · <a href="/checkout.html">Checkout</a> · <a href="/contact.html">Contact</a>
+    <a href="/pt/">Flare</a> · <a href="/pt/checkout.html">Checkout</a> · <a href="/pt/contact.html">Contacto</a>
   </footer>
 
   <script>
@@ -99,29 +86,24 @@
       form.addEventListener('submit', async function (e) {
         e.preventDefault();
         messageEl.style.display = 'none';
-        messageEl.className = 'message';
-        const email = form.email.value.trim();
-        const name = form.name.value.trim();
+        const payload = { email: document.getElementById('email').value.trim(), name: document.getElementById('name').value.trim() };
         try {
-          const res = await fetch(WORKER_URL + '/submit', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, name }),
-          });
+          const res = await fetch(WORKER_URL + '/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
           const data = await res.json();
-          messageEl.style.display = 'block';
-          if (data.ok) {
-            messageEl.textContent = 'Saved. Thanks for getting in touch!';
-            messageEl.classList.add('success');
+          if (data.ok || res.ok) {
+            messageEl.textContent = 'Mensagem enviada. Obrigado.';
+            messageEl.className = 'message success';
+            messageEl.style.display = 'block';
             form.reset();
           } else {
-            messageEl.textContent = data.error || 'Something went wrong.';
-            messageEl.classList.add('error');
+            messageEl.textContent = data.error || 'Erro ao enviar.';
+            messageEl.className = 'message error';
+            messageEl.style.display = 'block';
           }
         } catch (err) {
+          messageEl.textContent = err.message || 'Erro de rede.';
+          messageEl.className = 'message error';
           messageEl.style.display = 'block';
-          messageEl.textContent = 'Network error: ' + err.message;
-          messageEl.classList.add('error');
         }
       });
     })();

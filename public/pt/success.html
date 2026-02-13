@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pagamento concluído – Flare</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 36rem; margin: 2rem auto; padding: 0 1rem; background: #0a0a0b; color: #e4e4e7; }
+    h1 { color: #34d399; }
+    a { color: #22d3ee; }
+  </style>
+</head>
+<body>
+  <h1>Obrigado</h1>
+  <p>O seu pagamento foi concluído. Recebemos a sua encomenda.</p>
+  <p><strong>Próximo passo:</strong> <a href="/assessment.html" id="assessment-link">Complete o questionário de segurança</a> para gerarmos o seu relatório.</p>
+  <p id="report-link-wrap" style="display: none;">Quando o relatório estiver pronto: <a id="report-link" href="">Ver o seu relatório</a>.</p>
+  <p><a href="/pt/contact.html">Contacto</a> · <a href="/pt/">Início</a></p>
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var hash = params.get('hash');
+      var workerUrl = window.FLARE_WORKER_URL || 'https://flare-worker.gusmao-ricardo.workers.dev';
+      if (hash) {
+        var a = document.getElementById('assessment-link');
+        if (a) a.href = '/assessment.html?hash=' + encodeURIComponent(hash) + '&lang=pt';
+        var reportWrap = document.getElementById('report-link-wrap');
+        var reportA = document.getElementById('report-link');
+        if (reportWrap && reportA) {
+          reportA.href = workerUrl + '/report?hash=' + encodeURIComponent(hash);
+          reportWrap.style.display = 'block';
+        }
+      }
+    })();
+  </script>
+</body>
+</html>
