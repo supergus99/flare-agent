@@ -1,5 +1,7 @@
 # Replicating the existing STR app on Flare
 
+Flare is positioned as a **general risk assessment** product (not STR-specific); all user-facing copy uses generic language.
+
 This document maps the **existing** application (PHP + MySQL + filesystem; repo stays **untouched**) to the **Flare** stack (Workers + D1 + R2 + Queues + Pages). Use it as a step-by-step plan; implement in the **flare** repo only.
 
 ---

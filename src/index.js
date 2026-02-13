@@ -104,7 +104,7 @@ async function upsertPaymentFromIntent(db, intent, overrides = {}) {
     .bind(transactionId)
     .first();
   if (!result) return null;
-  // Regenerate access_hash with payment id (same as STR)
+  // Regenerate access_hash with payment id for stable link
   const newHash = await sha256Hex(
     result.id + customerEmail + serviceType + Date.now() + randomHex(16)
   );

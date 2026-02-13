@@ -1,6 +1,6 @@
 /**
  * Stripe helpers for Flare Worker (Phase 1).
- * Tier config matches STR: core, protect, assure with EUR/USD cents.
+ * Tier config: core, protect, assure with EUR/USD cents.
  */
 
 export const TIER_NAMES = {
