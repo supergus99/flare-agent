@@ -52,6 +52,7 @@
 
   <script>
     (function () {
+      if (!window.FLARE_WORKER_URL && /^(www\.)?getflare\.net$/.test(window.location.hostname)) window.FLARE_WORKER_URL = 'https://api.getflare.net';
       const WORKER_URL = window.FLARE_WORKER_URL || 'https://flare-worker.gusmao-ricardo.workers.dev';
 
       const params = new URLSearchParams(window.location.search);

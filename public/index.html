@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Flare – Security assessment, powered by AI</title>
+  <title>Flare – Security for everyone. No jargon, no big budgets.</title>
+  <meta name="description" content="Security for micro and small businesses. Get a clear report: what’s wrong, what to fix first, and step-by-step directions to do it yourself. Time, not money. No jargon.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -282,6 +283,43 @@
     .offer-cta { display: block; text-align: center; }
     .offer-cta .btn { margin: 0; }
 
+    /* Mission / problem section */
+    #mission { background: var(--bg-elevated); }
+    .problem-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    .problem-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      position: relative;
+    }
+    .problem-num {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .problem-card h3 { font-size: 1rem; margin: 0 0 0.5rem; color: var(--text); }
+    .problem-card p { color: var(--text-muted); font-size: 0.9rem; margin: 0; line-height: 1.5; }
+    .mission-statement {
+      max-width: 40rem;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem;
+      background: linear-gradient(145deg, rgba(34, 211, 238, 0.08), rgba(167, 139, 250, 0.06));
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      text-align: center;
+    }
+    .mission-statement p { margin: 0; color: var(--text); font-size: 1.05rem; line-height: 1.65; }
+
     /* Footer */
     footer {
       padding: 3rem 1.5rem 2rem;
@@ -304,7 +342,8 @@
   <nav class="nav" id="nav">
     <a href="#" class="nav-logo">Flare<span>.</span></a>
     <div class="nav-links">
-      <a href="#offer">Product</a>
+      <a href="#mission">Mission</a>
+      <a href="#offer">Your report</a>
       <a href="#how">How it works</a>
       <a href="#cta">Get started</a>
       <a href="/contact.html">Contact</a>
@@ -320,25 +359,57 @@
       <div class="flare-orb flare-orb-3"></div>
     </div>
     <div class="hero-content">
-      <div class="hero-badge">Security assessment × AI</div>
-      <h1>See risk clearly.<br>Act with <span class="flare-word">Flare</span>.</h1>
-      <p>Get a structured security assessment and actionable report—powered by AI for teams and organizations.</p>
+      <div class="hero-badge">Security for micro &amp; small businesses</div>
+      <h1>Security that makes sense.<br>For the smallest business.</h1>
+      <p>You care about your business—but when it comes to cybersecurity, everything feels confusing, expensive, or full of jargon. We’re here to change that. One clear report: what’s wrong, what to do first, and step-by-step directions so you can do it yourself. <strong>Time, not money.</strong></p>
       <div class="hero-btns">
         <a href="/checkout.html" class="btn btn-primary">Get your report</a>
-        <a href="#how" class="btn btn-ghost">How it works</a>
+        <a href="#mission" class="btn btn-ghost">Our mission</a>
       </div>
     </div>
   </header>
 
+  <section id="mission">
+    <p class="section-label">Why we exist</p>
+    <h2 class="section-title">Security should be accessible to everyone</h2>
+    <p class="section-desc">Micro and small businesses—and solos—want to protect what they’ve built. But usually:</p>
+    <div class="problem-grid">
+      <div class="problem-card">
+        <span class="problem-num">1</span>
+        <h3>It’s hard to understand</h3>
+        <p>“Cybersecurity” sounds vague. You’re not sure what it really means for you.</p>
+      </div>
+      <div class="problem-card">
+        <span class="problem-num">2</span>
+        <h3>It always seems expensive</h3>
+        <p>Costs feel out of reach. You assume only bigger companies can afford to be secure.</p>
+      </div>
+      <div class="problem-card">
+        <span class="problem-num">3</span>
+        <h3>It points to audits or pricey tools</h3>
+        <p>Advice is either “get an audit” or “buy this tool.” Neither fits a tiny budget.</p>
+      </div>
+      <div class="problem-card">
+        <span class="problem-num">4</span>
+        <h3>There’s too much jargon</h3>
+        <p>Terms and acronyms get in the way. You need plain language and clear steps.</p>
+      </div>
+    </div>
+    <div class="mission-statement">
+      <p><strong>Our mission:</strong> make security available to everyone. We focus on <strong>behaviors</strong>, <strong>small tweaks</strong>, and <strong>free tools</strong> that make a real difference—so you protect your business by spending <strong>time</strong>, not money.</p>
+    </div>
+  </section>
+
   <section id="offer">
-    <p class="section-label">Product</p>
+    <p class="section-label">Your report</p>
     <div class="offer-box">
-      <h2>Risk analysis &amp; action plan</h2>
-      <p class="offer-desc">One report with everything you need to understand your exposure and act on it. Powered by AI, tailored to your context.</p>
+      <h2>What’s wrong. What to do first. How to do it yourself.</h2>
+      <p class="offer-desc">One report, in plain language. No jargon. We show you your main risks, what to fix first, and—importantly—the <strong>steps or directions</strong> so you can do it yourself. We recommend behaviours, tweaks, and <strong>free tools</strong> that make a real difference. Protect your business by spending <strong>time</strong>, not money.</p>
       <ul class="offer-list">
-        <li><strong>Risk visibility</strong> — Clear view of exposure across access, data, and operations.</li>
-        <li><strong>Prioritized action plan</strong> — Concrete next steps so you know what to fix first.</li>
-        <li><strong>Structured report</strong> — Findings and recommendations generated from your assessment.</li>
+        <li><strong>What’s wrong</strong> — Clear view of your main risks, explained simply.</li>
+        <li><strong>What to do first</strong> — Prioritized so you know where to start.</li>
+        <li><strong>How to DIY</strong> — Step-by-step directions so you can do it yourself, without buying expensive tools.</li>
+        <li><strong>Free tools &amp; behaviours</strong> — We point you to free options and simple changes that help.</li>
         <li><strong>Secure link</strong> — Access your report anytime via the link we send by email.</li>
       </ul>
       <p class="offer-cta">
@@ -349,23 +420,28 @@
 
   <section id="features">
     <p class="section-label">What you get</p>
-    <h2 class="section-title">Assessment and report, end to end</h2>
-    <p class="section-desc">Complete a short assessment and receive a clear report with findings and next steps.</p>
+    <h2 class="section-title">A report that works for micro and small businesses</h2>
+    <p class="section-desc">Plain language. Priorities. DIY steps. No audits or expensive tools required.</p>
     <div class="features-grid">
       <div class="feature-card">
         <div class="feature-icon">◇</div>
-        <h3>Risk visibility</h3>
-        <p>Understand exposure across access, data, and operations—no jargon, no guesswork.</p>
+        <h3>No jargon</h3>
+        <p>We explain things clearly. You’ll understand what’s wrong and why it matters.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">▸</div>
-        <h3>Action plan</h3>
-        <p>Prioritized steps tailored to your setup so you know what to fix first.</p>
+        <h3>What to do first</h3>
+        <p>Prioritized list so you’re not overwhelmed. Fix the most important things first.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">◈</div>
-        <h3>AI-powered report</h3>
-        <p>Structured findings and recommendations generated from your assessment.</p>
+        <h3>DIY steps &amp; directions</h3>
+        <p>We give you the how—step-by-step directions so you can do it yourself.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">◆</div>
+        <h3>Time, not money</h3>
+        <p>Behaviours, tweaks, and free tools. Protect your business without a big budget.</p>
       </div>
     </div>
   </section>
@@ -373,7 +449,7 @@
   <section id="how">
     <p class="section-label">How it works</p>
     <h2 class="section-title">Three steps to your report</h2>
-    <p class="section-desc">Pay once, complete the assessment, and get your report by email—with a secure link to view anytime.</p>
+    <p class="section-desc">Pay once, complete a short assessment, and get your report by email—with a secure link to view anytime.</p>
     <div class="steps">
       <div class="step">
         <span class="step-num">1</span>
@@ -386,14 +462,14 @@
         <span class="step-num">2</span>
         <div>
           <h3>Complete the assessment</h3>
-          <p>Answer a short set of questions about your context. Use the link from your confirmation email.</p>
+          <p>Answer a short set of questions about your business. Use the link from your confirmation email.</p>
         </div>
       </div>
       <div class="step">
         <span class="step-num">3</span>
         <div>
           <h3>Receive your report</h3>
-          <p>We generate your report and send you a secure link. Review online or save it for later.</p>
+          <p>We generate your report and send you a secure link. You’ll see what’s wrong, what to do first, and how to do it yourself.</p>
         </div>
       </div>
     </div>
@@ -401,8 +477,8 @@
 
   <section id="cta">
     <div class="cta-box">
-      <h2>Ready to see your risk clearly?</h2>
-      <p>Get your risk analysis and action plan in one report.</p>
+      <h2>Security for everyone</h2>
+      <p>Get a clear report: what’s wrong, what to fix first, and step-by-step directions to do it yourself. Time, not money.</p>
       <a href="/checkout.html" class="btn btn-primary">Get your report</a>
       <a href="/contact.html" class="btn btn-ghost">Contact us</a>
     </div>
@@ -412,13 +488,15 @@
     <div class="footer-grid">
       <a href="#" class="footer-logo">Flare<span>.</span></a>
       <div class="footer-links">
-        <a href="/checkout.html">Checkout</a>
+        <a href="#mission">Mission</a>
+        <a href="#offer">Your report</a>
+        <a href="/checkout.html">Get your report</a>
         <a href="/assessment.html">Assessment</a>
         <a href="/contact.html">Contact</a>
         <a href="/admin.html">Admin</a>
       </div>
     </div>
-    <p class="footer-mono">Security & risk assessment · Powered by Cloudflare Workers & AI</p>
+    <p class="footer-mono">Security accessible to everyone · No jargon, no big budgets</p>
   </footer>
 
   <script>

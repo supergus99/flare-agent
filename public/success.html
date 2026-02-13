@@ -20,6 +20,7 @@
     (function () {
       const params = new URLSearchParams(window.location.search);
       const hash = params.get('hash');
+      if (!window.FLARE_WORKER_URL && /^(www\.)?getflare\.net$/.test(window.location.hostname)) window.FLARE_WORKER_URL = 'https://api.getflare.net';
       const workerUrl = window.FLARE_WORKER_URL || 'https://flare-worker.gusmao-ricardo.workers.dev';
       if (hash) {
         const a = document.getElementById('assessment-link');

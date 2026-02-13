@@ -64,10 +64,10 @@
   <div class="container">
     <p class="page-label">Checkout</p>
     <h1 class="page-title">Get your report</h1>
-    <p class="page-desc">Risk analysis &amp; action plan. Complete payment securely with Stripe; you’ll receive a confirmation and a link to your assessment.</p>
+    <p class="page-desc">One report: what’s wrong, what to do first, and how to do it yourself. Plain language, no jargon. Complete payment securely with Stripe; you’ll receive a confirmation and a link to your assessment.</p>
 
     <div class="card">
-      <p class="product-line"><strong>Risk Analysis &amp; Action Plan</strong> — €599 or $599 (choose currency below)</p>
+      <p class="product-line"><strong>Your report</strong> — What’s wrong, what to fix first, and step-by-step DIY directions. €599 or $599 (choose currency below).</p>
       <form id="checkout-form">
         <input type="hidden" id="service_type" name="service_type" value="protect">
 
@@ -100,6 +100,7 @@
 
   <script>
     (function () {
+      if (!window.FLARE_WORKER_URL && /^(www\.)?getflare\.net$/.test(window.location.hostname)) window.FLARE_WORKER_URL = 'https://api.getflare.net';
       const WORKER_URL = window.FLARE_WORKER_URL || 'https://flare-worker.gusmao-ricardo.workers.dev';
       const form = document.getElementById('checkout-form');
       const btn = document.getElementById('btn');
