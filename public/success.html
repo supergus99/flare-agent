@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment complete – Flare</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 36rem; margin: 2rem auto; padding: 0 1rem; }
+    h1 { color: #1a7f37; }
+    a { color: #0969da; }
+  </style>
+</head>
+<body>
+  <h1>Thank you</h1>
+  <p>Your payment is complete. We’ve received your order.</p>
+  <p><strong>Next step:</strong> <a href="/assessment.html" id="assessment-link">Complete your security assessment</a> so we can generate your report.</p>
+  <p id="report-link-wrap" style="display: none;">When your report is ready: <a id="report-link" href="">View your report</a>.</p>
+  <p><a href="/contact.html">Contact form</a> · <a href="/">Home</a></p>
+  <script>
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const hash = params.get('hash');
+      const workerUrl = window.FLARE_WORKER_URL || 'https://flare-worker.gusmao-ricardo.workers.dev';
+      if (hash) {
+        const a = document.getElementById('assessment-link');
+        if (a) a.href = '/assessment.html?hash=' + encodeURIComponent(hash);
+        var reportWrap = document.getElementById('report-link-wrap');
+        var reportA = document.getElementById('report-link');
+        if (reportWrap && reportA) {
+          reportA.href = workerUrl + '/report?hash=' + encodeURIComponent(hash);
+          reportWrap.style.display = 'block';
+        }
+      }
+    })();
+  </script>
+</body>
+</html>

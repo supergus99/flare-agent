@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin – Flare</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 56rem; margin: 1rem auto; padding: 0 1rem; }
+    h1 { color: #333; }
+    .login-box { max-width: 20rem; margin: 2rem 0; }
+    input { width: 100%; padding: 0.5rem; margin: 0.25rem 0; box-sizing: border-box; }
+    button { padding: 0.5rem 1rem; margin-right: 0.5rem; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.9rem; }
+    th, td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: 1px solid #eee; }
+    th { background: #f6f8fa; }
+    .tabs { margin: 1rem 0; }
+    .tabs button { margin-right: 0.25rem; }
+    .tabs button.active { background: #0969da; color: #fff; }
+    .error { color: #cf2222; margin-top: 0.5rem; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Flare Admin</h1>
+
+  <div id="login-box" class="login-box">
+    <p>Sign in with your admin username and password.</p>
+    <input type="text" id="username" placeholder="Username" autocomplete="username">
+    <input type="password" id="password" placeholder="Password" autocomplete="current-password">
+    <button type="button" id="login-btn">Sign in</button>
+    <p id="login-error" class="error hidden"></p>
+  </div>
+
+  <div id="admin-panel" class="hidden">
+    <button type="button" id="logout-btn">Sign out</button>
+    <div class="tabs">
+      <button type="button" data-tab="submissions" class="active">Submissions</button>
+      <button type="button" data-tab="payments">Payments</button>
+      <button type="button" data-tab="reports">Reports</button>
+    </div>
+    <div id="tab-submissions" class="tab-content">
+      <table><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Company</th><th>Service</th><th>Submitted</th><th>Status</th></tr></thead><tbody id="submissions-tbody"></tbody></table>
+    </div>
+    <div id="tab-payments" class="tab-content hidden">
+      <table><thead><tr><th>ID</th><th>Transaction</th><th>Service</th><th>Amount</th><th>Email</th><th>Status</th><th>Created</th></tr></thead><tbody id="payments-tbody"></tbody></table>
+    </div>
+    <div id="tab-reports" class="tab-content hidden">
+      <table><thead><tr><th>ID</th><th>Payment ID</th><th>Type</th><th>Status</th><th>Created</th><th>Action</th></tr></thead><tbody id="reports-tbody"></tbody></table>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const WORKER_URL = window.FLARE_WORKER_URL || 'https://flare-worker.gusmao-ricardo.workers.dev';
+      const TOKEN_KEY = 'flare_admin_token';
+
+      const loginBox = document.getElementById('login-box');
+      const adminPanel = document.getElementById('admin-panel');
+      const loginError = document.getElementById('login-error');
+
+      function getToken() { return localStorage.getItem(TOKEN_KEY); }
+      function setToken(t) { if (t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY); }
+
+      function showLogin() {
+        loginBox.classList.remove('hidden');
+        adminPanel.classList.add('hidden');
+      }
+      function showPanel() {
+        loginBox.classList.add('hidden');
+        adminPanel.classList.remove('hidden');
+      }
+
+      function authHeaders() {
+        const t = getToken();
+        return t ? { 'Authorization': 'Bearer ' + t, 'Content-Type': 'application/json' } : {};
+      }
+
+      document.getElementById('login-btn').addEventListener('click', async function () {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+        loginError.classList.add('hidden');
+        if (!username || !password) {
+          loginError.textContent = 'Enter username and password';
+          loginError.classList.remove('hidden');
+          return;
+        }
+        try {
+          const res = await fetch(WORKER_URL + '/api/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            loginError.textContent = data.error || 'Login failed';
+            loginError.classList.remove('hidden');
+            return;
+          }
+          setToken(data.token);
+          showPanel();
+          loadTab('submissions');
+        } catch (e) {
+          loginError.textContent = e.message || 'Network error';
+          loginError.classList.remove('hidden');
+        }
+      });
+
+      document.getElementById('logout-btn').addEventListener('click', function () {
+        setToken(null);
+        showLogin();
+      });
+
+      document.querySelectorAll('.tabs button').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+          btn.classList.add('active');
+          const tab = btn.getAttribute('data-tab');
+          document.getElementById('tab-' + tab).classList.remove('hidden');
+          loadTab(tab);
+        });
+      });
+
+      async function loadTab(tab) {
+        if (tab === 'submissions') {
+          const res = await fetch(WORKER_URL + '/api/admin/submissions?limit=100', { headers: authHeaders() });
+          if (res.status === 401) { setToken(null); showLogin(); return; }
+          const data = await res.json();
+          const tbody = document.getElementById('submissions-tbody');
+          tbody.innerHTML = (data.data || []).map(function (r) {
+            return '<tr><td>' + r.id + '</td><td>' + escapeHtml(r.name || '') + '</td><td>' + escapeHtml(r.email || '') + '</td><td>' + escapeHtml(r.company || '') + '</td><td>' + escapeHtml(r.service || '') + '</td><td>' + escapeHtml(r.submitted_at || '') + '</td><td>' + escapeHtml(r.status || '') + '</td></tr>';
+          }).join('');
+        } else if (tab === 'payments') {
+          const res = await fetch(WORKER_URL + '/api/admin/payments?limit=100', { headers: authHeaders() });
+          if (res.status === 401) { setToken(null); showLogin(); return; }
+          const data = await res.json();
+          const tbody = document.getElementById('payments-tbody');
+          tbody.innerHTML = (data.data || []).map(function (r) {
+            return '<tr><td>' + r.id + '</td><td>' + escapeHtml((r.transaction_id || '').slice(0, 24)) + '</td><td>' + escapeHtml(r.service_type || '') + '</td><td>' + (r.amount / 100) + ' ' + (r.currency || '') + '</td><td>' + escapeHtml(r.customer_email || '') + '</td><td>' + escapeHtml(r.payment_status || '') + '</td><td>' + escapeHtml(r.created_at || '') + '</td></tr>';
+          }).join('');
+        } else if (tab === 'reports') {
+          const res = await fetch(WORKER_URL + '/api/admin/reports?limit=100', { headers: authHeaders() });
+          if (res.status === 401) { setToken(null); showLogin(); return; }
+          const data = await res.json();
+          const tbody = document.getElementById('reports-tbody');
+          tbody.innerHTML = (data.data || []).map(function (r) {
+            const approveBtn = (r.status === 'pending_review' || r.status === 'approved') && r.status !== 'sent'
+              ? '<button type="button" class="approve-btn" data-id="' + r.id + '">Approve &amp; send email</button>'
+              : '<span>' + escapeHtml(r.status || '') + '</span>';
+            return '<tr><td>' + r.id + '</td><td>' + r.payment_id + '</td><td>' + escapeHtml(r.report_type || '') + '</td><td>' + escapeHtml(r.status || '') + '</td><td>' + escapeHtml(r.created_at || '') + '</td><td>' + approveBtn + '</td></tr>';
+          }).join('');
+          tbody.querySelectorAll('.approve-btn').forEach(function (b) {
+            b.addEventListener('click', function () {
+              const id = b.getAttribute('data-id');
+              fetch(WORKER_URL + '/api/admin/reports/' + id + '/approve', { method: 'POST', headers: authHeaders() })
+                .then(function (res) { return res.json(); })
+                .then(function (d) { alert(d.message || (d.ok ? 'Done' : d.error)); loadTab('reports'); })
+                .catch(function (e) { alert(e.message); });
+            });
+          });
+        }
+      }
+
+      function escapeHtml(s) {
+        if (s == null) return '';
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
+      if (getToken()) {
+        showPanel();
+        loadTab('submissions');
+      } else {
+        showLogin();
+      }
+    })();
+  </script>
+</body>
+</html>

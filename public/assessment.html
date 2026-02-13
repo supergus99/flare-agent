@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assessment – Flare</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 32rem; margin: 2rem auto; padding: 0 1rem; }
+    h1 { color: #333; }
+    label { display: block; margin-top: 0.75rem; font-weight: 500; }
+    input, textarea { width: 100%; padding: 0.5rem; margin-top: 0.25rem; box-sizing: border-box; }
+    textarea { min-height: 4rem; resize: vertical; }
+    button { margin-top: 1rem; padding: 0.6rem 1.2rem; background: #0969da; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .error { color: #cf2222; margin-top: 0.5rem; }
+    .message { margin-top: 1rem; padding: 0.5rem; border-radius: 6px; }
+    .message.success { background: #dafbe1; color: #1a7f37; }
+    .message.error { background: #ffebe9; color: #cf2222; }
+    .hash-warning { background: #fff8c5; padding: 0.5rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <h1>Security assessment</h1>
+  <p>Complete this form so we can generate your report. If you paid via Stripe, use the link from your confirmation email (it includes your secure access code).</p>
+
+  <div id="hash-warning" class="hash-warning" style="display: none;">
+    No access code in the URL. If you have a link from your payment confirmation, use that. You can still submit without a code; your submission will be saved but not linked to a payment.
+  </div>
+
+  <form id="assessment-form">
+    <input type="hidden" id="access_hash" name="access_hash" value="">
+
+    <label for="company_name">Company name *</label>
+    <input type="text" id="company_name" name="company_name" required placeholder="Your company">
+
+    <label for="contact_name">Your name *</label>
+    <input type="text" id="contact_name" name="contact_name" required placeholder="Full name">
+
+    <label for="email">Email *</label>
+    <input type="email" id="email" name="email" required placeholder="you@example.com">
+
+    <label for="role">Role (optional)</label>
+    <input type="text" id="role" name="role" placeholder="e.g. Operations Manager">
+
+    <label for="message">Additional notes (optional)</label>
+    <textarea id="message" name="message" placeholder="Any specific concerns or context..."></textarea>
+
+    <button type="submit" id="btn">Submit assessment</button>
+  </form>
+
+  <div id="message-el" class="message" style="display: none;"></div>
+
+  <script>
+    (function () {
+      const WORKER_URL = window.FLARE_WORKER_URL || 'https://flare-worker.gusmao-ricardo.workers.dev';
+
+      const params = new URLSearchParams(window.location.search);
+      const hash = params.get('hash') || params.get('access_hash') || '';
+      document.getElementById('access_hash').value = hash;
+      if (!hash) {
+        document.getElementById('hash-warning').style.display = 'block';
+      }
+
+      const form = document.getElementById('assessment-form');
+      const btn = document.getElementById('btn');
+      const messageEl = document.getElementById('message-el');
+
+      function showMessage(text, isError) {
+        messageEl.textContent = text;
+        messageEl.className = 'message ' + (isError ? 'error' : 'success');
+        messageEl.style.display = 'block';
+      }
+
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        btn.disabled = true;
+        messageEl.style.display = 'none';
+
+        const payload = {
+          access_hash: document.getElementById('access_hash').value.trim() || undefined,
+          company_name: document.getElementById('company_name').value.trim(),
+          contact_name: document.getElementById('contact_name').value.trim(),
+          email: document.getElementById('email').value.trim(),
+          role: document.getElementById('role').value.trim() || undefined,
+          message: document.getElementById('message').value.trim() || undefined,
+        };
+
+        try {
+          const res = await fetch(WORKER_URL + '/api/assessments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            showMessage(data.error || 'Submission failed', true);
+            btn.disabled = false;
+            return;
+          }
+          showMessage(data.message || 'Assessment saved. Your report will be generated shortly. Check your email for the report link when it\'s ready.', false);
+          form.reset();
+          document.getElementById('access_hash').value = hash;
+        } catch (err) {
+          showMessage(err.message || 'Network error', true);
+          btn.disabled = false;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

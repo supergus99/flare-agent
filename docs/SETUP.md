@@ -85,3 +85,75 @@ GitHub Actions will run and deploy **flare-worker** to Cloudflare. Check the **A
 5. **Save and Deploy.** Pages will deploy the contents of `public/` on every push to `main`.
 
 6. **URL:** You’ll get a URL like `https://flare-agent.pages.dev` (or the project name you chose). Open it to see the Flare landing page with links to the Worker endpoints.
+
+---
+
+## 7. Phase 1 – Stripe payments
+
+1. **Run Phase 1 migration** (creates `payments`, `leads`, `automation_settings`, `admin_users`, `stripe_webhook_events`):
+   ```bash
+   npx wrangler d1 execute flare-db --remote --file=./migrations/002_phase1_payments.sql
+   ```
+
+2. **Worker secrets** (Dashboard → Workers & Pages → flare-worker → Settings → Variables and Secrets, or `wrangler secret put <NAME>`):
+   - `STRIPE_SECRET_KEY` – Stripe secret key (sk_test_... or sk_live_...).
+   - `STRIPE_WEBHOOK_SECRET` – Stripe webhook signing secret (whsec_...).
+
+3. **Optional** (for correct redirects when Worker and Pages are on different hosts):
+   - `SUCCESS_BASE_URL` – Your Pages URL (e.g. `https://flare-agent.pages.dev`). Used so the Worker redirects to your success page after payment.
+   - `WORKER_PUBLIC_URL` – Your Worker URL (e.g. `https://flare-worker.gusmao-ricardo.workers.dev`). Used as Stripe Checkout `success_url` so Stripe redirects back to the Worker, which then redirects to `SUCCESS_BASE_URL/success.html?hash=...`.
+
+4. **Stripe webhook:** In [Stripe Dashboard → Webhooks](https://dashboard.stripe.com/webhooks), add endpoint:
+   - URL: `https://flare-worker.<your-subdomain>.workers.dev/api/webhooks/stripe`
+   - Events: `checkout.session.completed`, `payment_intent.succeeded`, `payment_intent.payment_failed`
+   - Copy the signing secret into `STRIPE_WEBHOOK_SECRET`.
+
+5. **Flow:** User opens Pages → Checkout → chooses plan → POST to Worker `/api/checkout` → redirect to Stripe Checkout → after payment Stripe redirects to Worker `/api/success?session_id=...` → Worker writes/updates payment in D1 and redirects to `SUCCESS_BASE_URL/success.html?hash=...`.
+
+---
+
+## 8. Phase 2 – Assessment and reports
+
+1. **Run Phase 2 migration** (expands `contact_submissions`, creates `reports`, `report_versions`):
+   ```bash
+   npx wrangler d1 execute flare-db --remote --file=./migrations/003_phase2_reports.sql
+   ```
+   Run once. If you see "duplicate column name", that migration was already applied; you can skip or run only the new table statements.
+
+2. **Flow:**
+   - After payment, user lands on `success.html?hash=...`. The page links to **Assessment** with the same `hash`.
+   - User opens **Assessment** (`/assessment.html?hash=...`), fills company name, contact name, email, optional notes, and submits.
+   - Worker **POST /api/assessments** saves to `contact_submissions` (and links to `payment_id` when `access_hash` is valid), then enqueues a **generate_report** job.
+   - **Queue consumer** processes `generate_report`: creates a `reports` row (with `view_hash`), creates a `report_versions` row, builds a placeholder HTML report from submission data, uploads it to **R2** (`reports/{reportId}/v{version}.html`), and updates `report_versions` with `html_path` and status `draft`.
+   - User can open **View your report** (link on success page): **GET** `https://flare-worker.<subdomain>.workers.dev/report?hash=...` (same payment `access_hash` or report `view_hash`). Worker looks up the report, fetches HTML from R2, and returns it.
+
+3. **Report content:** Phase 2 uses a **stub** report (contact details + notes). To use AI-generated content later, add `OPENAI_API_KEY` or Workers AI and extend the queue consumer (see `handleGenerateReport` in `src/index.js`).
+
+---
+
+## 9. Phase 3 – Email and admin
+
+1. **Run Phase 3 migration** (creates `email_logs`):
+   ```bash
+   npx wrangler d1 execute flare-db --remote --file=./migrations/004_phase3_email_admin.sql
+   ```
+
+2. **Resend (email):**
+   - Sign up at [resend.com](https://resend.com), create an API key.
+   - Worker secret: `RESEND_API_KEY` = your Resend API key (e.g. `re_...`).
+   - Optional: `FROM_EMAIL`, `FROM_NAME` or set `from_email` / `from_name` in D1 `automation_settings` (migration 002 inserts defaults).
+   - After payment (Stripe webhook), the Worker enqueues **send_welcome_email**; the queue consumer sends a welcome email with the assessment link via Resend and logs to `email_logs`.
+   - When you **approve** a report in Admin, the Worker enqueues **send_approved_report**; the consumer sends an email with the report view link and sets the report status to `sent`.
+
+3. **Admin auth:**
+   - Worker secrets: `ADMIN_JWT_SECRET` (random string, e.g. `openssl rand -hex 32`), `ADMIN_PASSWORD_SALT` (another random string).
+   - Create the first admin user in D1: password is stored as **SHA-256(salt + password)** in hex. Example (Node): `node -e "const c=require('crypto'); const s='YOUR_SALT'; const p='your_password'; console.log(c.createHash('sha256').update(s+p).digest('hex'));"` then `INSERT INTO admin_users (username, email, password_hash, is_active) VALUES ('admin', 'you@example.com', '<hex_output>', 1);` (run via `wrangler d1 execute` or Dashboard).
+   - **POST /api/admin/login** with `{ "username": "admin", "password": "your_password" }` returns `{ "token": "..." }`. Use the token in **Authorization: Bearer &lt;token&gt;** (or cookie `admin_token=...`) for admin routes.
+
+4. **Admin routes (all require auth):**
+   - **GET /api/admin/submissions** – list contact_submissions.
+   - **GET /api/admin/payments** – list payments.
+   - **GET /api/admin/reports** – list reports.
+   - **POST /api/admin/reports/:id/approve** – set report status to `approved` and enqueue `send_approved_report`.
+
+5. **Admin UI:** Open **/admin.html** on your Pages site. Sign in with your admin username and password; view submissions, payments, and reports; click **Approve & send email** on a report to send the report link to the customer.

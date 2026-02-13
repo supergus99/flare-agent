@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout – Flare</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 32rem; margin: 2rem auto; padding: 0 1rem; }
+    h1 { color: #333; }
+    label { display: block; margin-top: 0.75rem; font-weight: 500; }
+    input, select { width: 100%; padding: 0.5rem; margin-top: 0.25rem; box-sizing: border-box; }
+    button { margin-top: 1rem; padding: 0.6rem 1.2rem; background: #0969da; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .error { color: #cf2222; margin-top: 0.5rem; }
+    .message { margin-top: 1rem; padding: 0.5rem; border-radius: 6px; }
+    .message.success { background: #dafbe1; color: #1a7f37; }
+    .message.error { background: #ffebe9; color: #cf2222; }
+  </style>
+</head>
+<body>
+  <h1>Checkout</h1>
+  <p>Choose a plan and complete payment with Stripe.</p>
+
+  <form id="checkout-form">
+    <label for="service_type">Plan</label>
+    <select id="service_type" name="service_type" required>
+      <option value="core">Risk Visibility Report (€249 / $249)</option>
+      <option value="protect">Risk Analysis & Action Plan (€599 / $599)</option>
+      <option value="assure">Guided Risk Review (€999 / $999)</option>
+    </select>
+
+    <label for="currency">Currency</label>
+    <select id="currency" name="currency">
+      <option value="eur">EUR</option>
+      <option value="usd">USD</option>
+    </select>
+
+    <label for="customer_name">Name (optional)</label>
+    <input type="text" id="customer_name" name="customer_name" placeholder="Your name">
+
+    <label for="customer_email">Email (optional – Stripe will collect if empty)</label>
+    <input type="email" id="customer_email" name="customer_email" placeholder="you@example.com">
+
+    <label for="customer_company">Company (optional)</label>
+    <input type="text" id="customer_company" name="customer_company" placeholder="Company name">
+
+    <button type="submit" id="btn">Continue to payment</button>
+  </form>
+
+  <div id="message" class="message" style="display: none;"></div>
+
+  <script>
+    (function () {
+      // Set your Worker URL (e.g. https://flare-worker.gusmao-ricardo.workers.dev)
+      const WORKER_URL = window.FLARE_WORKER_URL || 'https://flare-worker.gusmao-ricardo.workers.dev';
+
+      const form = document.getElementById('checkout-form');
+      const btn = document.getElementById('btn');
+      const messageEl = document.getElementById('message');
+
+      function showMessage(text, isError) {
+        messageEl.textContent = text;
+        messageEl.className = 'message ' + (isError ? 'error' : 'success');
+        messageEl.style.display = 'block';
+      }
+
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        btn.disabled = true;
+        messageEl.style.display = 'none';
+
+        const payload = {
+          service_type: document.getElementById('service_type').value,
+          currency: document.getElementById('currency').value,
+          customer_name: document.getElementById('customer_name').value.trim() || undefined,
+          customer_email: document.getElementById('customer_email').value.trim() || undefined,
+          customer_company: document.getElementById('customer_company').value.trim() || undefined,
+        };
+
+        try {
+          const res = await fetch(WORKER_URL + '/api/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            showMessage(data.error || 'Checkout failed', true);
+            btn.disabled = false;
+            return;
+          }
+          if (data.url) {
+            window.location.href = data.url;
+            return;
+          }
+          showMessage('No redirect URL received', true);
+          btn.disabled = false;
+        } catch (err) {
+          showMessage(err.message || 'Network error', true);
+          btn.disabled = false;
+        }
+      });
+
+      // Show canceled message if redirected back
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('canceled') === '1') {
+        showMessage('Checkout was canceled. You can try again.', false);
+      }
+    })();
+  </script>
+</body>
+</html>
