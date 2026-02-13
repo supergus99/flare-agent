@@ -19,7 +19,7 @@
     </style>
     <style>
     @media print { body { display: none !important; } }
-    :root { --bg: #0a0a0b; --bg-elevated: #111113; --text: #e4e4e7; --text-muted: #71717a; --accent: #22d3ee; --accent-soft: rgba(34,211,238,0.15); --border: rgba(255,255,255,0.06); --error: #f87171; }
+    :root { --bg: #0a0a0b; --bg-elevated: #111113; --text: #e4e4e7; --text-muted: #71717a; --accent: #22d3ee; --accent-soft: rgba(34,211,238,0.15); --flare-orange: #fb923c; --logo-dot: #22c55e; --border: rgba(255,255,255,0.06); --error: #f87171; }
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: 'Outfit', system-ui, sans-serif; line-height: 1.55; }
     .assessment-container { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
@@ -71,7 +71,7 @@
 </head>
 <body>
     <!-- Navigation -->
-    <nav style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center;"><a href="index.html" style="font-weight: 700; font-size: 1.25rem; color: var(--text); text-decoration: none;">Flare<span style="color: var(--accent);">.</span></a></nav>
+    <nav style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center;"><a href="index.html" style="font-weight: 700; font-size: 1.25rem; letter-spacing: -0.02em; text-decoration: none; display: inline-flex; align-items: baseline;"><span style="background: linear-gradient(135deg, var(--flare-orange), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Flare</span><span style="color: var(--logo-dot);">.</span></a></nav>
 
     <div class="assessment-container">
         <div class="progress-bar">

@@ -15,6 +15,8 @@
       --text-muted: #71717a;
       --accent: #22d3ee;
       --accent-soft: rgba(34, 211, 238, 0.15);
+      --flare-orange: #fb923c;
+      --logo-dot: #22c55e;
       --border: rgba(255,255,255,0.06);
       --error: #f87171;
       --success: #34d399;
@@ -23,8 +25,9 @@
     html { scroll-behavior: smooth; }
     body { margin: 0; font-family: 'Outfit', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh; }
     .nav { padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
-    .nav-logo { font-weight: 700; font-size: 1.25rem; letter-spacing: -0.02em; color: var(--text); text-decoration: none; }
-    .nav-logo span { color: var(--accent); }
+    .nav-logo { font-weight: 700; font-size: 1.25rem; letter-spacing: -0.02em; text-decoration: none; display: inline-flex; align-items: baseline; }
+    .nav-logo-word { background: linear-gradient(135deg, var(--flare-orange), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .nav-logo-dot { color: var(--logo-dot); }
     .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; margin-left: 1.25rem; }
     .nav-links a:hover { color: var(--accent); }
     .container { max-width: 28rem; margin: 0 auto; padding: 3rem 1.5rem; }
@@ -52,7 +55,7 @@
 </head>
 <body>
   <nav class="nav">
-    <a href="/" class="nav-logo">Flare<span>.</span></a>
+    <a href="/" class="nav-logo"><span class="nav-logo-word">Flare</span><span class="nav-logo-dot">.</span></a>
     <div class="nav-links">
       <a href="/">Home</a>
       <a href="/checkout.html">Checkout</a>

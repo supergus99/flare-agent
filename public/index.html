@@ -13,12 +13,13 @@
       --bg: #0a0a0b;
       --bg-elevated: #111113;
       --text: #e4e4e7;
-      --text-muted: #71717a;
+      --text-muted: #a1a1aa;
       --accent: #22d3ee;
       --accent-soft: rgba(34, 211, 238, 0.15);
       --purple: #a78bfa;
       --purple-soft: rgba(167, 139, 250, 0.12);
       --flare-orange: #fb923c;
+      --logo-dot: #22c55e;
       --border: rgba(255,255,255,0.06);
     }
 
@@ -50,7 +51,7 @@
     .nav.scrolled { background: rgba(10,10,11,0.9); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
     .nav-logo { font-weight: 700; font-size: 1.25rem; letter-spacing: -0.02em; text-decoration: none; display: inline-flex; align-items: baseline; }
     .nav-logo-word { background: linear-gradient(135deg, var(--flare-orange), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    .nav-logo-dot { color: var(--accent); }
+    .nav-logo-dot { color: var(--logo-dot); }
     .nav-links { display: flex; gap: 1.5rem; align-items: center; }
     .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color .2s; }
     .nav-links a:hover { color: var(--accent); }
@@ -170,6 +171,7 @@
       animation: fade-up 0.8s ease-out 0.1s both;
     }
     .hero h1 .flare-word { background: linear-gradient(135deg, var(--flare-orange), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .hero h1 .flare-dot { color: var(--logo-dot); -webkit-text-fill-color: var(--logo-dot); }
     .hero-tagline {
       font-size: 1.1rem;
       color: #d4d4d8;
@@ -365,7 +367,7 @@
     .footer-grid { display: flex; flex-wrap: wrap; gap: 2rem; justify-content: space-between; align-items: center; }
     .footer-logo { font-weight: 700; font-size: 1.1rem; text-decoration: none; display: inline-flex; align-items: baseline; }
     .footer-logo .nav-logo-word { background: linear-gradient(135deg, var(--flare-orange), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    .footer-logo .nav-logo-dot { color: var(--accent); }
+    .footer-logo .nav-logo-dot { color: var(--logo-dot); }
     .footer-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
     .footer-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; }
     .footer-links a:hover { color: var(--accent); }
@@ -396,7 +398,7 @@
     </div>
     <div class="hero-content">
       <div class="hero-badge">Security × AI</div>
-      <h1>See risk clearly.<br>Act with <span class="flare-word">Flare</span>.</h1>
+      <h1>See risk clearly.<br>Act with <span class="flare-word">Flare</span><span class="flare-dot">.</span></h1>
       <p class="hero-tagline">One report. Your risks, in order—and the steps to fix them yourself.</p>
       <div class="hero-btns">
         <a href="/checkout.html" class="btn btn-primary">Get your report</a>
