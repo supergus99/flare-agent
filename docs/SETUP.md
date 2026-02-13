@@ -52,10 +52,11 @@ GitHub Actions will run and deploy **flare-worker** to Cloudflare. Check the **A
 
 ---
 
-## 4. R2 (when you add it)
+## 4. R2 (object storage for reports)
 
-- Create bucket: **Workers R2 Storage** → Create bucket → **flare-reports** (private, Automatic location)
-- Add to `wrangler.toml`: `[[r2_buckets]]` with `binding = "REPORTS"`, `bucket_name = "flare-reports"`
+1. **Create the bucket:** Cloudflare Dashboard → **Workers R2 Storage** → **Create bucket** → name: **flare-reports**, location Automatic, leave public access **off**.
+2. **Binding** is already in `wrangler.toml` (`REPORTS` → `flare-reports`). Deploy (push to main or `npx wrangler deploy`).
+3. **Test:** Open `https://flare-worker.gusmao-ricardo.workers.dev/r2` – you should see `{"r2":"ok","bucket":"flare-reports"}`.
 
 ---
 

@@ -30,6 +30,18 @@ export default {
         { status: 501, headers: { "Content-Type": "application/json" } }
       );
     }
+    if (url.pathname === "/r2") {
+      if (!env.REPORTS) {
+        return new Response(
+          JSON.stringify({ r2: "not_configured", hint: "Add R2 binding and create bucket flare-reports" }),
+          { status: 501, headers: { "Content-Type": "application/json" } }
+        );
+      }
+      return new Response(
+        JSON.stringify({ r2: "ok", bucket: "flare-reports" }),
+        { headers: { "Content-Type": "application/json" } }
+      );
+    }
     return new Response("Not Found", { status: 404 });
   },
 };

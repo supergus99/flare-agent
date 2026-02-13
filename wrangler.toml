@@ -12,3 +12,8 @@ compatibility_date = "2024-01-01"
 binding = "DB"
 database_name = "flare-db"
 database_id = "4cdf2868-c471-4005-9231-226c3289549f"
+
+# R2 – create bucket "flare-reports" in Dashboard (Workers R2 Storage) first
+[[r2_buckets]]
+binding = "REPORTS"
+bucket_name = "flare-reports"
