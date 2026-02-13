@@ -29,7 +29,7 @@ export function getServiceName(serviceType, short = false) {
 }
 
 /**
- * Create Stripe Checkout Session (Stripe API JSON).
+ * Create Stripe Checkout Session. Stripe API expects application/x-www-form-urlencoded.
  * @param {string} stripeSecretKey
  * @param {{ successUrl: string, cancelUrl: string, serviceType: string, currency: string, customerEmail?: string, customerName?: string, customerCompany?: string, leadId?: number }} opts
  * @returns {Promise<{ url: string, id: string }>}
@@ -52,46 +52,36 @@ export async function createCheckoutSession(stripeSecretKey, opts) {
     mode: "payment",
     success_url: successUrl,
     cancel_url: cancelUrl,
-    line_items: [
-      {
-        price_data: {
-          currency: currency.toLowerCase(),
-          product_data: { name: productName },
-          unit_amount: amount,
-        },
-        quantity: 1,
-      },
-    ],
-    metadata: {
-      service_type: serviceType,
-      customer_name: customerName || "",
-      customer_email: customerEmail || "",
-      customer_company: customerCompany || "",
-    },
-    payment_intent_data: {
-      metadata: {
-        service_type: serviceType,
-        customer_name: customerName || "",
-        customer_email: customerEmail || "",
-        customer_company: customerCompany || "",
-      },
-    },
+    "line_items[0][price_data][currency]": currency.toLowerCase(),
+    "line_items[0][price_data][product_data][name]": productName,
+    "line_items[0][price_data][unit_amount]": amount,
+    "line_items[0][quantity]": 1,
+    "metadata[service_type]": serviceType,
+    "metadata[customer_name]": customerName || "",
+    "metadata[customer_email]": customerEmail || "",
+    "metadata[customer_company]": customerCompany || "",
+    "payment_intent_data[metadata][service_type]": serviceType,
+    "payment_intent_data[metadata][customer_name]": customerName || "",
+    "payment_intent_data[metadata][customer_email]": customerEmail || "",
+    "payment_intent_data[metadata][customer_company]": customerCompany || "",
   };
   if (leadId != null) {
     body.client_reference_id = `lead_${leadId}`;
-    body.metadata.lead_id = String(leadId);
+    body["metadata[lead_id]"] = String(leadId);
   }
   if (customerEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
     body.customer_email = customerEmail;
   }
 
+  const formBody = new URLSearchParams(body).toString();
+
   const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${stripeSecretKey}`,
-      "Content-Type": "application/json",
+      "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: JSON.stringify(body),
+    body: formBody,
   });
   if (!res.ok) {
     const err = await res.text();
