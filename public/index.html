@@ -73,26 +73,27 @@
       pointer-events: none;
       z-index: 0;
     }
-    /* Central bright flare (dynamic glow) – tight gradient keeps text contrast */
+    /* Central bright flare (dynamic glow) */
     .flare-core {
       position: absolute;
       left: 50%;
       top: 50%;
-      width: min(72vw, 380px);
-      height: min(72vw, 380px);
+      width: min(80vw, 420px);
+      height: min(80vw, 420px);
       transform: translate(-50%, -50%);
       background: radial-gradient(
         circle at 50% 50%,
-        rgba(251, 146, 60, 0.55) 0%,
-        rgba(251, 146, 60, 0.28) 18%,
-        rgba(34, 211, 238, 0.12) 38%,
-        transparent 58%
+        rgba(251, 146, 60, 0.5) 0%,
+        rgba(251, 146, 60, 0.2) 25%,
+        rgba(34, 211, 238, 0.15) 50%,
+        transparent 70%
       );
       animation: flare-core-pulse 4s ease-in-out infinite;
     }
+    /* Pulse from outside to inside: large → contract to center → expand again */
     @keyframes flare-core-pulse {
-      0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.72; }
-      50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+      0%, 100% { transform: translate(-50%, -50%) scale(1.12); opacity: 0.85; }
+      50% { transform: translate(-50%, -50%) scale(0.88); opacity: 0.85; }
     }
     .flare-orb {
       position: absolute;
@@ -138,8 +139,8 @@
       66% { transform: translate(-52%, -48%) scale(0.98) rotate(-3deg); opacity: 1; }
     }
     @keyframes flare-pulse {
-      0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.75; }
-      50% { transform: translate(-50%, -50%) scale(1.12); opacity: 1; }
+      0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+      50% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
     }
     .hero-content { position: relative; z-index: 1; max-width: 42rem; }
     .hero-badge {
