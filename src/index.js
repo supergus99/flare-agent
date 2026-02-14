@@ -768,11 +768,22 @@ export default {
       const lastDay = new Date(year, monthIndex + 1, 0).getDate();
       const monthLabel = new Date(year, monthIndex).toLocaleDateString("en-US", { month: "long", year: "numeric" });
       try {
-        const rows = await env.DB.prepare(
-          `SELECT cast(strftime('%d', created_at) as integer) as day, COUNT(*) as cnt, COALESCE(SUM(amount), 0) / 100.0 as rev
-           FROM payments WHERE payment_status = 'completed' AND created_at >= ? AND created_at < ?
-           GROUP BY day ORDER BY day`
-        ).bind(first, nextMonth).all();
+        let rows;
+        try {
+          rows = await env.DB.prepare(
+            `SELECT cast(strftime('%d', created_at) as integer) as day, COUNT(*) as cnt, COALESCE(SUM(amount), 0) / 100.0 as rev
+             FROM payments WHERE payment_status = 'completed' AND created_at >= ? AND created_at < ?
+             GROUP BY day ORDER BY day`
+          ).bind(first, nextMonth).all();
+        } catch (colErr) {
+          if (String(colErr?.message || "").includes("amount")) {
+            rows = await env.DB.prepare(
+              `SELECT cast(strftime('%d', created_at) as integer) as day, COUNT(*) as cnt, COALESCE(SUM(amount_cents), 0) / 100.0 as rev
+               FROM payments WHERE payment_status = 'completed' AND created_at >= ? AND created_at < ?
+               GROUP BY day ORDER BY day`
+            ).bind(first, nextMonth).all();
+          } else throw colErr;
+        }
         const byDay = {};
         for (const r of rows.results || []) {
           byDay[r.day] = { purchases: r.cnt | 0, revenue: Math.round((r.rev || 0) * 100) / 100 };
