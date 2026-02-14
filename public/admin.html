@@ -282,11 +282,14 @@
           loadStats();
           const tbody = document.getElementById('reports-tbody');
           tbody.innerHTML = (data.data || []).map(function (r) {
+            const viewLink = r.view_hash
+              ? '<a href="' + WORKER_URL + '/report?hash=' + encodeURIComponent(r.view_hash) + '" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm me-1">View</a>'
+              : '';
             const approveBtn = (r.status === 'pending_review' || r.status === 'approved') && r.status !== 'sent'
               ? '<button type="button" class="approve-btn btn btn-success btn-sm" data-id="' + r.id + '">Approve &amp; send email</button>'
               : '<span class="badge bg-secondary">' + escapeHtml(r.status || '') + '</span>';
             const statusClass = r.status === 'sent' ? 'bg-success' : r.status === 'approved' ? 'bg-info' : r.status === 'pending_review' ? 'bg-warning text-dark' : 'bg-secondary';
-            return '<tr><td>' + r.id + '</td><td>' + r.payment_id + '</td><td>' + escapeHtml(r.report_type || '') + '</td><td><span class="badge ' + statusClass + '">' + escapeHtml(r.status || '') + '</span></td><td>' + escapeHtml(r.created_at || '') + '</td><td>' + approveBtn + '</td></tr>';
+            return '<tr><td>' + r.id + '</td><td>' + r.payment_id + '</td><td>' + escapeHtml(r.report_type || '') + '</td><td><span class="badge ' + statusClass + '">' + escapeHtml(r.status || '') + '</span></td><td>' + escapeHtml(r.created_at || '') + '</td><td>' + viewLink + approveBtn + '</td></tr>';
           }).join('');
           tbody.querySelectorAll('.approve-btn').forEach(function (b) {
             b.addEventListener('click', function () {

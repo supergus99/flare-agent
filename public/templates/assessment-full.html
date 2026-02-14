@@ -71,9 +71,26 @@
 </head>
 <body>
     <!-- Navigation -->
-    <nav style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center;"><a href="index.html" style="font-weight: 700; font-size: 1.25rem; letter-spacing: -0.02em; text-decoration: none; display: inline-flex; align-items: baseline;"><span style="background: linear-gradient(135deg, var(--flare-orange), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Flare</span><span style="color: var(--logo-dot);">.</span></a></nav>
+    <nav style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+      <a href="index.html" style="font-weight: 700; font-size: 1.25rem; letter-spacing: -0.02em; text-decoration: none; display: inline-flex; align-items: baseline;"><span style="background: linear-gradient(135deg, var(--flare-orange), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Flare</span><span style="color: var(--logo-dot);">.</span></a>
+      <button type="button" id="theme-toggle" aria-label="Toggle light/dark" style="background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text); padding: 0.4rem 0.75rem; border-radius: 8px; cursor: pointer; font-size: 0.875rem; font-family: inherit;">Dark</button>
+    </nav>
+    <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('flare_theme') || 'dark');</script>
+    <style>[data-theme="light"] { --bg: #f4f4f5; --bg-elevated: #ffffff; --text: #18181b; --text-muted: #71717a; --border: rgba(0,0,0,0.08); }</style>
 
-    <div class="assessment-container">
+    <!-- Security code gate (when link has hash and code not yet verified) -->
+    <div id="assessment-code-gate" class="assessment-section card" style="display: none; max-width: 28rem; margin: 2rem auto; padding: 2rem;">
+      <h2 style="margin: 0 0 0.5rem;">Enter your security code</h2>
+      <p class="help-text" style="margin-bottom: 1rem;">Use the 6-character code from your welcome email to access the assessment.</p>
+      <div class="form-group">
+        <label for="assessment-code-input">Security code</label>
+        <input type="text" id="assessment-code-input" maxlength="6" autocomplete="one-time-code" placeholder="e.g. ABC123" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-size: 1.1rem; letter-spacing: 0.2em; text-transform: uppercase;">
+        <p id="assessment-code-error" class="help-text" style="color: var(--error); margin-top: 0.5rem; display: none;"></p>
+      </div>
+      <button type="button" id="assessment-code-btn" class="btn btn-primary">Continue</button>
+    </div>
+
+    <div id="assessment-form-wrap" class="assessment-container">
         <div class="progress-bar">
             <div class="progress-steps" id="progressSteps">
                 <div class="progress-step active" data-step="1">Company</div>
@@ -1476,6 +1493,7 @@
                     </div>
                 </div>
 
+                <div id="turnstile-container" class="form-group" style="min-height: 65px;"></div>
                 <div class="form-navigation">
                     <button type="button" class="btn btn-secondary" id="prevBtn10">Previous</button>
                     <button type="submit" class="btn btn-primary" id="submitBtn">Submit Assessment</button>
@@ -1510,6 +1528,7 @@
             </div>
         </div>
     </div>
+    </div>
 
     
 <script>
@@ -1522,6 +1541,53 @@
   if (!form) return;
   var accessHashEl = document.getElementById('access_hash');
   if (accessHashEl) accessHashEl.value = hash;
+
+  var codeGate = document.getElementById('assessment-code-gate');
+  var formWrap = document.getElementById('assessment-form-wrap');
+  var codeInput = document.getElementById('assessment-code-input');
+  var codeBtn = document.getElementById('assessment-code-btn');
+  var codeError = document.getElementById('assessment-code-error');
+  var themeToggle = document.getElementById('theme-toggle');
+  if (themeToggle) {
+    function updateThemeLabel() { themeToggle.textContent = (document.documentElement.getAttribute('data-theme') === 'light') ? 'Light' : 'Dark'; }
+    updateThemeLabel();
+    themeToggle.addEventListener('click', function() {
+      var next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      try { localStorage.setItem('flare_theme', next); } catch(e) {}
+      updateThemeLabel();
+    });
+  }
+  if (hash && codeGate && formWrap) {
+    var storedOk = '';
+    try { storedOk = sessionStorage.getItem('assessment_code_ok') || ''; } catch(e) {}
+    if (storedOk !== hash) {
+      codeGate.style.display = 'block';
+      formWrap.style.display = 'none';
+      if (codeBtn && codeInput) {
+        codeBtn.addEventListener('click', function() {
+          var code = (codeInput.value || '').trim();
+          codeError.style.display = 'none';
+          if (!code) { codeError.textContent = 'Please enter the code from your email.'; codeError.style.display = 'block'; return; }
+          codeBtn.disabled = true;
+          fetch(WORKER_URL + '/api/assessment-verify?hash=' + encodeURIComponent(hash) + '&code=' + encodeURIComponent(code))
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+              if (data.ok) {
+                try { sessionStorage.setItem('assessment_code_ok', hash); sessionStorage.setItem('assessment_code_value', code); } catch(e) {}
+                codeGate.style.display = 'none';
+                formWrap.style.display = 'block';
+              } else {
+                codeError.textContent = data.error || 'Invalid code';
+                codeError.style.display = 'block';
+                codeBtn.disabled = false;
+              }
+            })
+            .catch(function() { codeError.textContent = 'Network error. Try again.'; codeError.style.display = 'block'; codeBtn.disabled = false; });
+        });
+      }
+    }
+  }
 
   var currentSection = 1;
   var totalSections = 10;
@@ -1582,6 +1648,7 @@
       }
       var payload = {
         access_hash: (accessHashEl && accessHashEl.value) ? accessHashEl.value.trim() : undefined,
+        verification_code: (function() { try { return sessionStorage.getItem('assessment_code_value') || undefined; } catch(e) { return undefined; } })(),
         contact_name: (raw.contact_name || '').toString().trim(),
         company_name: (raw.company_name || '').toString().trim(),
         email: (raw.email || '').toString().trim(),
@@ -1589,6 +1656,8 @@
         message: (raw.describe_concerns || '').toString().trim().slice(0, 2000),
         assessment_data: raw
       };
+      var turnstileResp = document.querySelector('[name="cf-turnstile-response"]');
+      if (turnstileResp && turnstileResp.value) payload.captcha_token = turnstileResp.value;
       submitBtn.disabled = true;
       submitBtn.textContent = 'Submitting...';
       fetch(WORKER_URL + '/api/assessments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
@@ -1605,6 +1674,21 @@
     });
   }
   updateProgress();
+  if (window.FLARE_TURNSTILE_SITE_KEY) {
+    var tc = document.getElementById('turnstile-container');
+    if (tc) {
+      var s = document.createElement('script');
+      s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+      s.async = true;
+      s.onload = function() {
+        var d = document.createElement('div');
+        d.className = 'cf-turnstile';
+        d.setAttribute('data-sitekey', window.FLARE_TURNSTILE_SITE_KEY);
+        tc.appendChild(d);
+      };
+      document.body.appendChild(s);
+    }
+  }
 })();
 </script>
 <script>

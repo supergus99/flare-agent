@@ -29,6 +29,16 @@ function randomHex(bytes = 32) {
     .join("");
 }
 
+/** 6-char alphanumeric security code for assessment access (from welcome email). */
+function verificationCode() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const arr = new Uint8Array(6);
+  crypto.getRandomValues(arr);
+  return Array.from(arr)
+    .map((b) => chars[b % chars.length])
+    .join("");
+}
+
 function getDefaultAssessmentConfig() {
   return {
     title: "Security assessment",
@@ -93,6 +103,7 @@ async function upsertPaymentFromIntent(db, intent, overrides = {}) {
   }
 
   const accessToken = randomHex(32);
+  const code = verificationCode();
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
   const accessHash = await sha256Hex(
     transactionId + customerEmail + serviceType + Date.now() + randomHex(16)
@@ -135,6 +146,9 @@ async function upsertPaymentFromIntent(db, intent, overrides = {}) {
     .prepare("UPDATE payments SET access_hash = ? WHERE id = ?")
     .bind(newHash, result.id)
     .run();
+  try {
+    await db.prepare("UPDATE payments SET verification_code = ? WHERE id = ?").bind(code, result.id).run();
+  } catch (_) {}
   const row = await db.prepare("SELECT * FROM payments WHERE id = ?").bind(result.id).first();
   return { row: row || result, isNew: true };
 }
@@ -145,6 +159,52 @@ async function sha256Hex(str) {
   return Array.from(new Uint8Array(buf))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
+}
+
+const RATE_LIMIT_WINDOW_MIN = 15;
+const RATE_LIMIT_MAX_REQUESTS = 10;
+
+async function checkAssessmentRateLimit(db, key) {
+  try {
+    const now = new Date();
+    const nowStr = now.toISOString().slice(0, 19);
+    const windowStart = new Date(now.getTime() - RATE_LIMIT_WINDOW_MIN * 60 * 1000).toISOString().slice(0, 19);
+    const row = await db.prepare("SELECT count, window_start FROM rate_limit_assessment WHERE key = ?").bind(key).first();
+    if (!row) {
+      await db.prepare("INSERT OR REPLACE INTO rate_limit_assessment (key, count, window_start) VALUES (?, 1, ?)").bind(key, nowStr).run();
+      return true;
+    }
+    const ws = row.window_start || "";
+    if (ws < windowStart) {
+      await db.prepare("UPDATE rate_limit_assessment SET count = 1, window_start = ? WHERE key = ?").bind(nowStr, key).run();
+      return true;
+    }
+    const count = (row.count || 0) + 1;
+    if (count > RATE_LIMIT_MAX_REQUESTS) return false;
+    await db.prepare("UPDATE rate_limit_assessment SET count = ? WHERE key = ?").bind(count, key).run();
+    return true;
+  } catch (_) {
+    return true;
+  }
+}
+
+async function verifyTurnstile(secret, token, request) {
+  if (!token) return false;
+  try {
+    const form = new FormData();
+    form.set("secret", secret);
+    form.set("response", token);
+    const ip = request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For");
+    if (ip) form.set("remoteip", ip);
+    const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      body: form,
+    });
+    const data = await res.json().catch(() => ({}));
+    return data.success === true;
+  } catch (_) {
+    return false;
+  }
 }
 
 /**
@@ -403,22 +463,61 @@ export default {
       return json({ ok: false, error: "Success endpoint requires DB and Stripe" }, 503);
     }
 
+    // ---------- Assessment link verification (hash + code) ----------
+    if (url.pathname === "/api/assessment-verify" && request.method === "GET" && env.DB) {
+      const hash = url.searchParams.get("hash") || url.searchParams.get("h") || "";
+      const code = (url.searchParams.get("code") || "").trim().toUpperCase();
+      if (!hash) return json({ ok: false, error: "hash required" }, 400);
+      if (!code) return json({ ok: false, error: "code required" }, 400);
+      try {
+        const payment = await env.DB.prepare(
+          "SELECT id, access_hash, verification_code, expires_at FROM payments WHERE access_hash = ? AND payment_status = 'completed' LIMIT 1"
+        ).bind(hash).first();
+        if (!payment) return json({ ok: false, error: "Invalid link" }, 404);
+        if (payment.expires_at && payment.expires_at < new Date().toISOString().slice(0, 19)) {
+          return json({ ok: false, error: "Link expired" }, 410);
+        }
+        const storedCode = (payment.verification_code || "").trim().toUpperCase();
+        if (!storedCode || storedCode !== code) return json({ ok: false, error: "Invalid security code" }, 401);
+        return json({ ok: true });
+      } catch (e) {
+        return json({ ok: false, error: e.message }, 500);
+      }
+    }
+
     // ---------- Phase 2: Assessments ----------
     if (url.pathname === "/api/assessments" && request.method === "POST" && env.DB) {
       try {
         const body = await request.json().catch(() => ({}));
         const accessHash = (body.access_hash ?? body.hash ?? "").trim();
         const paymentId = body.payment_id != null ? parseInt(body.payment_id, 10) : null;
+        const verificationCode = (body.verification_code ?? body.code ?? "").trim().toUpperCase();
         let payment = null;
         if (accessHash) {
           payment = await env.DB.prepare(
-            "SELECT id, service_type FROM payments WHERE access_hash = ? AND payment_status = 'completed' LIMIT 1"
+            "SELECT id, service_type, expires_at, verification_code FROM payments WHERE access_hash = ? AND payment_status = 'completed' LIMIT 1"
           ).bind(accessHash).first();
         }
         if (!payment && paymentId) {
           payment = await env.DB.prepare(
-            "SELECT id, service_type FROM payments WHERE id = ? AND payment_status = 'completed' LIMIT 1"
+            "SELECT id, service_type, expires_at, verification_code FROM payments WHERE id = ? AND payment_status = 'completed' LIMIT 1"
           ).bind(paymentId).first();
+        }
+        if (payment && payment.expires_at && payment.expires_at < new Date().toISOString().slice(0, 19)) {
+          return json({ ok: false, error: "Assessment link has expired" }, 410);
+        }
+        if (payment) {
+          const storedCode = (payment.verification_code || "").trim().toUpperCase();
+          if (storedCode && storedCode !== verificationCode) {
+            return json({ ok: false, error: "Invalid or missing security code" }, 401);
+          }
+        }
+        const rateLimitKey = request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For") || "unknown";
+        const rateLimitOk = await checkAssessmentRateLimit(env.DB, rateLimitKey);
+        if (!rateLimitOk) return json({ ok: false, error: "Too many attempts. Please try again later." }, 429);
+        if (env.TURNSTILE_SECRET_KEY && body.captcha_token) {
+          const turnstileOk = await verifyTurnstile(env.TURNSTILE_SECRET_KEY, body.captcha_token, request);
+          if (!turnstileOk) return json({ ok: false, error: "Security check failed. Please try again." }, 400);
         }
         const serviceType = (payment?.service_type ?? "core").toString();
         const name = (body.contact_name ?? body.name ?? "").trim();
@@ -884,6 +983,12 @@ async function handleGenerateReport(env, body) {
 
   const data = typeof submission.assessment_data === "string" ? JSON.parse(submission.assessment_data || "{}") : (submission.assessment_data || {});
   const reportVars = buildReportVars(submission, data);
+  if (env.OPENAI_API_KEY) {
+    try {
+      const aiVars = await callOpenAIForReport(env, submission, data, reportVars);
+      Object.assign(reportVars, aiVars);
+    } catch (_) {}
+  }
   let htmlContent = "";
   try {
     const templateRow = await env.DB.prepare("SELECT body FROM report_templates WHERE id = 1 AND body IS NOT NULL AND body != '' LIMIT 1").first();
@@ -907,6 +1012,32 @@ async function handleGenerateReport(env, body) {
   await env.DB.prepare(
     "UPDATE report_versions SET status = 'draft', html_path = ?, completed_at = ? WHERE id = ?"
   ).bind(r2Key, completedAt, versionId).run();
+}
+
+/** Email HTML in website style (Outfit, Flare colors). */
+function getWelcomeEmailHtml(name, assessmentUrl, fromName, codeBlock) {
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Welcome – Flare</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet"></head><body style="margin:0;font-family:'Outfit',system-ui,sans-serif;background:#0a0a0b;color:#e4e4e7;line-height:1.6;padding:2rem 1rem;">
+<div style="max-width:36em;margin:0 auto;">
+  <p style="margin:0 0 1rem;font-size:1.25rem;font-weight:600;background:linear-gradient(135deg,#fb923c,#22d3ee);-webkit-background-clip:text;color:transparent;">Flare.</p>
+  <p style="margin:0 0 1rem;">Hi ${escapeHtml(name)},</p>
+  <p style="margin:0 0 1rem;">Thanks for your purchase. Complete your assessment to receive your report.</p>
+  ${codeBlock || ""}
+  <p style="margin:1rem 0;"><a href="${escapeHtml(assessmentUrl)}" style="display:inline-block;padding:0.75rem 1.5rem;background:linear-gradient(135deg,#22d3ee,#06b6d4);color:#0a0a0b;text-decoration:none;font-weight:600;border-radius:10px;">Open assessment</a></p>
+  <p style="margin:1.5rem 0 0;color:#71717a;font-size:0.9rem;">This link expires in 30 days.</p>
+  <p style="margin:2rem 0 0;color:#71717a;font-size:0.85rem;">— ${escapeHtml(fromName)}</p>
+</div></body></html>`;
+}
+
+function getReportReadyEmailHtml(name, reportUrl, fromName) {
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Your report is ready – Flare</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet"></head><body style="margin:0;font-family:'Outfit',system-ui,sans-serif;background:#0a0a0b;color:#e4e4e7;line-height:1.6;padding:2rem 1rem;">
+<div style="max-width:36em;margin:0 auto;">
+  <p style="margin:0 0 1rem;font-size:1.25rem;font-weight:600;background:linear-gradient(135deg,#fb923c,#22d3ee);-webkit-background-clip:text;color:transparent;">Flare.</p>
+  <p style="margin:0 0 1rem;">Hi ${escapeHtml(name)},</p>
+  <p style="margin:0 0 1rem;">Your security assessment report is ready.</p>
+  <p style="margin:1rem 0;"><a href="${escapeHtml(reportUrl)}" style="display:inline-block;padding:0.75rem 1.5rem;background:linear-gradient(135deg,#22d3ee,#06b6d4);color:#0a0a0b;text-decoration:none;font-weight:600;border-radius:10px;">View report</a></p>
+  <p style="margin:1.5rem 0 0;color:#71717a;font-size:0.9rem;">This link will expire in 30 days.</p>
+  <p style="margin:2rem 0 0;color:#71717a;font-size:0.85rem;">— ${escapeHtml(fromName)}</p>
+</div></body></html>`;
 }
 
 async function getFromEmail(env) {
@@ -933,7 +1064,7 @@ async function handleSendWelcomeEmail(env, body) {
   const paymentId = body.payment_id ? parseInt(body.payment_id, 10) : 0;
   if (!paymentId || !env.RESEND_API_KEY) return;
   const payment = await env.DB.prepare(
-    "SELECT id, customer_email, customer_name, access_hash, service_type, payment_status FROM payments WHERE id = ?"
+    "SELECT id, customer_email, customer_name, access_hash, verification_code, service_type, payment_status FROM payments WHERE id = ?"
   ).bind(paymentId).first();
   if (!payment || payment.payment_status !== "completed") return;
   const to = payment.customer_email?.trim();
@@ -941,11 +1072,15 @@ async function handleSendWelcomeEmail(env, body) {
   const base = env.SUCCESS_BASE_URL || env.WORKER_PUBLIC_URL || "https://flare-agent.pages.dev";
   const assessmentUrl = `${base.replace(/\/$/, "")}/assessment.html?hash=${encodeURIComponent(payment.access_hash || "")}`;
   const name = payment.customer_name || "there";
+  const code = payment.verification_code || "";
   const fromName = await getFromName(env);
   const fromEmail = await getFromEmail(env);
   const from = fromEmail.includes("<") ? fromEmail : `${fromName} <${fromEmail}>`;
   const subject = "Welcome – complete your security assessment";
-  const html = `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;max-width:36em;margin:1rem auto;"><p>Hi ${escapeHtml(name)},</p><p>Thanks for your purchase. Complete your assessment to receive your report:</p><p><a href="${escapeHtml(assessmentUrl)}">${escapeHtml(assessmentUrl)}</a></p><p>— ${escapeHtml(fromName)}</p></body></html>`;
+  const codeBlock = code
+    ? `<p>Use this security code to access your assessment: <strong style="font-size:1.1em;letter-spacing:0.15em;">${escapeHtml(code)}</strong></p>`
+    : "";
+  const html = getWelcomeEmailHtml(name, assessmentUrl, fromName, codeBlock);
   const result = await sendResend(env.RESEND_API_KEY, { from, to, subject, html });
   const now = new Date().toISOString().slice(0, 19).replace("T", " ");
   try {
@@ -985,7 +1120,7 @@ async function handleSendApprovedReport(env, body) {
   const fromEmail = await getFromEmail(env);
   const from = fromEmail.includes("<") ? fromEmail : `${fromName} <${fromEmail}>`;
   const subject = "Your security assessment report is ready";
-  const html = `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;max-width:36em;margin:1rem auto;"><p>Hi ${escapeHtml(name)},</p><p>Your report is ready. View it here:</p><p><a href="${escapeHtml(reportUrl)}">${escapeHtml(reportUrl)}</a></p><p>— ${escapeHtml(fromName)}</p></body></html>`;
+  const html = getReportReadyEmailHtml(name, reportUrl, fromName);
   const result = await sendResend(env.RESEND_API_KEY, { from, to, subject, html });
   const now = new Date().toISOString().slice(0, 19).replace("T", " ");
   try {
@@ -998,10 +1133,57 @@ async function handleSendApprovedReport(env, body) {
   } catch (_) {}
 }
 
+async function callOpenAIForReport(env, submission, data, reportVars) {
+  const systemInstruction =
+    (await getSetting(env.DB, "ai_report_instruction")) ||
+    "You are a security and operations risk analyst. Based on the assessment data, produce a concise JSON object with exactly these keys (escape any HTML): executive_summary (2-3 sentences), findings (HTML list of 3-5 key findings), recommendations (HTML list of 3-5 prioritized recommendations). Use plain language.";
+  const prompt = `Assessment submission:\nCompany: ${reportVars.company}\nContact: ${reportVars.name} (${reportVars.email})\nRole: ${reportVars.role}\nService: ${reportVars.service}\nNotes: ${reportVars.message}\n\nRaw assessment data (JSON):\n${typeof data === "string" ? data : JSON.stringify(data)}\n\nProduce the JSON object only.`;
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.OPENAI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: env.OPENAI_MODEL || "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemInstruction },
+        { role: "user", content: prompt },
+      ],
+      max_tokens: 2000,
+    }),
+  });
+  if (!res.ok) return {};
+  const out = await res.json();
+  const content = out.choices?.[0]?.message?.content?.trim() || "";
+  try {
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+    return {
+      ai_executive_summary: parsed.executive_summary || "",
+      ai_findings: parsed.findings || "",
+      ai_recommendations: parsed.recommendations || "",
+    };
+  } catch (_) {
+    return { ai_executive_summary: content.slice(0, 500) };
+  }
+}
+
+async function getSetting(db, key) {
+  try {
+    const row = await db.prepare("SELECT setting_value FROM automation_settings WHERE setting_key = ? LIMIT 1").bind(key).first();
+    return row?.setting_value ?? null;
+  } catch (_) {
+    return null;
+  }
+}
+
 function applyReportTemplate(templateBody, vars) {
   let out = templateBody;
   for (const [key, value] of Object.entries(vars)) {
-    out = out.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), escapeHtml(String(value ?? "")));
+    const str = value != null ? String(value) : "";
+    const safe = key.startsWith("ai_") ? str : escapeHtml(str);
+    out = out.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), safe);
   }
   return out;
 }
@@ -1027,6 +1209,9 @@ function buildReportVars(submission, data) {
     units_range: unitsRange,
     countries: countries,
     language: str(d.language) || "—",
+    ai_executive_summary: "",
+    ai_findings: "",
+    ai_recommendations: "",
   };
 }
 
@@ -1101,20 +1286,11 @@ function getDefaultReportTemplateBodyFlare() {
     </section>
     <section class="card">
       <div class="section-title"><h2>2) Executive Summary</h2><span class="pill">Overall Risk: [Low | Moderate | High | Critical]</span></div>
+      {{ai_executive_summary}}
       <h3>Top 5 Findings</h3>
-      <ul>
-        <li>[Finding #1 — short impact statement]</li>
-        <li>[Finding #2]</li>
-        <li>[Finding #3]</li>
-        <li>[Finding #4]</li>
-        <li>[Finding #5]</li>
-      </ul>
+      <div class="ai-findings">{{ai_findings}}</div>
       <h3>Priority Recommendations (0–90 days)</h3>
-      <ul>
-        <li>[Action 1 — 0–30 days] &rarr; Impact: [High/Med/Low]</li>
-        <li>[Action 2 — 0–60 days] &rarr; Impact: [High/Med/Low]</li>
-        <li>[Action 3 — 0–90 days] &rarr; Impact: [High/Med/Low]</li>
-      </ul>
+      <div class="ai-recommendations">{{ai_recommendations}}</div>
       <div class="grid-2">
         <div class="kpi"><div><strong>Estimated Budget Range</strong><br><small class="muted">[Notes on scope]</small></div><div>[Currency + range]</div></div>
         <div class="kpi"><div><strong>Target Timeline</strong><br><small class="muted">[e.g. Core items within 90 days]</small></div><div>[Start date / cadence]</div></div>
