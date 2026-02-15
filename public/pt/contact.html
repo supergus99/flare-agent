@@ -64,6 +64,9 @@
         <label class="form-label" for="name">Nome</label>
         <input type="text" id="name" name="name" placeholder="O seu nome">
 
+        <label class="form-label" for="message-field">Mensagem</label>
+        <textarea id="message-field" name="message" rows="5" placeholder="A sua mensagem..." maxlength="2000"></textarea>
+
         <button type="submit" class="btn btn-primary">Enviar</button>
       </form>
     </div>
@@ -86,7 +89,11 @@
       form.addEventListener('submit', async function (e) {
         e.preventDefault();
         messageEl.style.display = 'none';
-        const payload = { email: document.getElementById('email').value.trim(), name: document.getElementById('name').value.trim() };
+        const payload = {
+          email: document.getElementById('email').value.trim(),
+          name: document.getElementById('name').value.trim(),
+          message: (document.querySelector('[name="message"]')?.value || '').trim().slice(0, 2000) || undefined
+        };
         try {
           const res = await fetch(WORKER_URL + '/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
           const data = await res.json();

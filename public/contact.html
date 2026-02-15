@@ -77,6 +77,9 @@
         <label class="form-label" for="name">Name</label>
         <input type="text" id="name" name="name" placeholder="Your name">
 
+        <label class="form-label" for="message">Message</label>
+        <textarea id="message-field" name="message" rows="5" placeholder="Your message..." maxlength="2000"></textarea>
+
         <button type="submit" class="btn btn-primary">Submit</button>
       </form>
     </div>
@@ -102,11 +105,12 @@
         messageEl.className = 'message';
         const email = form.email.value.trim();
         const name = form.name.value.trim();
+        const message = (form.querySelector('[name="message"]')?.value || '').trim().slice(0, 2000);
         try {
           const res = await fetch(WORKER_URL + '/submit', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, name }),
+            body: JSON.stringify({ email, name, message: message || undefined }),
           });
           const data = await res.json();
           messageEl.style.display = 'block';

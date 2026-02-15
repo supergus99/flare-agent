@@ -278,14 +278,17 @@ export default {
         let email = "";
         let name = "";
         const ct = request.headers.get("Content-Type") || "";
+        let message = "";
         if (ct.includes("application/json")) {
           const body = await request.json();
           email = (body.email || "").trim();
           name = (body.name || "").trim();
+          message = (body.message != null ? String(body.message) : "").trim().slice(0, 2000);
         } else if (ct.includes("application/x-www-form-urlencoded")) {
           const body = await request.formData();
           email = (body.get("email") || "").trim();
           name = (body.get("name") || "").trim();
+          message = (body.get("message") != null ? String(body.get("message")) : "").trim().slice(0, 2000);
         } else {
           return json({ ok: false, error: "Content-Type must be application/json or application/x-www-form-urlencoded" }, 400);
         }
@@ -293,9 +296,19 @@ export default {
           return json({ ok: false, error: "email is required" }, 400);
         }
         const submitted_at = new Date().toISOString();
-        await env.DB.prepare(
-          "INSERT INTO contact_submissions (email, name, submitted_at, status) VALUES (?, ?, ?, 'new')"
-        ).bind(email, name || null, submitted_at).run();
+        try {
+          await env.DB.prepare(
+            "INSERT INTO contact_submissions (email, name, message, submitted_at, status) VALUES (?, ?, ?, ?, 'new')"
+          ).bind(email, name || null, message || null, submitted_at).run();
+        } catch (insertErr) {
+          if (insertErr.message && /no such column: message/i.test(insertErr.message)) {
+            await env.DB.prepare(
+              "INSERT INTO contact_submissions (email, name, submitted_at, status) VALUES (?, ?, ?, 'new')"
+            ).bind(email, name || null, submitted_at).run();
+          } else {
+            throw insertErr;
+          }
+        }
         return json({ ok: true, message: "Submission saved" });
       } catch (e) {
         return json({ ok: false, error: e.message }, 500);
