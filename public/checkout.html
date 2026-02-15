@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-locale="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -56,53 +56,54 @@
     .footer a:hover { color: var(--accent); }
   </style>
 </head>
-<body>
+<body data-doc-title="checkout.meta_title">
   <nav class="nav">
-    <a href="/" class="nav-logo"><span class="nav-logo-word">Flare</span><span class="nav-logo-dot">.</span></a>
+    <a href="/" class="nav-logo" data-i18n-href="home"><span class="nav-logo-word">Flare</span><span class="nav-logo-dot">.</span></a>
     <div class="nav-links">
-      <a href="/">Home</a>
-      <a href="/contact.html">Contact</a>
-      <span class="nav-lang"><a href="/pt/checkout.html" aria-label="Português">PT</a></span>
+      <a href="/" data-i18n="common.nav_home" data-i18n-href="home">Home</a>
+      <a href="/contact.html" data-i18n="common.nav_contact" data-i18n-href="contact">Contact</a>
+      <span class="nav-lang"><a href="/pt/checkout.html" data-i18n="common.nav_lang_other" data-i18n-href="alternate" aria-label="Português">PT</a></span>
     </div>
   </nav>
 
   <div class="container">
-    <p class="page-label">Checkout</p>
-    <h1 class="page-title">Get your report</h1>
-    <p class="page-desc">One report: what’s wrong, what to do first, and how to do it yourself. Plain language, no jargon. Complete payment securely with Stripe; you’ll receive a confirmation and a link to your assessment.</p>
+    <p class="page-label" data-i18n="checkout.page_label">Checkout</p>
+    <h1 class="page-title" data-i18n="checkout.title">Get your report</h1>
+    <p class="page-desc" data-i18n="checkout.desc">One report: what’s wrong, what to do first, and how to do it yourself. Plain language, no jargon. Complete payment securely with Stripe; you’ll receive a confirmation and a link to your assessment.</p>
 
     <div class="card">
-      <p class="product-line"><strong>Your report</strong> — What’s wrong, what to fix first, and step-by-step DIY directions. <strong>89€</strong> or <strong>$89</strong> (launch campaign — choose currency below).</p>
+      <p class="product-line" data-i18n="checkout.product_line" data-i18n-html><strong>Your report</strong> — What’s wrong, what to fix first, and step-by-step DIY directions. <strong>89€</strong> or <strong>$89</strong> (launch campaign — choose currency below).</p>
       <form id="checkout-form">
         <input type="hidden" id="service_type" name="service_type" value="protect">
 
-        <label class="form-label" for="currency">Currency</label>
+        <label class="form-label" for="currency" data-i18n="checkout.currency_label">Currency</label>
         <select id="currency" name="currency">
           <option value="eur">EUR</option>
           <option value="usd">USD</option>
         </select>
 
-        <label class="form-label" for="customer_name">Name (optional)</label>
-        <input type="text" id="customer_name" name="customer_name" placeholder="Your name">
+        <label class="form-label" for="customer_name" data-i18n="checkout.name_label">Name (optional)</label>
+        <input type="text" id="customer_name" name="customer_name" data-i18n-placeholder="checkout.name_placeholder" placeholder="Your name">
 
-        <label class="form-label" for="customer_email">Email (optional – Stripe will collect if empty)</label>
-        <input type="email" id="customer_email" name="customer_email" placeholder="you@example.com">
+        <label class="form-label" for="customer_email" data-i18n="checkout.email_label">Email (optional – Stripe will collect if empty)</label>
+        <input type="email" id="customer_email" name="customer_email" data-i18n-placeholder="checkout.email_placeholder" placeholder="you@example.com">
 
-        <label class="form-label" for="customer_company">Company (optional)</label>
-        <input type="text" id="customer_company" name="customer_company" placeholder="Company name">
+        <label class="form-label" for="customer_company" data-i18n="checkout.company_label">Company (optional)</label>
+        <input type="text" id="customer_company" name="customer_company" data-i18n-placeholder="checkout.company_placeholder" placeholder="Company name">
 
-        <button type="submit" id="btn" class="btn btn-primary">Continue to payment</button>
+        <button type="submit" id="btn" class="btn btn-primary" data-i18n="checkout.btn">Continue to payment</button>
       </form>
     </div>
 
     <div id="message" class="message" role="status"></div>
-    <a href="/" class="btn btn-ghost">← Back to home</a>
+    <a href="/" class="btn btn-ghost" data-i18n="common.btn_back_home" data-i18n-href="home">← Back to home</a>
   </div>
 
   <footer class="footer">
-    <a href="/">Flare</a> · <a href="/contact.html">Contact</a>
+    <a href="/" data-i18n-href="home">Flare</a> · <a href="/contact.html" data-i18n-href="contact" data-i18n="common.nav_contact">Contact</a>
   </footer>
 
+  <script src="/js/i18n.js"></script>
   <script>
     (function () {
       if (!window.FLARE_WORKER_URL && /^(www\.)?getflare\.net$/.test(window.location.hostname)) window.FLARE_WORKER_URL = 'https://api.getflare.net';

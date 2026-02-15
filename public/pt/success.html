@@ -1,29 +1,32 @@
 <!DOCTYPE html>
-<html lang="pt-PT">
+<html lang="pt" data-locale="pt">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pagamento concluído – Flare</title>
+  <title>Payment complete – Flare</title>
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 36rem; margin: 2rem auto; padding: 0 1rem; background: #0a0a0b; color: #e4e4e7; }
-    h1 { color: #34d399; }
-    a { color: #22d3ee; }
+    body { font-family: system-ui, sans-serif; max-width: 36rem; margin: 2rem auto; padding: 0 1rem; }
+    h1 { color: #1a7f37; }
+    a { color: #0969da; }
   </style>
 </head>
-<body>
-  <h1>Obrigado</h1>
-  <p>O seu pagamento foi concluído. Recebemos a sua encomenda.</p>
-  <p><strong>Próximo passo:</strong> <a href="/assessment.html" id="assessment-link">Complete o questionário de segurança</a> para gerarmos o seu relatório.</p>
-  <p id="report-link-wrap" style="display: none;">Quando o relatório estiver pronto: <a id="report-link" href="">Ver o seu relatório</a>.</p>
-  <p><a href="/pt/contact.html">Contacto</a> · <a href="/pt/">Início</a></p>
+<body data-doc-title="success.meta_title">
+  <h1 data-i18n="success.title">Thank you</h1>
+  <p data-i18n="success.body">Your payment is complete. We’ve received your order.</p>
+  <p><span data-i18n="success.next_step" data-i18n-html></span> <a href="/assessment.html" id="assessment-link" data-i18n="success.assessment_link">Complete your security assessment</a></p>
+  <p id="report-link-wrap" style="display: none;"><span data-i18n="success.report_ready"></span> <a id="report-link" href="" data-i18n="success.view_report">View your report</a>.</p>
+  <p><a href="/contact.html" id="contact-link" data-i18n="success.contact_link" data-i18n-href="contact">Contact form</a> · <a href="/" id="home-link" data-i18n="success.home_link" data-i18n-href="home">Home</a></p>
+  <script src="/js/i18n.js"></script>
   <script>
     (function () {
-      var params = new URLSearchParams(window.location.search);
-      var hash = params.get('hash');
-      var workerUrl = window.FLARE_WORKER_URL || 'https://flare-worker.gusmao-ricardo.workers.dev';
+      const params = new URLSearchParams(window.location.search);
+      const hash = params.get('hash');
+      if (!window.FLARE_WORKER_URL && /^(www\.)?getflare\.net$/.test(window.location.hostname)) window.FLARE_WORKER_URL = 'https://api.getflare.net';
+      const workerUrl = window.FLARE_WORKER_URL || 'https://flare-worker.gusmao-ricardo.workers.dev';
+      function path(k) { return window.FLARE_I18N ? window.FLARE_I18N.path(k) : (k === 'assessment' ? '/assessment.html' : k === 'contact' ? '/contact.html' : '/'); }
       if (hash) {
-        var a = document.getElementById('assessment-link');
-        if (a) a.href = '/assessment.html?hash=' + encodeURIComponent(hash) + '&lang=pt';
+        const a = document.getElementById('assessment-link');
+        if (a) a.href = (path('assessment').replace(/\.html$/, '') || '/assessment') + '.html?hash=' + encodeURIComponent(hash);
         var reportWrap = document.getElementById('report-link-wrap');
         var reportA = document.getElementById('report-link');
         if (reportWrap && reportA) {

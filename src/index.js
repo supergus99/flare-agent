@@ -14,6 +14,36 @@ const CORS = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
+/** Email copy for welcome and report-ready emails (en/pt). */
+const I18N_EMAIL = {
+  en: {
+    welcome_subject: "Welcome – complete your security assessment",
+    welcome_title: "Welcome – Flare",
+    welcome_thanks: "Thanks for your purchase. Complete your assessment to receive your report.",
+    welcome_code: "Use this security code to access your assessment:",
+    welcome_cta: "Open assessment",
+    welcome_expires: "This link expires in 30 days.",
+    report_ready_subject: "Your security assessment report is ready",
+    report_ready_title: "Your report is ready – Flare",
+    report_ready_body: "Your security assessment report is ready.",
+    report_ready_cta: "View report",
+    report_ready_expires: "This link will expire in 30 days.",
+  },
+  pt: {
+    welcome_subject: "Bem-vindo – complete o seu questionário de segurança",
+    welcome_title: "Bem-vindo – Flare",
+    welcome_thanks: "Obrigado pela sua compra. Complete o questionário para receber o seu relatório.",
+    welcome_code: "Use este código para aceder ao questionário:",
+    welcome_cta: "Abrir questionário",
+    welcome_expires: "Este link expira em 30 dias.",
+    report_ready_subject: "O seu relatório de segurança está pronto",
+    report_ready_title: "O seu relatório está pronto – Flare",
+    report_ready_body: "O seu relatório de avaliação de segurança está pronto.",
+    report_ready_cta: "Ver relatório",
+    report_ready_expires: "Este link expira em 30 dias.",
+  },
+};
+
 function json(body, status = 200, headers = {}) {
   return new Response(JSON.stringify(body), {
     status,
@@ -1091,28 +1121,30 @@ async function handleGenerateReport(env, body) {
   ).bind(r2Key, completedAt, versionId).run();
 }
 
-/** Email HTML in website style (Outfit, Flare colors). */
-function getWelcomeEmailHtml(name, assessmentUrl, fromName, codeBlock) {
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Welcome – Flare</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet"></head><body style="margin:0;font-family:'Outfit',system-ui,sans-serif;background:#0a0a0b;color:#e4e4e7;line-height:1.6;padding:2rem 1rem;">
+/** Email HTML in website style (Outfit, Flare colors). locale: 'en' | 'pt' (default en). */
+function getWelcomeEmailHtml(name, assessmentUrl, fromName, codeBlock, locale = "en") {
+  const t = I18N_EMAIL[locale === "pt" || locale === "pt-pt" ? "pt" : "en"] || I18N_EMAIL.en;
+  return `<!DOCTYPE html><html lang="${locale === "pt" || locale === "pt-pt" ? "pt" : "en"}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${escapeHtml(t.welcome_title)}</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet"></head><body style="margin:0;font-family:'Outfit',system-ui,sans-serif;background:#0a0a0b;color:#e4e4e7;line-height:1.6;padding:2rem 1rem;">
 <div style="max-width:36em;margin:0 auto;">
   <p style="margin:0 0 1rem;font-size:1.25rem;font-weight:600;background:linear-gradient(135deg,#fb923c,#22d3ee);-webkit-background-clip:text;color:transparent;">Flare.</p>
   <p style="margin:0 0 1rem;">Hi ${escapeHtml(name)},</p>
-  <p style="margin:0 0 1rem;">Thanks for your purchase. Complete your assessment to receive your report.</p>
+  <p style="margin:0 0 1rem;">${t.welcome_thanks}</p>
   ${codeBlock || ""}
-  <p style="margin:1rem 0;"><a href="${escapeHtml(assessmentUrl)}" style="display:inline-block;padding:0.75rem 1.5rem;background:linear-gradient(135deg,#22d3ee,#06b6d4);color:#0a0a0b;text-decoration:none;font-weight:600;border-radius:10px;">Open assessment</a></p>
-  <p style="margin:1.5rem 0 0;color:#71717a;font-size:0.9rem;">This link expires in 30 days.</p>
+  <p style="margin:1rem 0;"><a href="${escapeHtml(assessmentUrl)}" style="display:inline-block;padding:0.75rem 1.5rem;background:linear-gradient(135deg,#22d3ee,#06b6d4);color:#0a0a0b;text-decoration:none;font-weight:600;border-radius:10px;">${t.welcome_cta}</a></p>
+  <p style="margin:1.5rem 0 0;color:#71717a;font-size:0.9rem;">${t.welcome_expires}</p>
   <p style="margin:2rem 0 0;color:#71717a;font-size:0.85rem;">— ${escapeHtml(fromName)}</p>
 </div></body></html>`;
 }
 
-function getReportReadyEmailHtml(name, reportUrl, fromName) {
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Your report is ready – Flare</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet"></head><body style="margin:0;font-family:'Outfit',system-ui,sans-serif;background:#0a0a0b;color:#e4e4e7;line-height:1.6;padding:2rem 1rem;">
+function getReportReadyEmailHtml(name, reportUrl, fromName, locale = "en") {
+  const t = I18N_EMAIL[locale === "pt" || locale === "pt-pt" ? "pt" : "en"] || I18N_EMAIL.en;
+  return `<!DOCTYPE html><html lang="${locale === "pt" || locale === "pt-pt" ? "pt" : "en"}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${escapeHtml(t.report_ready_title)}</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet"></head><body style="margin:0;font-family:'Outfit',system-ui,sans-serif;background:#0a0a0b;color:#e4e4e7;line-height:1.6;padding:2rem 1rem;">
 <div style="max-width:36em;margin:0 auto;">
   <p style="margin:0 0 1rem;font-size:1.25rem;font-weight:600;background:linear-gradient(135deg,#fb923c,#22d3ee);-webkit-background-clip:text;color:transparent;">Flare.</p>
   <p style="margin:0 0 1rem;">Hi ${escapeHtml(name)},</p>
-  <p style="margin:0 0 1rem;">Your security assessment report is ready.</p>
-  <p style="margin:1rem 0;"><a href="${escapeHtml(reportUrl)}" style="display:inline-block;padding:0.75rem 1.5rem;background:linear-gradient(135deg,#22d3ee,#06b6d4);color:#0a0a0b;text-decoration:none;font-weight:600;border-radius:10px;">View report</a></p>
-  <p style="margin:1.5rem 0 0;color:#71717a;font-size:0.9rem;">This link will expire in 30 days.</p>
+  <p style="margin:0 0 1rem;">${t.report_ready_body}</p>
+  <p style="margin:1rem 0;"><a href="${escapeHtml(reportUrl)}" style="display:inline-block;padding:0.75rem 1.5rem;background:linear-gradient(135deg,#22d3ee,#06b6d4);color:#0a0a0b;text-decoration:none;font-weight:600;border-radius:10px;">${t.report_ready_cta}</a></p>
+  <p style="margin:1.5rem 0 0;color:#71717a;font-size:0.9rem;">${t.report_ready_expires}</p>
   <p style="margin:2rem 0 0;color:#71717a;font-size:0.85rem;">— ${escapeHtml(fromName)}</p>
 </div></body></html>`;
 }
@@ -1153,11 +1185,13 @@ async function handleSendWelcomeEmail(env, body) {
   const fromName = await getFromName(env);
   const fromEmail = await getFromEmail(env);
   const from = fromEmail.includes("<") ? fromEmail : `${fromName} <${fromEmail}>`;
-  const subject = "Welcome – complete your security assessment";
+  const locale = "en";
+  const t = I18N_EMAIL[locale] || I18N_EMAIL.en;
+  const subject = t.welcome_subject;
   const codeBlock = code
-    ? `<p>Use this security code to access your assessment: <strong style="font-size:1.1em;letter-spacing:0.15em;">${escapeHtml(code)}</strong></p>`
+    ? `<p>${t.welcome_code} <strong style="font-size:1.1em;letter-spacing:0.15em;">${escapeHtml(code)}</strong></p>`
     : "";
-  const html = getWelcomeEmailHtml(name, assessmentUrl, fromName, codeBlock);
+  const html = getWelcomeEmailHtml(name, assessmentUrl, fromName, codeBlock, locale);
   const result = await sendResend(env.RESEND_API_KEY, { from, to, subject, html });
   const now = new Date().toISOString().slice(0, 19).replace("T", " ");
   try {
@@ -1191,13 +1225,25 @@ async function handleSendApprovedReport(env, body) {
     }
   }
   if (!to) return;
+  let reportLocale = "en";
+  if (report.submission_id) {
+    try {
+      const sub = await env.DB.prepare("SELECT assessment_data FROM assessment_submissions WHERE id = ?").bind(report.submission_id).first();
+      if (sub?.assessment_data) {
+        const data = typeof sub.assessment_data === "string" ? JSON.parse(sub.assessment_data || "{}") : sub.assessment_data || {};
+        const lang = (data.report_language || data.language || "").toString().toLowerCase();
+        if (lang === "pt" || lang === "pt-pt") reportLocale = "pt";
+      }
+    } catch (_) {}
+  }
   const workerBase = (env.WORKER_PUBLIC_URL || "https://flare-worker.gusmao-ricardo.workers.dev").replace(/\/$/, "");
   const reportUrl = `${workerBase}/report?hash=${encodeURIComponent(report.view_hash)}`;
   const fromName = await getFromName(env);
   const fromEmail = await getFromEmail(env);
   const from = fromEmail.includes("<") ? fromEmail : `${fromName} <${fromEmail}>`;
-  const subject = "Your security assessment report is ready";
-  const html = getReportReadyEmailHtml(name, reportUrl, fromName);
+  const reportT = I18N_EMAIL[reportLocale] || I18N_EMAIL.en;
+  const subject = reportT.report_ready_subject;
+  const html = getReportReadyEmailHtml(name, reportUrl, fromName, reportLocale);
   const result = await sendResend(env.RESEND_API_KEY, { from, to, subject, html });
   const now = new Date().toISOString().slice(0, 19).replace("T", " ");
   try {

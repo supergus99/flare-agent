@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-locale="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -54,44 +54,45 @@
     .footer a:hover { color: var(--accent); }
   </style>
 </head>
-<body>
+<body data-doc-title="contact.meta_title">
   <nav class="nav">
-    <a href="/" class="nav-logo"><span class="nav-logo-word">Flare</span><span class="nav-logo-dot">.</span></a>
+    <a href="/" class="nav-logo" data-i18n-href="home"><span class="nav-logo-word">Flare</span><span class="nav-logo-dot">.</span></a>
     <div class="nav-links">
-      <a href="/">Home</a>
-      <a href="/checkout.html">Checkout</a>
-      <span class="nav-lang"><a href="/pt/contact.html" aria-label="Português">PT</a></span>
+      <a href="/" data-i18n="common.nav_home" data-i18n-href="home">Home</a>
+      <a href="/checkout.html" data-i18n="checkout.page_label" data-i18n-href="checkout">Checkout</a>
+      <span class="nav-lang"><a href="/pt/contact.html" data-i18n="common.nav_lang_other" data-i18n-href="alternate" aria-label="Português">PT</a></span>
     </div>
   </nav>
 
   <div class="container">
-    <p class="page-label">Contact</p>
-    <h1 class="page-title">Get in touch</h1>
-    <p class="page-desc">Send us a message. We’ll get back to you as soon as we can.</p>
+    <p class="page-label" data-i18n="contact.page_label">Contact</p>
+    <h1 class="page-title" data-i18n="contact.title">Get in touch</h1>
+    <p class="page-desc" data-i18n="contact.desc">Send us a message. We’ll get back to you as soon as we can.</p>
 
     <div class="card">
       <form id="contact-form">
-        <label class="form-label" for="email">Email *</label>
-        <input type="email" id="email" name="email" required placeholder="you@example.com">
+        <label class="form-label" for="email" data-i18n="contact.email_label">Email *</label>
+        <input type="email" id="email" name="email" required data-i18n-placeholder="contact.email_placeholder" placeholder="you@example.com">
 
-        <label class="form-label" for="name">Name</label>
-        <input type="text" id="name" name="name" placeholder="Your name">
+        <label class="form-label" for="name" data-i18n="contact.name_label">Name</label>
+        <input type="text" id="name" name="name" data-i18n-placeholder="contact.name_placeholder" placeholder="Your name">
 
-        <label class="form-label" for="message">Message</label>
-        <textarea id="message-field" name="message" rows="5" placeholder="Your message..." maxlength="2000"></textarea>
+        <label class="form-label" for="message" data-i18n="contact.message_label">Message</label>
+        <textarea id="message-field" name="message" rows="5" data-i18n-placeholder="contact.message_placeholder" placeholder="Your message..." maxlength="2000"></textarea>
 
-        <button type="submit" class="btn btn-primary">Submit</button>
+        <button type="submit" class="btn btn-primary" data-i18n="common.btn_submit">Submit</button>
       </form>
     </div>
 
     <div id="message" class="message" role="status"></div>
-    <a href="/" class="btn btn-ghost">← Back to home</a>
+    <a href="/" class="btn btn-ghost" data-i18n="common.btn_back_home" data-i18n-href="home">← Back to home</a>
   </div>
 
   <footer class="footer">
-    <a href="/">Flare</a> · <a href="/checkout.html">Checkout</a> · <a href="/contact.html">Contact</a>
+    <a href="/" data-i18n-href="home">Flare</a> · <a href="/checkout.html" data-i18n-href="checkout" data-i18n="checkout.page_label">Checkout</a> · <a href="/contact.html" data-i18n-href="contact" data-i18n="common.nav_contact">Contact</a>
   </footer>
 
+  <script src="/js/i18n.js"></script>
   <script>
     (function () {
       if (!window.FLARE_WORKER_URL && /^(www\.)?getflare\.net$/.test(window.location.hostname)) window.FLARE_WORKER_URL = 'https://api.getflare.net';
@@ -115,16 +116,16 @@
           const data = await res.json();
           messageEl.style.display = 'block';
           if (data.ok) {
-            messageEl.textContent = 'Saved. Thanks for getting in touch!';
+            messageEl.textContent = (window.FLARE_I18N && window.FLARE_I18N.t('contact.success')) || 'Saved. Thanks for getting in touch!';
             messageEl.classList.add('success');
             form.reset();
           } else {
-            messageEl.textContent = data.error || 'Something went wrong.';
+            messageEl.textContent = data.error || (window.FLARE_I18N && window.FLARE_I18N.t('contact.error')) || 'Something went wrong.';
             messageEl.classList.add('error');
           }
         } catch (err) {
           messageEl.style.display = 'block';
-          messageEl.textContent = 'Network error: ' + err.message;
+          messageEl.textContent = ((window.FLARE_I18N && window.FLARE_I18N.t('contact.network_error')) || 'Network error: ') + err.message;
           messageEl.classList.add('error');
         }
       });

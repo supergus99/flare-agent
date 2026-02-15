@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-locale="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -381,17 +381,17 @@
     @keyframes fade-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
-<body>
+<body data-doc-title="home.meta_title" data-doc-desc="home.meta_description">
   <nav class="nav" id="nav">
-    <a href="#" class="nav-logo"><span class="nav-logo-word">Flare</span><span class="nav-logo-dot">.</span></a>
+    <a href="/" class="nav-logo" data-i18n-href="home"><span class="nav-logo-word">Flare</span><span class="nav-logo-dot">.</span></a>
     <div class="nav-links">
-      <a href="#mission">Mission</a>
-      <a href="#offer">Your report</a>
-      <a href="#how">How it works</a>
-      <a href="#cta">Get started</a>
-      <a href="/contact.html">Contact</a>
-      <span class="nav-lang"><a href="/pt/" aria-label="Português">PT</a></span>
-      <a href="/checkout.html" class="nav-cta">Get your report</a>
+      <a href="#mission" data-i18n="common.nav_mission">Mission</a>
+      <a href="#offer" data-i18n="common.nav_offer">Your report</a>
+      <a href="#how" data-i18n="common.nav_how">How it works</a>
+      <a href="#cta" data-i18n="common.nav_cta">Get started</a>
+      <a href="/contact.html" data-i18n="common.nav_contact" data-i18n-href="contact">Contact</a>
+      <span class="nav-lang"><a href="/pt/" data-i18n="common.nav_lang_other" data-i18n-href="alternate" aria-label="Português">PT</a></span>
+      <a href="/checkout.html" class="nav-cta" data-i18n="common.nav_checkout" data-i18n-href="checkout">Get your report</a>
     </div>
   </nav>
 
@@ -403,123 +403,123 @@
       <div class="flare-orb flare-orb-3"></div>
     </div>
     <div class="hero-content">
-      <div class="hero-badge">Security × AI</div>
-      <h1>See risk clearly.<br>Act with <span class="flare-word">Flare</span><span class="flare-dot">.</span></h1>
-      <p class="hero-tagline">One report. Your risks, in order—and the steps to fix them yourself.</p>
+      <div class="hero-badge" data-i18n="home.hero_badge">Security × AI</div>
+      <h1><span data-i18n="home.hero_title" data-i18n-html></span> <span class="flare-word" data-i18n="home.hero_title_flare">Flare</span><span class="flare-dot">.</span></h1>
+      <p class="hero-tagline" data-i18n="home.hero_tagline">One report. Your risks, in order—and the steps to fix them yourself.</p>
       <div class="hero-btns">
-        <a href="/checkout.html" class="btn btn-primary">Get your report</a>
-        <a href="#intro" class="btn btn-ghost">Find out more</a>
+        <a href="/checkout.html" class="btn btn-primary" data-i18n="home.hero_btn_primary" data-i18n-href="checkout">Get your report</a>
+        <a href="#intro" class="btn btn-ghost" data-i18n="home.hero_btn_ghost">Find out more</a>
       </div>
     </div>
   </header>
 
   <section id="intro" class="intro-block">
-    <p class="intro-heading">For everyone who cares about their business</p>
-    <p class="intro-text">You care about your business. Cybersecurity? It feels like another world—confusing, pricey, full of acronyms. We cut through the noise: one report that spells out your risks, puts them in order, and shows you exactly how to fix things yourself. <strong>Invest time, not a fortune.</strong></p>
+    <p class="intro-heading" data-i18n="home.intro_heading">For everyone who cares about their business</p>
+    <p class="intro-text" data-i18n="home.intro_text" data-i18n-html>You care about your business. Cybersecurity? It feels like another world—confusing, pricey, full of acronyms. We cut through the noise: one report that spells out your risks, puts them in order, and shows you exactly how to fix things yourself. <strong>Invest time, not a fortune.</strong></p>
   </section>
 
   <section id="mission">
-    <p class="section-label">Why we exist</p>
-    <h2 class="section-title">Security should be accessible to everyone</h2>
-    <p class="section-desc">Micro and small businesses—and solos—want to protect what they’ve built. But usually:</p>
+    <p class="section-label" data-i18n="home.mission_label">Why we exist</p>
+    <h2 class="section-title" data-i18n="home.mission_title">Security should be accessible to everyone</h2>
+    <p class="section-desc" data-i18n="home.mission_desc">Micro and small businesses—and solos—want to protect what they’ve built. But usually:</p>
     <div class="problem-grid">
       <div class="problem-card">
         <span class="problem-num">1</span>
-        <h3>It’s hard to understand</h3>
+        <h3 data-i18n="home.mission_1_title">It’s hard to understand</h3>
         <p>“Cybersecurity” sounds vague. You’re not sure what it really means for you.</p>
       </div>
       <div class="problem-card">
         <span class="problem-num">2</span>
-        <h3>It always seems expensive</h3>
-        <p>Costs feel out of reach. You assume only bigger companies can afford to be secure.</p>
+        <h3 data-i18n="home.mission_2_title">It always seems expensive</h3>
+        <p data-i18n="home.mission_2_text">Costs feel out of reach. You assume only bigger companies can afford to be secure.</p>
       </div>
       <div class="problem-card">
         <span class="problem-num">3</span>
-        <h3>It points to audits or pricey tools</h3>
+        <h3 data-i18n="home.mission_3_title">It points to audits or pricey tools</h3>
         <p>Advice is either “get an audit” or “buy this tool.” Neither fits a tiny budget.</p>
       </div>
       <div class="problem-card">
         <span class="problem-num">4</span>
-        <h3>There’s too much jargon</h3>
-        <p>Terms and acronyms get in the way. You need plain language and clear steps.</p>
+        <h3 data-i18n="home.mission_4_title">There’s too much jargon</h3>
+        <p data-i18n="home.mission_4_text">Terms and acronyms get in the way. You need plain language and clear steps.</p>
       </div>
     </div>
     <div class="mission-statement">
-      <p><strong>We’re here to change that.</strong> Our focus: <strong>behaviors</strong>, <strong>tweaks</strong>, and <strong>free tools</strong> that actually move the needle—so you protect what you’ve built by spending time, not cash.</p>
+      <p data-i18n="home.mission_statement" data-i18n-html><strong>We’re here to change that.</strong> Our focus: <strong>behaviors</strong>, <strong>tweaks</strong>, and <strong>free tools</strong> that actually move the needle—so you protect what you’ve built by spending time, not cash.</p>
     </div>
   </section>
 
   <section id="offer">
-    <p class="section-label">Your report</p>
+    <p class="section-label" data-i18n="home.offer_label">Your report</p>
     <div class="offer-box">
-      <h2>Risks. Priorities. Then the how-to.</h2>
-      <p class="offer-price">Launch campaign: <strong>89€</strong> <span class="offer-price-alt">(or $89)</span></p>
-      <p class="offer-desc">One report, written so you can use it. We highlight your main gaps, put them in order, and give you the <strong>steps</strong>—so you can do the work yourself. We lean on free tools and simple habits, not big spend. Your report lives behind a secure link we send by email.</p>
+      <h2 data-i18n="home.offer_title">Risks. Priorities. Then the how-to.</h2>
+      <p class="offer-price" data-i18n="home.offer_price" data-i18n-html>Launch campaign: <strong>89€</strong> <span class="offer-price-alt" data-i18n="home.offer_price_alt">(or $89)</span></p>
+      <p class="offer-desc" data-i18n="home.offer_desc" data-i18n-html>One report, written so you can use it. We highlight your main gaps, put them in order, and give you the <strong>steps</strong>—so you can do the work yourself. We lean on free tools and simple habits, not big spend. Your report lives behind a secure link we send by email.</p>
       <ul class="offer-list">
-        <li><strong>Where you’re exposed</strong> — Your main risks, in plain language.</li>
-        <li><strong>Where to start</strong> — A clear order so you’re not guessing.</li>
-        <li><strong>The how-to</strong> — Directions you can follow yourself; no expensive tools required.</li>
-        <li><strong>Free options first</strong> — We point to free tools and small changes that help.</li>
-        <li><strong>Yours to keep</strong> — Access the report anytime via the link we send.</li>
+        <li data-i18n="home.offer_1" data-i18n-html><strong>Where you’re exposed</strong> — Your main risks, in plain language.</li>
+        <li data-i18n="home.offer_2" data-i18n-html><strong>Where to start</strong> — A clear order so you’re not guessing.</li>
+        <li data-i18n="home.offer_3" data-i18n-html><strong>The how-to</strong> — Directions you can follow yourself; no expensive tools required.</li>
+        <li data-i18n="home.offer_4" data-i18n-html><strong>Free options first</strong> — We point to free tools and small changes that help.</li>
+        <li data-i18n="home.offer_5" data-i18n-html><strong>Yours to keep</strong> — Access the report anytime via the link we send.</li>
       </ul>
       <p class="offer-cta">
-        <a href="/checkout.html" class="btn btn-primary">Get your report</a>
+        <a href="/checkout.html" class="btn btn-primary" data-i18n="home.hero_btn_primary" data-i18n-href="checkout">Get your report</a>
       </p>
     </div>
   </section>
 
   <section id="features">
-    <p class="section-label">What you get</p>
-    <h2 class="section-title">Built for teams without a security team</h2>
-    <p class="section-desc section-desc-oneline">No audits, no enterprise software. Just clarity and a path you can walk yourself.</p>
+    <p class="section-label" data-i18n="home.features_label">What you get</p>
+    <h2 class="section-title" data-i18n="home.features_title">Built for teams without a security team</h2>
+    <p class="section-desc section-desc-oneline" data-i18n="home.features_desc">No audits, no enterprise software. Just clarity and a path you can walk yourself.</p>
     <div class="features-grid">
       <div class="feature-card">
         <div class="feature-icon">◇</div>
-        <h3>Plain English</h3>
-        <p>We skip the acronyms. You’ll see what matters and why.</p>
+        <h3 data-i18n="home.feature_1_title">Plain English</h3>
+        <p data-i18n="home.feature_1_text">We skip the acronyms. You’ll see what matters and why.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">▸</div>
-        <h3>First things first</h3>
-        <p>Prioritized so you know where to focus without getting lost.</p>
+        <h3 data-i18n="home.feature_2_title">First things first</h3>
+        <p data-i18n="home.feature_2_text">Prioritized so you know where to focus without getting lost.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">◈</div>
-        <h3>You do the doing</h3>
-        <p>We give you the steps; you run them. No consultants required.</p>
+        <h3 data-i18n="home.feature_3_title">You do the doing</h3>
+        <p data-i18n="home.feature_3_text">We give you the steps; you run them. No consultants required.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">◆</div>
-        <h3>Small budget, real impact</h3>
-        <p>Free tools and simple tweaks. Protect more by spending time, not cash.</p>
+        <h3 data-i18n="home.feature_4_title">Small budget, real impact</h3>
+        <p data-i18n="home.feature_4_text">Free tools and simple tweaks. Protect more by spending time, not cash.</p>
       </div>
     </div>
   </section>
 
   <section id="how">
-    <p class="section-label">How it works</p>
-    <h2 class="section-title">Three steps to clarity</h2>
-    <p class="section-desc">Pay once, answer a short set of questions, and we’ll send your report by email with a link you can keep.</p>
+    <p class="section-label" data-i18n="home.how_label">How it works</p>
+    <h2 class="section-title" data-i18n="home.how_title">Three steps to clarity</h2>
+    <p class="section-desc" data-i18n="home.how_desc">Pay once, answer a short set of questions, and we’ll send your report by email with a link you can keep.</p>
     <div class="steps">
       <div class="step">
         <span class="step-num">1</span>
         <div>
-          <h3>Get your report</h3>
-          <p>Pay securely and we’ll send you a link to the assessment.</p>
+          <h3 data-i18n="home.how_1_title">Get your report</h3>
+          <p data-i18n="home.how_1_text">Pay securely and we’ll send you a link to the assessment.</p>
         </div>
       </div>
       <div class="step">
         <span class="step-num">2</span>
         <div>
-          <h3>Complete the assessment</h3>
-          <p>Short questions about your setup. Use the link from your confirmation email.</p>
+          <h3 data-i18n="home.how_2_title">Complete the assessment</h3>
+          <p data-i18n="home.how_2_text">Short questions about your setup. Use the link from your confirmation email.</p>
         </div>
       </div>
       <div class="step">
         <span class="step-num">3</span>
         <div>
-          <h3>Receive your report</h3>
-          <p>We build your report and send the link. Open it anytime—risks, order, and how-to in one place.</p>
+          <h3 data-i18n="home.how_3_title">Receive your report</h3>
+          <p data-i18n="home.how_3_text">We build your report and send the link. Open it anytime—risks, order, and how-to in one place.</p>
         </div>
       </div>
     </div>
@@ -527,27 +527,28 @@
 
   <section id="cta">
     <div class="cta-box">
-      <h2>Ready to see where you stand?</h2>
-      <p>One report. Plain language. Your next steps—and the directions to follow them. <strong>89€</strong> during our launch.</p>
-      <a href="/checkout.html" class="btn btn-primary">Get your report — 89€</a>
-      <a href="/contact.html" class="btn btn-ghost">Contact us</a>
+      <h2 data-i18n="home.cta_title">Ready to see where you stand?</h2>
+      <p data-i18n="home.cta_text" data-i18n-html>One report. Plain language. Your next steps—and the directions to follow them. <strong>89€</strong> during our launch.</p>
+      <a href="/checkout.html" class="btn btn-primary" data-i18n="home.cta_btn" data-i18n-href="checkout">Get your report — 89€</a>
+      <a href="/contact.html" class="btn btn-ghost" data-i18n="home.cta_contact" data-i18n-href="contact">Contact us</a>
     </div>
   </section>
 
   <footer>
     <div class="footer-grid">
-      <a href="#" class="footer-logo"><span class="nav-logo-word">Flare</span><span class="nav-logo-dot">.</span></a>
+      <a href="/" class="footer-logo" data-i18n-href="home"><span class="nav-logo-word">Flare</span><span class="nav-logo-dot">.</span></a>
       <div class="footer-links">
-        <a href="#mission">Mission</a>
-        <a href="#offer">Your report</a>
-        <a href="/checkout.html">Get your report</a>
-        <a href="/contact.html">Contact</a>
-        <a href="/admin.html">Admin</a>
+        <a href="#mission" data-i18n="common.footer_mission">Mission</a>
+        <a href="#offer" data-i18n="common.footer_offer">Your report</a>
+        <a href="/checkout.html" data-i18n="common.nav_checkout" data-i18n-href="checkout">Get your report</a>
+        <a href="/contact.html" data-i18n="common.footer_contact" data-i18n-href="contact">Contact</a>
+        <a href="/admin.html" data-i18n="common.footer_admin">Admin</a>
       </div>
     </div>
-    <p class="footer-mono">Security accessible to everyone · No jargon, no big budgets</p>
+    <p class="footer-mono" data-i18n="common.footer_tagline">Security accessible to everyone · No jargon, no big budgets</p>
   </footer>
 
+  <script src="/js/i18n.js"></script>
   <script>
     (function () {
       var nav = document.getElementById('nav');
