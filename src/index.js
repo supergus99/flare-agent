@@ -1210,12 +1210,18 @@ async function getSetting(db, key) {
   }
 }
 
+/** Escape string for use in RegExp (so {{a.contact_name}} works). */
+function escapeRegExp(s) {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function applyReportTemplate(templateBody, vars) {
   let out = templateBody;
   for (const [key, value] of Object.entries(vars)) {
     const str = value != null ? String(value) : "";
     const safe = key.startsWith("ai_") || key.endsWith("_html") ? str : escapeHtml(str);
-    out = out.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), safe);
+    const pattern = `\\{\\{${escapeRegExp(key)}\\}\\}`;
+    out = out.replace(new RegExp(pattern, "g"), safe);
   }
   return out;
 }
@@ -1226,11 +1232,24 @@ function getArr(d, key) {
   return Array.isArray(v) ? v : v != null ? [v] : [];
 }
 
+/** Count "Not sure" in key control fields for confidence. */
+function countNotSure(data, keys) {
+  const d = data || {};
+  let n = 0;
+  for (const k of keys) {
+    const v = d[k] ?? d[k + "[]"];
+    const s = Array.isArray(v) ? v.join(" ") : (v != null ? String(v) : "");
+    if (/not\s*sure/i.test(s)) n += 1;
+  }
+  return n;
+}
+
 function buildReportVars(submission, data) {
   const d = data || {};
   const arr = (v) => (Array.isArray(v) ? v : v ? [v] : []);
   const join = (v) => arr(v).join(", ") || "—";
   const str = (v) => (v != null && String(v).trim() !== "" ? String(v).trim() : "—");
+  const reportDate = new Date().toISOString().slice(0, 10);
   const nameVal = str(submission.name) !== "—" ? str(submission.name) : str(d.contact_name) || str(submission.email) || "Customer";
   const companyVal = str(submission.company) || str(d.company_name);
   const emailVal = str(submission.email) || str(d.email);
@@ -1250,14 +1269,35 @@ function buildReportVars(submission, data) {
   const language = str(d.report_language) || str(d.language) || "—";
   const timeline = str(d.improvements_timeline);
   const budget_range = str(d.budget_range);
-  return {
+  const acceptPayments = str(d.accept_payments);
+  const paymentsApplicable = acceptPayments === "Yes";
+  const websiteApplicable = publicWebsite === "Yes";
+  const byodVal = str(d.byod);
+  const byodApplicable = byodVal === "Yes" || byodVal === "Some roles";
+  const pastIncidentsArr = getArr(d, "past_incidents");
+  const hadIncidents = pastIncidentsArr.length > 0 && !pastIncidentsArr.every((x) => /^none$/i.test(String(x).trim()));
+
+  const notSureKeys = [
+    "mfa_email", "mfa_other_tools", "share_passwords", "password_manager", "backup_method", "backup_tested",
+    "updates_handled", "who_receives_alerts", "devices_encrypted", "customer_data_request"
+  ];
+  const notSureCount = countNotSure(d, notSureKeys);
+  const confidenceLevel = notSureCount <= 1 ? "High" : notSureCount <= 4 ? "Medium" : "Low";
+
+  const customerDataList = getArr(d, "customer_data");
+  const employeeDataList = getArr(d, "employee_data");
+  const hasSensitiveData = customerDataList.some((x) => /payment|health|financial|id\s*doc|children/i.test(String(x)))
+    || employeeDataList.some((x) => /tax|ssn|bank|payroll|health/i.test(String(x)));
+  const dataSensitivitySummary = hasSensitiveData ? "Handles sensitive data (e.g. payment, health, or identity)" : "General business data";
+
+  const vars = {
     name: nameVal,
     company: companyVal,
     email: emailVal,
     role: roleVal,
     service: str(submission.service),
     message: messageVal,
-    report_date: new Date().toISOString().slice(0, 10),
+    report_date: reportDate,
     website_url: websiteDisplay,
     website_href: websiteHref,
     website_cell_html,
@@ -1302,7 +1342,7 @@ function buildReportVars(submission, data) {
     endpoint_protection: str(d.computer_protection),
     update_cadence: str(d.updates_handled),
     screen_lock: str(d.screen_lock),
-    byod: str(d.byod),
+    byod: byodVal,
     byod_requirements: str(d.byod_protections),
     device_inventory: str(d.device_inventory),
     alerts_enabled: join(getArr(d, "security_alerts")),
@@ -1322,7 +1362,108 @@ function buildReportVars(submission, data) {
     ai_executive_summary: "",
     ai_findings: "",
     ai_recommendations: "",
+    website_applicable: websiteApplicable ? "Yes" : "No",
+    payments_applicable: paymentsApplicable ? "Yes" : "No",
+    byod_applicable: byodApplicable ? "Yes" : "No",
+    had_incidents: hadIncidents ? "Yes" : "No",
+    data_sensitivity_summary: dataSensitivitySummary,
+    tools_count: str(d.tools_count),
+    industry: str(d.industry),
+    top_concerns_list: join(getArr(d, "top_concerns")),
+    store_work_files_list: join(getArr(d, "store_work_files")),
+    chat_meet_list: join(getArr(d, "chat_meet")),
+    other_tools_list: join(getArr(d, "other_tools")),
+    email_provider: str(d.email_provider),
+    accept_payments: acceptPayments,
+    how_accept_payments: str(d.how_accept_payments),
+    card_numbers_direct: str(d.card_numbers_direct),
+    store_card_details: str(d.store_card_details),
+    fraud_protection_list: join(getArr(d, "fraud_protection")),
+    payment_scam_attempt: str(d.payment_scam_attempt),
+    amount_lost: str(d.amount_lost),
+    "meta.report_date": reportDate,
+    "meta.confidence_level": confidenceLevel,
+    "meta.not_sure_count": String(notSureCount),
+    "a.contact_name": str(d.contact_name) || nameVal,
+    "a.company_name": str(d.company_name) || companyVal,
+    "a.email": str(d.email) || emailVal,
+    "a.role": str(d.role),
+    "a.number_of_people": peopleRange,
+    "a.work_location": workSetup,
+    "a.public_website": publicWebsite,
+    "a.website_url": websiteDisplay,
+    "a.website_platform": str(d.website_platform),
+    "a.website_admin_access": str(d.website_admin_access),
+    "a.website_updates": str(d.website_updates),
+    "a.tools_count": str(d.tools_count),
+    "a.industry": str(d.industry),
+    "a.store_work_files_list": join(getArr(d, "store_work_files")),
+    "a.chat_meet_list": join(getArr(d, "chat_meet")),
+    "a.other_tools_list": join(getArr(d, "other_tools")),
+    "a.login_count": str(d.login_count),
+    "a.outside_access_list": join(getArr(d, "outside_access")),
+    "a.share_passwords": str(d.share_passwords),
+    "a.mfa_email": str(d.mfa_email),
+    "a.mfa_other_tools": str(d.mfa_other_tools),
+    "a.password_manager": str(d.password_manager),
+    "a.admin_access": str(d.admin_access),
+    "a.offboard_speed": str(d.offboard_speed),
+    "a.screen_lock": str(d.screen_lock),
+    "a.account_recovery": str(d.account_recovery),
+    "a.accounts_inventory": str(d.accounts_inventory),
+    "a.customer_data_list": join(getArr(d, "customer_data")),
+    "a.employee_data_list": join(getArr(d, "employee_data")),
+    "a.important_data_stored_list": join(getArr(d, "important_data_stored")),
+    "a.delete_data": str(d.delete_data),
+    "a.customer_data_request": str(d.customer_data_request),
+    "a.data_hosted": str(d.data_hosted),
+    "a.devices_encrypted": str(d.devices_encrypted),
+    "a.secure_file_sharing": str(d.secure_file_sharing),
+    "a.privacy_policy": str(d.privacy_policy),
+    "a.limit_sensitive_access": str(d.limit_sensitive_access),
+    "a.accept_payments": acceptPayments,
+    "a.how_accept_payments": str(d.how_accept_payments),
+    "a.card_numbers_direct": str(d.card_numbers_direct),
+    "a.store_card_details": str(d.store_card_details),
+    "a.fraud_protection_list": join(getArr(d, "fraud_protection")),
+    "a.payment_scam_attempt": str(d.payment_scam_attempt),
+    "a.amount_lost": str(d.amount_lost),
+    "a.byod": byodVal,
+    "a.byod_protections": str(d.byod_protections),
+    "a.vpn": str(d.vpn),
+    "a.wifi_security": str(d.wifi_security),
+    "a.guest_wifi": str(d.guest_wifi),
+    "a.computer_protection": str(d.computer_protection),
+    "a.updates_handled": str(d.updates_handled),
+    "a.device_inventory": str(d.device_inventory),
+    "a.security_alerts_list": join(getArr(d, "security_alerts")),
+    "a.who_receives_alerts": str(d.who_receives_alerts),
+    "a.hack_checklist": str(d.hack_checklist),
+    "a.first_call_list": join(getArr(d, "first_call")),
+    "a.past_incidents_list": join(getArr(d, "past_incidents")),
+    "a.incident_details": str(d.incident_details),
+    "a.backup_method": str(d.backup_method),
+    "a.backup_data_list": join(getArr(d, "backup_data")),
+    "a.backup_frequency": str(d.backup_frequency),
+    "a.backup_tested": str(d.backup_tested),
+    "a.legal_requirements": str(d.legal_requirements),
+    "a.customer_security_ask_list": join(getArr(d, "customer_security_ask")),
+    "a.dpa_with_vendors": str(d.dpa_with_vendors),
+    "a.vendor_security_check": str(d.vendor_security_check),
+    "a.security_training": str(d.security_training),
+    "a.phishing_tests": str(d.phishing_tests),
+    "a.cyber_insurance": str(d.cyber_insurance),
+    "a.security_checkup": str(d.security_checkup),
+    "a.top_concerns_list": join(getArr(d, "top_concerns")),
+    "a.describe_concerns": str(d.describe_concerns),
+    "a.improvements_timeline": timeline,
+    "a.budget_range": budget_range,
+    "a.website_applicable": websiteApplicable ? "Yes" : "No",
+    "a.payments_applicable": paymentsApplicable ? "Yes" : "No",
+    "a.byod_applicable": byodApplicable ? "Yes" : "No",
+    "a.had_incidents": hadIncidents ? "Yes" : "No",
   };
+  return vars;
 }
 
 /** Full report template (STR structure) with Flare styling. Placeholders: {{name}}, {{company}}, {{email}}, {{role}}, {{service}}, {{message}}, {{report_date}}, {{website_url}}, {{units_range}}, {{countries}}, {{language}} */
@@ -1367,6 +1508,18 @@ function getDefaultReportTemplateBodyFlare() {
     .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
     .kpi { display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: var(--bg); }
     .kpi small, .muted { color: var(--muted); }
+    .cover-page { min-height: 60vh; display: flex; flex-direction: column; justify-content: center; padding: 48px 24px; text-align: center; }
+    .cover-page h1 { font-size: 28px; margin: 0 0 24px; }
+    .cover-page .meta { font-size: 15px; line-height: 1.8; color: var(--muted); }
+    .cover-page .confidential { margin-top: 32px; font-size: 13px; color: var(--muted); }
+    .snapshot-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+    .snapshot-status { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+    .snapshot-status.ok { background: var(--pill-low); }
+    .snapshot-status.warn { background: var(--pill-mod); }
+    .snapshot-status.gap { background: var(--pill-high); }
+    table.report-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    table.report-table th, table.report-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    table.report-table th { color: var(--muted); font-weight: 600; }
     .section-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
     a { color: var(--accent); }
     @media (max-width: 720px) { .meta-grid, .grid-2, .kv { grid-template-columns: 1fr; } }
@@ -1382,32 +1535,99 @@ function getDefaultReportTemplateBodyFlare() {
       </div>
       <button type="button" id="theme-toggle" aria-label="Toggle dark/light mode" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); color: #fff; padding: 0.4rem 0.75rem; border-radius: 8px; cursor: pointer; font-size: 0.875rem; font-family: inherit; white-space: nowrap;">Dark</button>
     </header>
+    <section class="card cover-page">
+      <h1>Security & Operations Risk Assessment Report</h1>
+      <p class="meta"><strong>{{company}}</strong></p>
+      <p class="meta">Prepared for {{name}}, {{role}}</p>
+      <p class="meta">Date generated: {{meta.report_date}}</p>
+      <p class="confidential">This report is confidential and intended for the addressee. Do not distribute without permission.</p>
+      <p class="muted" style="margin-top:16px;font-size:12px;">Version 1 · Inputs: assessment data (sections 1–10), {{meta.report_date}}</p>
+    </section>
     <section class="card">
-      <div class="section-title"><h2>1) Report Metadata</h2></div>
+      <div class="section-title"><h2>1) Report Metadata &amp; Scope</h2></div>
       <div class="meta-grid">
         <div class="kv"><label>Company</label><div>{{company}}</div></div>
-        <div class="kv"><label>Website</label><div>{{website_cell_html}}</div></div>
+        <div class="kv"><label>Website status</label><div>{{website_cell_html}}</div></div>
+        <div class="kv"><label>Website platform</label><div>{{website_platform}}</div></div>
         <div class="kv"><label>Prepared for</label><div>{{name}} — {{role}}</div></div>
         <div class="kv"><label>Prepared by</label><div>Flare</div></div>
-        <div class="kv"><label>Assessment Date</label><div>{{report_date}}</div></div>
-        <div class="kv"><label>Scope</label><div>{{people_range}} people using company systems; Work setup: {{work_setup}}; Primary region: {{primary_region}}</div></div>
-        <div class="kv"><label>Language/Locale</label><div>{{language}}</div></div>
+        <div class="kv"><label>Date generated</label><div>{{report_date}}</div></div>
+        <div class="kv"><label>Team size</label><div>{{people_range}} people using company systems</div></div>
+        <div class="kv"><label>Work setup</label><div>{{work_setup}}</div></div>
+        <div class="kv"><label>Tools footprint</label><div>{{tools_count}} online tools (approx)</div></div>
+        <div class="kv"><label>Data sensitivity (summary)</label><div>{{data_sensitivity_summary}}</div></div>
+        <div class="kv"><label>Assessment confidence</label><div>{{meta.confidence_level}} ({{meta.not_sure_count}} &quot;Not sure&quot; on key controls)</div></div>
       </div>
+      <p class="muted" style="margin-top:10px;">Website details shown only when public website = Yes. Primary region: {{primary_region}}. Language: {{language}}.</p>
     </section>
     <section class="card">
-      <div class="section-title"><h2>2) Executive Summary</h2><span class="pill">Overall Risk: [Low | Moderate | High | Critical]</span></div>
-      {{ai_executive_summary}}
-      <h3>Top 5 Findings</h3>
-      <div class="ai-findings">{{ai_findings}}</div>
-      <h3>Priority Recommendations (0–90 days)</h3>
-      <div class="ai-recommendations">{{ai_recommendations}}</div>
+      <h2>2) Executive Summary (Decision-Ready)</h2>
+      <h3>2.1 Overall posture</h3>
+      <p class="muted">Two dimensions: Prevention Readiness (accounts, devices, website hardening) and Recovery Readiness (backups, restore test, incident checklist).</p>
       <div class="grid-2">
-        <div class="kpi"><div><strong>Estimated Budget Range</strong><br><small class="muted">From assessment</small></div><div>{{budget_range}}</div></div>
-        <div class="kpi"><div><strong>Target Timeline</strong><br><small class="muted">From assessment</small></div><div>{{timeline}}</div></div>
+        <div class="kpi"><div>Prevention Readiness</div><div><span class="pill">[Low / Moderate / High / Critical]</span></div></div>
+        <div class="kpi"><div>Recovery Readiness</div><div><span class="pill">[Low / Moderate / High / Critical]</span></div></div>
       </div>
+      <p><strong>Overall rating:</strong> [Short explanation based on {{mfa_email}}, {{backup_status}}, {{alert_owner}}, {{update_cadence}}].</p>
+      <p><strong>Top 3 business risks (plain language):</strong> e.g. email takeover, ransomware downtime, invoice fraud — derived from {{top_concerns_list}} and control gaps.</p>
+      <h3>2.2 Top 5 findings (with impact)</h3>
+      <p class="muted">For each: What&apos;s happening · Why it matters · Evidence (QIDs) · Fix priority (Now / Next / Later).</p>
+      <ul>
+        <li><strong>1.</strong> [Finding] — Impact: [business]. Evidence: [QIDs]. Priority: Now/Next/Later.</li>
+        <li><strong>2.</strong> [Finding] — Impact: [business]. Evidence: [QIDs]. Priority: Now/Next/Later.</li>
+        <li><strong>3–5.</strong> [From {{mfa_email}}, {{shared_passwords}}, {{backup_tested}}, {{alert_owner}}, {{update_cadence}}, {{fraud_protection_list}}].</li>
+      </ul>
+      <h3>2.3 7-Day Quick Wins</h3>
+      <ul>
+        <li>Turn on MFA for email</li>
+        <li>Assign alert owner ({{alert_owner}})</li>
+        <li>Run 1 restore test (current: {{backup_tested}})</li>
+        <li>Enable auto-updates where possible (current: {{update_cadence}})</li>
+        <li>Stop password sharing; introduce password manager (current sharing: {{shared_passwords}})</li>
+      </ul>
+      <h3>2.4 30/60/90-day priorities</h3>
+      <p class="muted">Timeline from assessment: {{timeline}}. Budget: {{budget_range}}. Owner role, effort (S/M/L), cost (Free/Low/Med), disruption (Low/Med).</p>
+      <ul>
+        <li><strong>Week 1–2:</strong> MFA everywhere; assign alert owner; enable alerts.</li>
+        <li><strong>Week 3–4:</strong> Password manager; backup + 1 restore test.</li>
+        <li><strong>Month 2:</strong> Offboarding checklist; reduce admin accounts; device encryption + updates.</li>
+        <li><strong>Month 3:</strong> Tool/account list; vendor check before purchase; security checkup.</li>
+      </ul>
+      {{ai_executive_summary}}
+      <div class="ai-findings">{{ai_findings}}</div>
+      <div class="ai-recommendations">{{ai_recommendations}}</div>
     </section>
     <section class="card">
-      <h2>3) Environment Profile (From Assessment)</h2>
+      <h2>3) One-Page Security Snapshot (Shareable Internally)</h2>
+      <p class="muted">Green = in place, Yellow = partial, Red = gap. Use for internal alignment.</p>
+      <h3>Accounts &amp; sign-in</h3>
+      <div class="snapshot-row"><span class="snapshot-status ok"></span><span>MFA on email: {{mfa_email}}</span></div>
+      <div class="snapshot-row"><span class="snapshot-status ok"></span><span>MFA on key tools: {{mfa_critical}}</span></div>
+      <div class="snapshot-row"><span class="snapshot-status ok"></span><span>Password sharing: {{shared_passwords}} (target: Never)</span></div>
+      <div class="snapshot-row"><span class="snapshot-status ok"></span><span>Password manager: {{password_manager}}</span></div>
+      <div class="snapshot-row"><span class="snapshot-status ok"></span><span>Admin access spread: {{admin_access}}</span></div>
+      <h3>Devices</h3>
+      <div class="snapshot-row"><span class="snapshot-status ok"></span><span>Updates: {{update_cadence}}</span></div>
+      <div class="snapshot-row"><span class="snapshot-status ok"></span><span>Device encryption: {{device_encryption}}</span></div>
+      <div class="snapshot-row"><span class="snapshot-status ok"></span><span>Endpoint protection: {{endpoint_protection}}</span></div>
+      <div class="snapshot-row"><span class="snapshot-status ok"></span><span>Device inventory: {{device_inventory}}</span></div>
+      <h3>Backups</h3>
+      <div class="snapshot-row"><span class="snapshot-status ok"></span><span>Method: {{backup_status}} — Frequency: {{backup_frequency}} — Restore tested: {{backup_tested}}</span></div>
+      <h3>Alerts &amp; readiness</h3>
+      <div class="snapshot-row"><span class="snapshot-status ok"></span><span>Alerts enabled: {{alerts_enabled}}</span></div>
+      <div class="snapshot-row"><span class="snapshot-status ok"></span><span>Alert owner: {{alert_owner}}</span></div>
+      <div class="snapshot-row"><span class="snapshot-status ok"></span><span>Incident checklist: {{incident_checklist}}</span></div>
+      <div class="snapshot-row"><span class="snapshot-status ok"></span><span>Who to call first: {{incident_contacts}}</span></div>
+      <h3>Payments (if applicable)</h3>
+      <p class="muted">Shown when accept_payments = Yes (current: {{a.payments_applicable}}).</p>
+      <div class="snapshot-row"><span class="snapshot-status ok"></span><span>Fraud controls: {{fraud_protection_list}}</span></div>
+      <div class="snapshot-row"><span class="snapshot-status ok"></span><span>Card handling / scam history: {{payment_scam_attempt}} — {{amount_lost}}</span></div>
+      <h3>Website (if applicable)</h3>
+      <p class="muted">Shown when public_website = Yes (current: {{a.website_applicable}}).</p>
+      <div class="snapshot-row"><span class="snapshot-status ok"></span><span>Platform: {{website_platform}} — Admin access: {{website_admin_access}} — Updates: {{website_updates}}</span></div>
+    </section>
+    <section class="card">
+      <h2>4) Environment Profile (From Assessment)</h2>
       <p class="muted">Aligned to the assessment sections.</p>
       <h3>3.1 Company Information</h3>
       <ul>
@@ -1488,93 +1708,121 @@ function getDefaultReportTemplateBodyFlare() {
       </ul>
     </section>
     <section class="card">
-      <h2>4) Risk Scoring Framework</h2>
-      <p class="muted">Scale (0–5): 0=Not implemented, 1=Ad-hoc, 2=Basic, 3=Defined, 4=Managed, 5=Optimized. Domains aligned to assessment. Overall posture may be derived from answers (or use Basic/Standard/Strong if no numeric scoring).</p>
+      <h2>5) Scoring &amp; Method (Transparent)</h2>
+      <h3>5.1 How scoring works</h3>
+      <p>Scale 0–5: 0=Not implemented, 1=Ad-hoc, 2=Basic, 3=Defined, 4=Managed, 5=Optimized. Areas weighted more: email MFA, backups + restore test, automatic updates, alert ownership.</p>
+      <h3>5.2 Domain scores (aligned to assessment)</h3>
       <div class="grid-2">
-        <div class="kpi"><div>Access Control: [x/5]</div><div><span class="pill">[Level]</span></div></div>
-        <div class="kpi"><div>Network Security: [x/5]</div><div><span class="pill">[Level]</span></div></div>
-        <div class="kpi"><div>Data Protection: [x/5]</div><div><span class="pill">[Level]</span></div></div>
-        <div class="kpi"><div>Endpoint Security: [x/5]</div><div><span class="pill">[Level]</span></div></div>
-        <div class="kpi"><div>Alerts &amp; Incident Readiness: [x/5]</div><div><span class="pill">[Level]</span></div></div>
-        <div class="kpi"><div>Compliance &amp; Policies: [x/5]</div><div><span class="pill">[Level]</span></div></div>
+        <div class="kpi"><div>Accounts &amp; Access (Section 3)</div><div><span class="pill">[x/5]</span></div></div>
+        <div class="kpi"><div>Devices &amp; Updates (Section 6 + 3.9, 4.7)</div><div><span class="pill">[x/5]</span></div></div>
+        <div class="kpi"><div>Data &amp; Privacy Basics (Section 4)</div><div><span class="pill">[x/5]</span></div></div>
+        <div class="kpi"><div>Alerts &amp; Incident Readiness (Section 7)</div><div><span class="pill">[x/5]</span></div></div>
+        <div class="kpi"><div>Payments &amp; Fraud (Section 5, conditional)</div><div><span class="pill">[x/5]</span></div></div>
+        <div class="kpi"><div>Legal / Vendors / Training (Section 8)</div><div><span class="pill">[x/5]</span></div></div>
       </div>
-      <div class="kpi" style="margin-top:12px;"><div><strong>Overall Posture: [Early / Basic / Developing / Strong] or weighted score when scoring is implemented</strong></div><div><span class="pill">[Level]</span></div></div>
+      <h3>5.3 Confidence score</h3>
+      <p>Based on &quot;Not sure&quot; count ({{meta.not_sure_count}}), unanswered optional fields, and skipped vs N/A. This report: <strong>{{meta.confidence_level}}</strong>.</p>
     </section>
     <section class="card">
-      <h2>5) Key Findings &amp; Gaps (Evidence-Based)</h2>
-      <p class="muted">Evidence format: Quote question ID and answer (e.g. Evidence: 3.4 MFA for email = &quot;No&quot;; 3.3 Password sharing = &quot;Sometimes&quot;). Gaps should reflect SMB controls (MFA, password manager, backups, alerts owner, updates), not enterprise-only (SIEM, IDS, vuln scanning) unless added to assessment.</p>
-      <h3>5.1 Access Control</h3>
-      <ul><li><strong>Strengths:</strong> [From {{mfa_email}}, {{password_manager}}, {{admin_access}}]</li><li><strong>Gaps:</strong> [e.g. MFA not everywhere, password sharing, no password manager]</li><li><strong>Evidence:</strong> [Quote QIDs and answers from Section 3.2]</li><li><strong>Remediation:</strong> MFA everywhere (Google/Microsoft built-in), password manager (e.g. Bitwarden), stop sharing passwords</li></ul>
-      <h3>5.2 Network Security</h3>
-      <ul><li><strong>Strengths:</strong> [From {{wifi_security}}, {{vpn_usage}}, {{guest_wifi}}]</li><li><strong>Gaps:</strong> [e.g. Wi‑Fi/guest separation, VPN usage]</li><li><strong>Evidence:</strong> [Quote QIDs from Section 3.3]</li><li><strong>Remediation:</strong> [SMB-appropriate steps]</li></ul>
-      <h3>5.3 Data Protection</h3>
-      <ul><li><strong>Strengths:</strong> [From {{backup_status}}, {{device_encryption}}, {{dsar_readiness}}]</li><li><strong>Gaps:</strong> [e.g. backups not tested, no retention approach]</li><li><strong>Evidence:</strong> [Quote QIDs from Section 3.4]</li><li><strong>Remediation:</strong> Backups + restore test; limit access to sensitive data</li></ul>
-      <h3>5.4 Endpoint Security</h3>
-      <ul><li><strong>Strengths:</strong> [From {{endpoint_protection}}, {{update_cadence}}, {{screen_lock}}]</li><li><strong>Gaps:</strong> [e.g. updates not automatic, no device inventory]</li><li><strong>Evidence:</strong> [Quote QIDs from Section 3.5]</li><li><strong>Remediation:</strong> Automatic updates; Windows/macOS built-in security + encryption</li></ul>
-      <h3>5.5 Alerts &amp; Incident Readiness</h3>
-      <ul><li><strong>Strengths:</strong> [From {{alerts_enabled}}, {{alert_owner}}, {{incident_checklist}}]</li><li><strong>Gaps:</strong> [e.g. alerts not enabled, no owner, no checklist]</li><li><strong>Evidence:</strong> [Quote QIDs from Section 3.6]</li><li><strong>Remediation:</strong> Turn on login/bank/payment alerts; assign owner; simple incident checklist</li></ul>
-      <h3>5.6 Compliance &amp; Policies</h3>
-      <ul><li><strong>Strengths:</strong> [From {{legal_contract_requirements}}, {{training_cadence}}, {{cyber_insurance}}]</li><li><strong>Gaps:</strong> [e.g. vendor checks, DPAs, training cadence]</li><li><strong>Evidence:</strong> [Quote QIDs from Section 3.7]</li><li><strong>Remediation:</strong> [Conditional: payments → PCI-lite; customers ask for security → DPAs/vendor check]</li></ul>
+      <h2>6) Findings by Domain (Evidence → Impact → Fix)</h2>
+      <p class="muted">Per domain: Strengths · Gaps · Business impact · Evidence (QIDs) · Recommendations · Verification.</p>
+      <h3>6.1 Accounts &amp; Access</h3>
+      <ul><li><strong>Strengths:</strong> {{mfa_email}}, {{password_manager}}, {{admin_access}}</li><li><strong>Gaps:</strong> MFA not everywhere, password sharing ({{shared_passwords}}), no password manager</li><li><strong>Business impact:</strong> Account takeover, invoice fraud</li><li><strong>Evidence:</strong> 3.4 MFA email = {{a.mfa_email}}; 3.3 sharing = {{a.share_passwords}}; 3.6 password manager = {{a.password_manager}}</li><li><strong>Recommendations:</strong> MFA everywhere; Bitwarden; stop sharing. <strong>Verify:</strong> All key tools show MFA enabled; no shared logins.</li></ul>
+      <h3>6.2 Devices &amp; Updates</h3>
+      <ul><li><strong>Strengths:</strong> {{endpoint_protection}}, {{screen_lock}}, {{device_encryption}}</li><li><strong>Gaps:</strong> Updates ({{update_cadence}}), device inventory ({{device_inventory}})</li><li><strong>Evidence:</strong> 6.8 updates = {{a.updates_handled}}; 6.9 inventory = {{a.device_inventory}}</li><li><strong>Recommendations:</strong> Automatic updates; simple device list. <strong>Verify:</strong> OS set to auto-update; list of who has which device.</li></ul>
+      <h3>6.3 Data &amp; Privacy Basics</h3>
+      <ul><li><strong>Strengths:</strong> {{backup_status}}, {{backup_frequency}}, {{dsar_readiness}}, {{limit_sensitive_access}}</li><li><strong>Gaps:</strong> Restore tested ({{backup_tested}}), retention ({{data_retention}})</li><li><strong>Evidence:</strong> 7.10 backup_tested = {{a.backup_tested}}; 4.4 delete_data = {{a.delete_data}}</li><li><strong>Recommendations:</strong> Run one restore test; document retention. <strong>Verify:</strong> Restore test done; retention note in place.</li></ul>
+      <h3>6.4 Alerts &amp; Incident Readiness</h3>
+      <ul><li><strong>Strengths:</strong> {{alerts_enabled}}, {{alert_owner}}, {{incident_checklist}}, {{incident_contacts}}</li><li><strong>Gaps:</strong> Owner assigned ({{alert_owner}}); written checklist ({{incident_checklist}})</li><li><strong>Evidence:</strong> 7.1–7.4 alerts, owner, checklist, first_call</li><li><strong>Recommendations:</strong> Assign one person; one-page &quot;hacked account&quot; checklist. <strong>Verify:</strong> Name in doc; checklist in shared drive.</li></ul>
+      <h3>6.5 Payments &amp; Fraud Controls (conditional)</h3>
+      <p class="muted">Shown when accept_payments = Yes. Inputs: 5.2–5.7.</p>
+      <ul><li><strong>Strengths:</strong> {{fraud_protection_list}}</li><li><strong>Gaps:</strong> Card handling ({{card_numbers_direct}}), scam history ({{payment_scam_attempt}})</li><li><strong>Evidence:</strong> 5.5 fraud_protection; 5.6 payment_scam_attempt; 5.7 amount_lost</li><li><strong>Recommendations:</strong> No card numbers by email/text; use processor alerts. <strong>Verify:</strong> Policy + alerts on.</li></ul>
+      <h3>6.6 Legal, Vendors, Training &amp; Insurance</h3>
+      <ul><li><strong>Strengths:</strong> {{legal_contract_requirements}}, {{training_cadence}}, {{cyber_insurance}}, {{vendor_security_check}}</li><li><strong>Gaps:</strong> DPA usage ({{dpa_usage}}); security checkup ({{security_checkups}})</li><li><strong>Evidence:</strong> Section 8 fields</li><li><strong>Recommendations:</strong> Vendor check before purchase; DPAs when customers ask. <strong>Verify:</strong> Checklist used; DPAs on file.</li></ul>
     </section>
     <section class="card">
-      <h2>6) Prioritized Action Plan</h2>
-      <p class="muted">Actions are conditional: e.g. if no public website, omit website hardening; if no payments, omit payment fraud actions; if no BYOD, skip BYOD controls. Timeline from assessment: {{timeline}}. Budget: {{budget_range}}.</p>
-      <h3>6.1 Quick Wins (0–30 days)</h3>
-      <ul><li>Enable MFA on email and critical tools</li><li>Stop password sharing; introduce password manager</li><li>Turn on login/bank/payment alerts and assign an owner</li><li>Enable automatic updates and device encryption where possible</li></ul>
-      <h3>6.2 Near-Term (31–90 days)</h3>
-      <ul><li>Backups in place + run a restore test</li><li>Reduce admin accounts; offboarding checklist</li><li>Simple list of important tools + owners</li></ul>
-      <h3>6.3 Mid-Term (3–6 months)</h3>
-      <ul><li>Review access to important tools every 6–12 months (or when staff changes)</li><li>Vendor/DPA checks if customers ask for security</li></ul>
-      <h3>6.4 Long-Term (6–12 months)</h3>
-      <ul><li>Security checkup cadence; training and phishing tests</li><li>Cyber insurance review</li></ul>
-    </section>
-    <section class="card">
-      <h2>7) Policy, Process, and Controls Upgrades</h2>
-      <p class="muted">SMB-friendly: every 6–12 months or when staff changes; simple checklist + shared doc. Show only when relevant (e.g. payments → PCI-lite; website → update ownership; backups → restore practice).</p>
+      <h2>7) Playbooks (Step-by-Step &quot;How To Fix&quot;)</h2>
+      <p class="muted">Goal · Steps (5–10) · Time estimate · Free/low-cost tools · Verification. Generated conditionally from gaps.</p>
       <ul>
-        <li>Access control: MFA everywhere, reduce admin accounts, stop sharing passwords, offboarding checklist</li>
-        <li>Password management: password manager (e.g. Bitwarden), no shared credentials</li>
-        <li>Backups and restore: document what you backup, frequency, and run a restore test</li>
-        <li>Alerts and incidents: assign alert owner, simple &quot;hacked account&quot; checklist, who to call first</li>
-        <li>Vendor/DPA: check before purchase; DPAs when customers ask for security</li>
-        <li>Website (if applicable): update ownership, limit admin access, enable protections</li>
-        <li>Payments (if applicable): fraud controls, chargeback alerts</li>
+        <li><strong>Enforce MFA everywhere:</strong> Email + key tools. Steps: Enable in Google/Microsoft admin; require for all. Time: 1–2 hrs. Tool: Built-in. Verify: No login without MFA.</li>
+        <li><strong>Stop password sharing + password manager:</strong> Steps: Choose Bitwarden/1Password; create vault; migrate shared to vault; revoke shared. Time: 2–4 hrs. Verify: No shared logins.</li>
+        <li><strong>Backup + restore test:</strong> Steps: Confirm backup method ({{backup_status}}); run one restore; document. Time: 1–2 hrs. Verify: Restore test date recorded.</li>
+        <li><strong>Alerts + owner:</strong> Steps: Turn on login/bank/payment alerts; name owner ({{alert_owner}}). Time: &lt;1 hr. Verify: Owner in doc.</li>
+        <li><strong>Offboarding checklist:</strong> Same-day access removal (current: {{offboarding_speed}}). Steps: List accounts; disable same day; document. Verify: Checklist used.</li>
+        <li><strong>Device baseline:</strong> Auto-updates, screen lock, encryption. Time: 2–4 hrs. Verify: Settings checked.</li>
+        <li><strong>Vendor quick security check:</strong> Before buying: who has access, where data lives, contract. Verify: Checklist in procurement.</li>
       </ul>
     </section>
     <section class="card">
-      <h2>8) Monitoring, Metrics, and Alerts</h2>
-      <p class="muted">SMB metrics derived from assessment answers.</p>
+      <h2>8) Conditional Deep-Dives</h2>
+      <h3>8.1 Website Security (if {{a.website_applicable}} = Yes)</h3>
+      <p>Platform: {{website_platform}}. Admin access: {{website_admin_access}}. Update owner: {{website_updates}}. Tips: WordPress → auto-updates + plugin hygiene; Shopify/Wix → review access; use Cloudflare free where possible.</p>
+      <h3>8.2 Payments &amp; Invoice Fraud (if {{a.payments_applicable}} = Yes)</h3>
+      <p>How you accept: {{how_accept_payments}}. Avoid: receiving card numbers via email/text. Fraud controls: {{fraud_protection_list}}. Scam history: {{payment_scam_attempt}} — {{amount_lost}}. Safer flow: use processor; enable alerts; two-person for large.</p>
+      <h3>8.3 BYOD (if {{a.byod_applicable}} = Yes)</h3>
+      <p>BYOD: {{byod}}. Required protections: {{byod_requirements}}. Minimum: work profile or separate account; screen lock; no full device control needed for SMB.</p>
+      <h3>8.4 Incident Learning (if {{a.had_incidents}} = Yes)</h3>
+      <p>Past incidents: {{past_incidents}}. Details: {{incident_details}}. Use to improve: prevent (MFA, backups), detect (alerts), recover (checklist, who to call).</p>
+    </section>
+    <section class="card">
+      <h2>9) Prioritized Roadmap (Dependencies + Ownership)</h2>
+      <p class="muted">Target timeline: {{timeline}}. Budget: {{budget_range}}. Conditional: no website → omit website tasks; no payments → omit payment tasks.</p>
+      <table class="report-table">
+        <thead><tr><th>Task</th><th>Why it matters</th><th>Owner (role)</th><th>Effort</th><th>Cost</th><th>Dependencies</th><th>Target</th></tr></thead>
+        <tbody>
+          <tr><td>Enable MFA (email + tools)</td><td>Prevent account takeover</td><td>IT / Owner</td><td>S</td><td>Free</td><td>—</td><td>Week 1–2</td></tr>
+          <tr><td>Assign alert owner</td><td>Someone sees alerts</td><td>Owner</td><td>S</td><td>Free</td><td>—</td><td>Week 1</td></tr>
+          <tr><td>Password manager + stop sharing</td><td>No shared credentials</td><td>Owner</td><td>M</td><td>Low</td><td>Pick tool first</td><td>Month 1</td></tr>
+          <tr><td>Backup + 1 restore test</td><td>Recovery works</td><td>Owner</td><td>M</td><td>Free–Low</td><td>—</td><td>Month 1–2</td></tr>
+          <tr><td>Offboarding checklist</td><td>Same-day access removal</td><td>HR / Owner</td><td>S</td><td>Free</td><td>—</td><td>Month 2</td></tr>
+          <tr><td>Auto-updates + device list</td><td>Patched devices</td><td>IT / Owner</td><td>M</td><td>Free</td><td>—</td><td>Month 2–3</td></tr>
+          <tr><td>Vendor check before purchase</td><td>Third-party risk</td><td>Who buys</td><td>S</td><td>Free</td><td>—</td><td>Ongoing</td></tr>
+        </tbody>
+      </table>
+    </section>
+    <section class="card">
+      <h2>10) Tooling Recommendations (Free-First, Fit to Stack)</h2>
+      <p class="muted">By environment: email provider, file storage, endpoint, backups. &quot;Why this tool&quot; · Setup highlights · Expected cost (incl. $0).</p>
       <ul>
-        <li>MFA coverage: {{mfa_email}} (email); {{mfa_critical}} (other tools) &rarr; Target: enabled on all key tools</li>
-        <li>Password sharing: {{shared_passwords}} &rarr; Target: Never</li>
-        <li>Backups: {{backup_status}} — Frequency: {{backup_frequency}} — Restore tested: {{backup_tested}}</li>
-        <li>Updates: {{update_cadence}} &rarr; Target: automatic where possible</li>
-        <li>Alerts owner assigned: {{alert_owner}} &rarr; Target: clearly assigned</li>
-        <li>Payment fraud controls: (show only if payments apply)</li>
+        <li><strong>Email:</strong> {{email_provider}} — Use built-in MFA and security settings (Google Admin / Microsoft 365). Cost: $0 with existing subscription.</li>
+        <li><strong>File storage:</strong> {{store_work_files_list}} — Ensure sharing rules and backup; avoid local-only critical data. Cost: $0–Low.</li>
+        <li><strong>Endpoint:</strong> {{endpoint_protection}} — Prefer built-in (Windows Security / macOS) + auto-updates before paid EDR. Cost: $0.</li>
+        <li><strong>Backups:</strong> {{backup_status}} — {{backup_frequency}}. Run restore test. Cost: $0 (cloud) or Low (backup tool).</li>
+        <li><strong>Password manager:</strong> Bitwarden (free team tier) or 1Password. Cost: $0–Low.</li>
+        <li><strong>Website (if applicable):</strong> {{website_platform}} — Auto-updates, limit admins, Cloudflare free. Cost: $0.</li>
+        <li><strong>Payments (if applicable):</strong> Use processor alerts; no card by email. Cost: $0.</li>
       </ul>
     </section>
     <section class="card">
-      <h2>9) Tooling &amp; Integration Recommendations</h2>
-      <p class="muted">SMB defaults: Google Workspace / Microsoft 365 built-in MFA and security settings (not Okta by default). Password manager: Bitwarden. Endpoint: Windows Security / macOS built-in + auto updates. Website: Cloudflare free, WordPress auto-updates (if applicable).</p>
+      <h2>11) Customer-Ready Security Summary (Externally Shareable)</h2>
+      <p class="muted">Short section they can send to customers/prospects. Only include items supported by their answers (no over-claiming).</p>
       <ul>
-        <li>Identity/MFA: Google Workspace or Microsoft 365 built-in security defaults + MFA</li>
-        <li>Password Manager: Bitwarden (or 1Password for teams)</li>
-        <li>Endpoint: Built-in (Windows Security / macOS) + automatic updates; configuration checklist before considering paid EDR</li>
-        <li>Alerts: Built-in alerts (email, bank, key tools) first; assign owner</li>
-        <li>Website (if applicable): WordPress hardening, Cloudflare free plan, plugin hygiene</li>
-        <li>Payments (if applicable): Stripe Radar, chargeback alerts</li>
+        <li><strong>Controls in place:</strong> MFA ({{mfa_email}} email; {{mfa_critical}} other tools); password manager ({{password_manager}}); backups ({{backup_status}}, {{backup_frequency}}); restore tested ({{backup_tested}}); alerts ({{alerts_enabled}}); alert owner ({{alert_owner}}); device encryption ({{device_encryption}}); updates ({{update_cadence}}).</li>
+        <li><strong>Data handling:</strong> {{data_sensitivity_summary}}. Storage: {{data_locations}}. Retention: {{data_retention}}. Customer data requests: {{dsar_readiness}}.</li>
+        <li><strong>Training / insurance:</strong> Training ({{training_cadence}}); cyber insurance ({{cyber_insurance}}); security checkups ({{security_checkups}}).</li>
+        <li><strong>Contact for security questions:</strong> {{email}}</li>
       </ul>
     </section>
     <section class="card">
-      <h2>10) Assumptions, Constraints, and Data Quality</h2>
+      <h2>12) Assumptions, Constraints &amp; Data Quality</h2>
       <ul>
-        <li>Data missing because not applicable: e.g. payment questions skipped if no payments; website questions skipped if no public website</li>
-        <li>Not sure / blank: Count of &quot;Not sure&quot; and unanswered fields may lower confidence</li>
-        <li>Confidence Level: [High/Medium/Low] — Based on % completed, &quot;Not sure&quot; on key controls (MFA, backups, updates, alerts owner)</li>
+        <li><strong>Skipped (Not applicable):</strong> Payment questions if no payments; website questions if no public website; BYOD if no personal devices. Normal.</li>
+        <li><strong>Unknown (&quot;Not sure&quot;):</strong> {{meta.not_sure_count}} key controls with &quot;Not sure&quot; — reduces confidence. Re-assess those when known.</li>
+        <li><strong>Missing inputs:</strong> Any blank required fields affect accuracy; optional blanks are OK.</li>
+        <li><strong>Confidence:</strong> {{meta.confidence_level}}. Recommended re-assessment: 90 days or after major changes.</li>
       </ul>
     </section>
     <section class="card">
-      <h2>11) Appendix: Raw Assessment Responses</h2>
+      <h2>Quick wins callout</h2>
+      <p><strong>Biggest risk reducers:</strong> MFA everywhere + backups + automatic updates. These three cut most SMB risk from account takeover, ransomware, and lost data.</p>
+      <p><strong>If you do only 3 things this month:</strong> (1) Turn on MFA for email. (2) Assign one person to receive security alerts. (3) Run one backup restore test.</p>
+      <p class="muted"><strong>Mini glossary:</strong> MFA = multi-factor authentication (second step to sign in). Phishing = fake emails/links to steal credentials. Backup restore test = actually restoring a file from backup to confirm it works.</p>
+    </section>
+    <section class="card">
+      <h2>13) Appendices</h2>
+      <h3>13.1 Templates (Copy/Paste)</h3>
+      <p class="muted">Incident checklist · Offboarding checklist · Vendor security checklist · Backup checklist · Simple password/MFA policy (1 page). Available on request or from Flare.</p>
+      <h3>13.2 Raw Responses (Traceable)</h3>
       <p class="muted">Traceability: QID-style references support Evidence in Section 5.</p>
       <h3>Company Information</h3>
       <ul><li>Company: {{company}} — Contact: {{name}} — Role: {{role}} — Public website: {{public_website}} — Platform: {{website_platform}} — Updates: {{website_updates}}</li></ul>
