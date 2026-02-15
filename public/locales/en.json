@@ -25,7 +25,11 @@
     "checkout": "/checkout.html",
     "success": "/success.html",
     "assessment": "/assessment.html",
-    "alternate": "/pt/"
+    "en": "/",
+    "pt": "/pt/",
+    "es": "/es/",
+    "fr": "/fr/",
+    "de": "/de/"
   },
   "home": {
     "meta_title": "Flare – Security for everyone. No jargon, no big budgets.",

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" data-locale="en">
+<html lang="de" data-locale="de">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Checkout – Flare</title>
+  <title>Contact – Flare</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -37,61 +37,50 @@
     .page-desc { color: var(--text-muted); font-size: 0.95rem; margin: 0 0 2rem; }
     .card { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; margin-bottom: 1.5rem; }
     .form-label { display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 0.35rem; color: var(--text); }
-    input, select { width: 100%; padding: 0.65rem 0.85rem; font-family: inherit; font-size: 0.95rem; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); margin-bottom: 1rem; }
-    input::placeholder, select { color: var(--text-muted); }
-    input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    input, textarea { width: 100%; padding: 0.65rem 0.85rem; font-family: inherit; font-size: 0.95rem; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); margin-bottom: 1rem; }
+    textarea { min-height: 5rem; resize: vertical; }
+    input::placeholder, textarea::placeholder { color: var(--text-muted); }
+    input:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
     .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.85rem 1.5rem; font-family: inherit; font-size: 0.95rem; font-weight: 600; border-radius: 10px; cursor: pointer; border: none; transition: transform .2s, box-shadow .2s; width: 100%; }
     .btn:hover:not(:disabled) { transform: translateY(-2px); }
-    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
     .btn-primary { background: linear-gradient(135deg, var(--accent), #06b6d4); color: var(--bg); box-shadow: 0 4px 24px rgba(34, 211, 238, 0.35); }
-    .btn-ghost { background: transparent; color: var(--text-muted); margin-top: 0.75rem; text-decoration: none; }
+    .btn-ghost { background: transparent; color: var(--text-muted); margin-top: 0.75rem; text-decoration: none; display: inline-block; width: auto; }
     .btn-ghost:hover { color: var(--accent); }
     .message { padding: 0.85rem 1rem; border-radius: 10px; font-size: 0.9rem; margin-top: 1rem; display: none; }
     .message.success { background: rgba(52, 211, 153, 0.15); color: var(--success); border: 1px solid rgba(52, 211, 153, 0.3); }
     .message.error { background: rgba(248, 113, 113, 0.12); color: var(--error); border: 1px solid rgba(248, 113, 113, 0.3); }
-    .product-line { font-size: 0.95rem; color: var(--text-muted); margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
-    .product-line strong { color: var(--text); }
     .footer { padding: 2rem 1.5rem; border-top: 1px solid var(--border); text-align: center; }
     .footer a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; }
     .footer a:hover { color: var(--accent); }
   </style>
 </head>
-<body data-doc-title="checkout.meta_title">
+<body data-doc-title="contact.meta_title">
   <nav class="nav">
     <a href="/" class="nav-logo" data-i18n-href="home"><span class="nav-logo-word">Flare</span><span class="nav-logo-dot">.</span></a>
     <div class="nav-links">
       <a href="/" data-i18n="common.nav_home" data-i18n-href="home">Home</a>
-      <a href="/contact.html" data-i18n="common.nav_contact" data-i18n-href="contact">Contact</a>
+      <a href="/checkout.html" data-i18n="checkout.page_label" data-i18n-href="checkout">Checkout</a>
       <span class="nav-lang"><a href="/" data-i18n-href="en" aria-label="English">EN</a> <a href="/pt/" data-i18n-href="pt" aria-label="Português">PT</a> <a href="/es/" data-i18n-href="es" aria-label="Español">ES</a> <a href="/fr/" data-i18n-href="fr" aria-label="Français">FR</a> <a href="/de/" data-i18n-href="de" aria-label="Deutsch">DE</a></span>
     </div>
   </nav>
 
   <div class="container">
-    <p class="page-label" data-i18n="checkout.page_label">Checkout</p>
-    <h1 class="page-title" data-i18n="checkout.title">Get your report</h1>
-    <p class="page-desc" data-i18n="checkout.desc">One report: what’s wrong, what to do first, and how to do it yourself. Plain language, no jargon. Complete payment securely with Stripe; you’ll receive a confirmation and a link to your assessment.</p>
+    <p class="page-label" data-i18n="contact.page_label">Contact</p>
+    <h1 class="page-title" data-i18n="contact.title">Get in touch</h1>
+    <p class="page-desc" data-i18n="contact.desc">Send us a message. We’ll get back to you as soon as we can.</p>
 
     <div class="card">
-      <p class="product-line" data-i18n="checkout.product_line" data-i18n-html><strong>Your report</strong> — What’s wrong, what to fix first, and step-by-step DIY directions. <strong>89€</strong> or <strong>$89</strong> (launch campaign — choose currency below).</p>
-      <form id="checkout-form">
-        <input type="hidden" id="service_type" name="service_type" value="protect">
+      <form id="contact-form">
+        <label class="form-label" for="email" data-i18n="contact.email_label">Email *</label>
+        <input type="email" id="email" name="email" required data-i18n-placeholder="contact.email_placeholder" placeholder="you@example.com">
 
-        <label class="form-label" for="currency" data-i18n="checkout.currency_label">Currency</label>
-        <select id="currency" name="currency">
-          <option value="eur">EUR</option>
-          <option value="usd">USD</option>
-        </select>
+        <label class="form-label" for="name" data-i18n="contact.name_label">Name</label>
+        <input type="text" id="name" name="name" data-i18n-placeholder="contact.name_placeholder" placeholder="Your name">
 
-        <label class="form-label" for="customer_name" data-i18n="checkout.name_label">Name (optional)</label>
-        <input type="text" id="customer_name" name="customer_name" data-i18n-placeholder="checkout.name_placeholder" placeholder="Your name">
+        <label class="form-label" for="message" data-i18n="contact.message_label">Message</label>
+        <textarea id="message-field" name="message" rows="5" data-i18n-placeholder="contact.message_placeholder" placeholder="Your message..." maxlength="2000"></textarea>
 
-        <label class="form-label" for="customer_email" data-i18n="checkout.email_label">Email (optional – Stripe will collect if empty)</label>
-        <input type="email" id="customer_email" name="customer_email" data-i18n-placeholder="checkout.email_placeholder" placeholder="you@example.com">
-
-        <label class="form-label" for="customer_company" data-i18n="checkout.company_label">Company (optional)</label>
-        <input type="text" id="customer_company" name="customer_company" data-i18n-placeholder="checkout.company_placeholder" placeholder="Company name">
-
-        <button type="submit" id="btn" class="btn btn-primary" data-i18n="checkout.btn">Continue to payment</button>
+        <button type="submit" class="btn btn-primary" data-i18n="common.btn_submit">Submit</button>
       </form>
     </div>
 
@@ -100,7 +89,7 @@
   </div>
 
   <footer class="footer">
-    <a href="/" data-i18n-href="home">Flare</a> · <a href="/contact.html" data-i18n-href="contact" data-i18n="common.nav_contact">Contact</a>
+    <a href="/" data-i18n-href="home">Flare</a> · <a href="/checkout.html" data-i18n-href="checkout" data-i18n="checkout.page_label">Checkout</a> · <a href="/contact.html" data-i18n-href="contact" data-i18n="common.nav_contact">Contact</a>
   </footer>
 
   <script src="/js/i18n.js"></script>
@@ -108,57 +97,38 @@
     (function () {
       if (!window.FLARE_WORKER_URL && /^(www\.)?getflare\.net$/.test(window.location.hostname)) window.FLARE_WORKER_URL = 'https://api.getflare.net';
       const WORKER_URL = window.FLARE_WORKER_URL || 'https://flare-worker.gusmao-ricardo.workers.dev';
-      const form = document.getElementById('checkout-form');
-      const btn = document.getElementById('btn');
+      const form = document.getElementById('contact-form');
       const messageEl = document.getElementById('message');
-
-      function showMessage(text, isError) {
-        messageEl.textContent = text;
-        messageEl.className = 'message ' + (isError ? 'error' : 'success');
-        messageEl.style.display = 'block';
-      }
 
       form.addEventListener('submit', async function (e) {
         e.preventDefault();
-        btn.disabled = true;
         messageEl.style.display = 'none';
-
-        const payload = {
-          service_type: document.getElementById('service_type').value,
-          currency: document.getElementById('currency').value,
-          customer_name: document.getElementById('customer_name').value.trim() || undefined,
-          customer_email: document.getElementById('customer_email').value.trim() || undefined,
-          customer_company: document.getElementById('customer_company').value.trim() || undefined,
-        };
-
+        messageEl.className = 'message';
+        const email = form.email.value.trim();
+        const name = form.name.value.trim();
+        const message = (form.querySelector('[name="message"]')?.value || '').trim().slice(0, 2000);
         try {
-          const res = await fetch(WORKER_URL + '/api/checkout', {
+          const res = await fetch(WORKER_URL + '/submit', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
+            body: JSON.stringify({ email, name, message: message || undefined }),
           });
           const data = await res.json();
-          if (!res.ok) {
-            showMessage(data.error || 'Checkout failed', true);
-            btn.disabled = false;
-            return;
+          messageEl.style.display = 'block';
+          if (data.ok) {
+            messageEl.textContent = (window.FLARE_I18N && window.FLARE_I18N.t('contact.success')) || 'Saved. Thanks for getting in touch!';
+            messageEl.classList.add('success');
+            form.reset();
+          } else {
+            messageEl.textContent = data.error || (window.FLARE_I18N && window.FLARE_I18N.t('contact.error')) || 'Something went wrong.';
+            messageEl.classList.add('error');
           }
-          if (data.url) {
-            window.location.href = data.url;
-            return;
-          }
-          showMessage('No redirect URL received', true);
-          btn.disabled = false;
         } catch (err) {
-          showMessage(err.message || 'Network error', true);
-          btn.disabled = false;
+          messageEl.style.display = 'block';
+          messageEl.textContent = ((window.FLARE_I18N && window.FLARE_I18N.t('contact.network_error')) || 'Network error: ') + err.message;
+          messageEl.classList.add('error');
         }
       });
-
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('canceled') === '1') {
-        showMessage('Checkout was canceled. You can try again.', false);
-      }
     })();
   </script>
 </body>

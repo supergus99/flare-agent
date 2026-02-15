@@ -1,17 +1,19 @@
 /**
  * Flare client-side i18n.
- * - Set data-locale="en" or data-locale="pt" on <html>.
- * - Use data-i18n="key" (dot notation, e.g. "contact.title") for text content.
- * - Use data-i18n-placeholder="key" for input/textarea placeholder.
- * - Use data-i18n-title="key" for title attribute.
- * - Use data-i18n-href="key" for path (from paths.* keys); sets element href.
+ * Supported: en (English), pt (Portuguese – Portugal), es (Spanish – Spain), fr (French), de (German – Germany).
+ * - Set data-locale="en" | "pt" | "es" | "fr" | "de" on <html>.
+ * - Use data-i18n="key" (dot notation) for text; data-i18n-placeholder, data-i18n-title, data-i18n-href, data-i18n-html.
  * - **text** in locale strings is rendered as <strong>text</strong> when using data-i18n.
  */
 (function () {
+  var SUPPORTED = { en: 1, pt: 1, es: 1, fr: 1, de: 1 };
   var locale = (document.documentElement.getAttribute('data-locale') || '').trim().toLowerCase();
   if (!locale) {
     var pathname = window.location.pathname || '';
     if (pathname.indexOf('/pt/') === 0 || pathname === '/pt' || pathname === '/pt/') locale = 'pt';
+    else if (pathname.indexOf('/es/') === 0 || pathname === '/es' || pathname === '/es/') locale = 'es';
+    else if (pathname.indexOf('/fr/') === 0 || pathname === '/fr' || pathname === '/fr/') locale = 'fr';
+    else if (pathname.indexOf('/de/') === 0 || pathname === '/de' || pathname === '/de/') locale = 'de';
     else {
       var q = window.location.search && window.location.search.indexOf('lang=') !== -1
         ? new URLSearchParams(window.location.search).get('lang')
@@ -22,7 +24,7 @@
   if (!locale) {
     try { locale = (localStorage.getItem('flare_locale') || '').trim().toLowerCase().slice(0, 5); } catch (e) {}
   }
-  if (locale !== 'pt') locale = 'en';
+  if (!SUPPORTED[locale]) locale = 'en';
 
   var dict = {};
   var base = (function () {
@@ -99,11 +101,16 @@
       .then(function (r) { return r.ok ? r.json() : (locale === 'en' ? {} : fetch(base + '/locales/en.json').then(function (r2) { return r2.ok ? r2.json() : {}; })); })
       .then(function (data) {
         dict = data || {};
-        if (!dict.paths && locale === 'pt') {
-          dict.paths = { home: '/pt/', contact: '/pt/contact.html', checkout: '/pt/checkout.html', success: '/pt/success.html', assessment: '/pt/assessment.html' };
-        }
-        if (!dict.paths && locale === 'en') {
-          dict.paths = { home: '/', contact: '/contact.html', checkout: '/checkout.html', success: '/success.html', assessment: '/assessment.html' };
+        var pathPrefixes = { en: '/', pt: '/pt/', es: '/es/', fr: '/fr/', de: '/de/' };
+        if (!dict.paths || !dict.paths.home) {
+          var pre = pathPrefixes[locale] || '/';
+          dict.paths = dict.paths || {};
+          dict.paths.home = pre;
+          dict.paths.contact = pre.replace(/\/$/, '') + '/contact.html';
+          dict.paths.checkout = pre.replace(/\/$/, '') + '/checkout.html';
+          dict.paths.success = pre.replace(/\/$/, '') + '/success.html';
+          dict.paths.assessment = pre.replace(/\/$/, '') + '/assessment.html';
+          dict.paths.en = '/'; dict.paths.pt = '/pt/'; dict.paths.es = '/es/'; dict.paths.fr = '/fr/'; dict.paths.de = '/de/';
         }
         apply();
         try { localStorage.setItem('flare_locale', locale); } catch (e) {}

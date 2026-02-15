@@ -25,7 +25,11 @@
     "checkout": "/pt/checkout.html",
     "success": "/pt/success.html",
     "assessment": "/pt/assessment.html",
-    "alternate": "/"
+    "en": "/",
+    "pt": "/pt/",
+    "es": "/es/",
+    "fr": "/fr/",
+    "de": "/de/"
   },
   "home": {
     "meta_title": "Flare – Segurança para todos. Sem jargão, sem orçamentos de luxo.",

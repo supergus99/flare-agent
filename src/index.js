@@ -14,7 +14,7 @@ const CORS = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
-/** Email copy for welcome and report-ready emails (en/pt). */
+/** Email copy for welcome and report-ready emails. Locales: en, pt (Portugal), es (Spain), fr, de (Germany). */
 const I18N_EMAIL = {
   en: {
     welcome_subject: "Welcome – complete your security assessment",
@@ -41,6 +41,45 @@ const I18N_EMAIL = {
     report_ready_body: "O seu relatório de avaliação de segurança está pronto.",
     report_ready_cta: "Ver relatório",
     report_ready_expires: "Este link expira em 30 dias.",
+  },
+  es: {
+    welcome_subject: "Bienvenido – complete su cuestionario de seguridad",
+    welcome_title: "Bienvenido – Flare",
+    welcome_thanks: "Gracias por su compra. Complete el cuestionario para recibir su informe.",
+    welcome_code: "Use este código para acceder al cuestionario:",
+    welcome_cta: "Abrir cuestionario",
+    welcome_expires: "Este enlace caduca en 30 días.",
+    report_ready_subject: "Su informe de seguridad está listo",
+    report_ready_title: "Su informe está listo – Flare",
+    report_ready_body: "Su informe de evaluación de seguridad está listo.",
+    report_ready_cta: "Ver informe",
+    report_ready_expires: "Este enlace caducará en 30 días.",
+  },
+  fr: {
+    welcome_subject: "Bienvenue – complétez votre questionnaire de sécurité",
+    welcome_title: "Bienvenue – Flare",
+    welcome_thanks: "Merci pour votre achat. Complétez le questionnaire pour recevoir votre rapport.",
+    welcome_code: "Utilisez ce code pour accéder au questionnaire :",
+    welcome_cta: "Ouvrir le questionnaire",
+    welcome_expires: "Ce lien expire dans 30 jours.",
+    report_ready_subject: "Votre rapport de sécurité est prêt",
+    report_ready_title: "Votre rapport est prêt – Flare",
+    report_ready_body: "Votre rapport d'évaluation de sécurité est prêt.",
+    report_ready_cta: "Voir le rapport",
+    report_ready_expires: "Ce lien expirera dans 30 jours.",
+  },
+  de: {
+    welcome_subject: "Willkommen – füllen Sie Ihren Sicherheitsfragebogen aus",
+    welcome_title: "Willkommen – Flare",
+    welcome_thanks: "Danke für Ihren Einkauf. Füllen Sie den Fragebogen aus, um Ihren Bericht zu erhalten.",
+    welcome_code: "Nutzen Sie diesen Code für den Zugang zum Fragebogen:",
+    welcome_cta: "Fragebogen öffnen",
+    welcome_expires: "Dieser Link läuft in 30 Tagen ab.",
+    report_ready_subject: "Ihr Sicherheitsbericht ist fertig",
+    report_ready_title: "Ihr Bericht ist fertig – Flare",
+    report_ready_body: "Ihr Bericht zur Sicherheitsbewertung ist fertig.",
+    report_ready_cta: "Bericht ansehen",
+    report_ready_expires: "Dieser Link läuft in 30 Tagen ab.",
   },
 };
 
@@ -1121,10 +1160,21 @@ async function handleGenerateReport(env, body) {
   ).bind(r2Key, completedAt, versionId).run();
 }
 
-/** Email HTML in website style (Outfit, Flare colors). locale: 'en' | 'pt' (default en). */
+/** Normalize email locale to I18N_EMAIL key: en, pt, es, fr, de. */
+function emailLocaleKey(locale) {
+  const k = (locale || "").toString().toLowerCase();
+  if (k === "pt" || k === "pt-pt") return "pt";
+  if (k === "es") return "es";
+  if (k === "fr") return "fr";
+  if (k === "de") return "de";
+  return "en";
+}
+
+/** Email HTML in website style (Outfit, Flare colors). locale: en | pt | es | fr | de (default en). */
 function getWelcomeEmailHtml(name, assessmentUrl, fromName, codeBlock, locale = "en") {
-  const t = I18N_EMAIL[locale === "pt" || locale === "pt-pt" ? "pt" : "en"] || I18N_EMAIL.en;
-  return `<!DOCTYPE html><html lang="${locale === "pt" || locale === "pt-pt" ? "pt" : "en"}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${escapeHtml(t.welcome_title)}</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet"></head><body style="margin:0;font-family:'Outfit',system-ui,sans-serif;background:#0a0a0b;color:#e4e4e7;line-height:1.6;padding:2rem 1rem;">
+  const key = emailLocaleKey(locale);
+  const t = I18N_EMAIL[key] || I18N_EMAIL.en;
+  return `<!DOCTYPE html><html lang="${key}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${escapeHtml(t.welcome_title)}</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet"></head><body style="margin:0;font-family:'Outfit',system-ui,sans-serif;background:#0a0a0b;color:#e4e4e7;line-height:1.6;padding:2rem 1rem;">
 <div style="max-width:36em;margin:0 auto;">
   <p style="margin:0 0 1rem;font-size:1.25rem;font-weight:600;background:linear-gradient(135deg,#fb923c,#22d3ee);-webkit-background-clip:text;color:transparent;">Flare.</p>
   <p style="margin:0 0 1rem;">Hi ${escapeHtml(name)},</p>
@@ -1137,8 +1187,9 @@ function getWelcomeEmailHtml(name, assessmentUrl, fromName, codeBlock, locale = 
 }
 
 function getReportReadyEmailHtml(name, reportUrl, fromName, locale = "en") {
-  const t = I18N_EMAIL[locale === "pt" || locale === "pt-pt" ? "pt" : "en"] || I18N_EMAIL.en;
-  return `<!DOCTYPE html><html lang="${locale === "pt" || locale === "pt-pt" ? "pt" : "en"}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${escapeHtml(t.report_ready_title)}</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet"></head><body style="margin:0;font-family:'Outfit',system-ui,sans-serif;background:#0a0a0b;color:#e4e4e7;line-height:1.6;padding:2rem 1rem;">
+  const key = emailLocaleKey(locale);
+  const t = I18N_EMAIL[key] || I18N_EMAIL.en;
+  return `<!DOCTYPE html><html lang="${key}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${escapeHtml(t.report_ready_title)}</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet"></head><body style="margin:0;font-family:'Outfit',system-ui,sans-serif;background:#0a0a0b;color:#e4e4e7;line-height:1.6;padding:2rem 1rem;">
 <div style="max-width:36em;margin:0 auto;">
   <p style="margin:0 0 1rem;font-size:1.25rem;font-weight:600;background:linear-gradient(135deg,#fb923c,#22d3ee);-webkit-background-clip:text;color:transparent;">Flare.</p>
   <p style="margin:0 0 1rem;">Hi ${escapeHtml(name)},</p>
@@ -1232,7 +1283,7 @@ async function handleSendApprovedReport(env, body) {
       if (sub?.assessment_data) {
         const data = typeof sub.assessment_data === "string" ? JSON.parse(sub.assessment_data || "{}") : sub.assessment_data || {};
         const lang = (data.report_language || data.language || "").toString().toLowerCase();
-        if (lang === "pt" || lang === "pt-pt") reportLocale = "pt";
+        reportLocale = emailLocaleKey(lang);
       }
     } catch (_) {}
   }
