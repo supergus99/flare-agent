@@ -752,6 +752,27 @@ export default {
       }
     }
 
+    if (url.pathname === "/api/admin/test-email" && request.method === "POST" && env.DB) {
+      const admin = await requireAdmin(request, env);
+      if (!admin) return json({ error: "Unauthorized" }, 401);
+      if (!env.RESEND_API_KEY) return json({ ok: false, error: "RESEND_API_KEY is not set" }, 503);
+      try {
+        const body = await request.json().catch(() => ({}));
+        const to = (body.to ?? "").trim();
+        if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) return json({ ok: false, error: "Valid 'to' email required in body" }, 400);
+        const fromName = await getFromName(env);
+        const fromEmail = await getFromEmail(env);
+        const from = fromEmail.includes("<") ? fromEmail : `${fromName} <${fromEmail}>`;
+        const subject = "Flare – email test";
+        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="font-family:system-ui,sans-serif;padding:1rem;"><p>If you received this, Resend is working.</p><p><strong>Flare</strong></p></body></html>`;
+        const result = await sendResend(env.RESEND_API_KEY, { from, to, subject, html });
+        if (result.error) return json({ ok: false, error: result.error }, 502);
+        return json({ ok: true, id: result.id });
+      } catch (e) {
+        return json({ ok: false, error: e.message }, 500);
+      }
+    }
+
     if (url.pathname === "/api/admin/chart-data" && request.method === "GET" && env.DB) {
       const admin = await requireAdmin(request, env);
       if (!admin) return json({ error: "Unauthorized" }, 401);
@@ -1193,10 +1214,16 @@ function applyReportTemplate(templateBody, vars) {
   let out = templateBody;
   for (const [key, value] of Object.entries(vars)) {
     const str = value != null ? String(value) : "";
-    const safe = key.startsWith("ai_") ? str : escapeHtml(str);
+    const safe = key.startsWith("ai_") || key.endsWith("_html") ? str : escapeHtml(str);
     out = out.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), safe);
   }
   return out;
+}
+
+/** Get array from assessment data; form may send key or "key[]". */
+function getArr(d, key) {
+  const v = d[key] ?? d[key + "[]"];
+  return Array.isArray(v) ? v : v != null ? [v] : [];
 }
 
 function buildReportVars(submission, data) {
@@ -1204,22 +1231,94 @@ function buildReportVars(submission, data) {
   const arr = (v) => (Array.isArray(v) ? v : v ? [v] : []);
   const join = (v) => arr(v).join(", ") || "—";
   const str = (v) => (v != null && String(v).trim() !== "" ? String(v).trim() : "—");
-  const unitsTotal = d.units_total != null ? String(d.units_total) : "";
-  const unitsRange = unitsTotal || "—";
-  const countries = join(d.regions_operated);
+  const nameVal = str(submission.name) !== "—" ? str(submission.name) : str(d.contact_name) || str(submission.email) || "Customer";
+  const companyVal = str(submission.company) || str(d.company_name);
+  const emailVal = str(submission.email) || str(d.email);
+  const roleVal = str(d.role);
+  const messageVal = str(submission.message) !== "—" ? str(submission.message) : str(d.describe_concerns);
+  const publicWebsite = str(d.public_website);
+  const websiteUrlRaw = str(d.website_url || d.website);
+  const hasWebsite = publicWebsite === "Yes" && websiteUrlRaw !== "—" && websiteUrlRaw !== "";
+  const websiteHref = hasWebsite ? websiteUrlRaw : "#";
+  const websiteDisplay = hasWebsite ? websiteUrlRaw : "No public website";
+  const website_cell_html = hasWebsite
+    ? `<a href="${escapeHtml(websiteHref)}" target="_blank" rel="noopener">${escapeHtml(websiteUrlRaw)}</a>`
+    : "No public website";
+  const peopleRange = str(d.number_of_people);
+  const workSetup = str(d.work_location);
+  const primaryRegion = str(d.data_hosted) || join(getArr(d, "operating_regions"));
+  const language = str(d.report_language) || str(d.language) || "—";
+  const timeline = str(d.improvements_timeline);
+  const budget_range = str(d.budget_range);
   return {
-    name: str(submission.name) !== "—" ? str(submission.name) : str(submission.email) || "Customer",
-    company: str(submission.company),
-    email: str(submission.email),
-    role: str(d.role),
+    name: nameVal,
+    company: companyVal,
+    email: emailVal,
+    role: roleVal,
     service: str(submission.service),
-    message: str(submission.message) !== "—" ? str(submission.message) : str(d.describe_concerns),
+    message: messageVal,
     report_date: new Date().toISOString().slice(0, 10),
-    website_url: str(d.website_url || d.website),
-    website_href: (d.website_url || d.website) && String(d.website_url || d.website).trim() ? String(d.website_url || d.website).trim() : "#",
-    units_range: unitsRange,
-    countries: countries,
-    language: str(d.language) || "—",
+    website_url: websiteDisplay,
+    website_href: websiteHref,
+    website_cell_html,
+    people_range: peopleRange,
+    work_setup: workSetup,
+    primary_region: primaryRegion,
+    units_range: peopleRange,
+    countries: primaryRegion,
+    language,
+    timeline,
+    budget_range,
+    public_website: publicWebsite,
+    website_platform: str(d.website_platform),
+    website_admin_access: str(d.website_admin_access),
+    website_updates: str(d.website_updates),
+    mfa_email: str(d.mfa_email),
+    mfa_critical: str(d.mfa_other_tools),
+    shared_passwords: str(d.share_passwords),
+    password_manager: str(d.password_manager),
+    admin_access: str(d.admin_access),
+    offboarding_speed: str(d.offboard_speed),
+    account_recovery: str(d.account_recovery),
+    tool_owner_list: str(d.accounts_inventory),
+    login_count: str(d.login_count),
+    outside_access: join(getArr(d, "outside_access")),
+    vpn_usage: str(d.vpn),
+    wifi_security: str(d.wifi_security),
+    guest_wifi: str(d.guest_wifi),
+    customer_data_types: join(getArr(d, "customer_data")),
+    employee_data_types: join(getArr(d, "employee_data")),
+    data_locations: join(getArr(d, "important_data_stored")),
+    data_retention: str(d.delete_data),
+    dsar_readiness: str(d.customer_data_request),
+    device_encryption: str(d.devices_encrypted),
+    secure_sharing: str(d.secure_file_sharing),
+    privacy_notice: str(d.privacy_policy),
+    limit_sensitive_access: str(d.limit_sensitive_access),
+    backup_status: str(d.backup_method),
+    backup_frequency: str(d.backup_frequency),
+    backup_tested: str(d.backup_tested),
+    backup_data: join(getArr(d, "backup_data")),
+    endpoint_protection: str(d.computer_protection),
+    update_cadence: str(d.updates_handled),
+    screen_lock: str(d.screen_lock),
+    byod: str(d.byod),
+    byod_requirements: str(d.byod_protections),
+    device_inventory: str(d.device_inventory),
+    alerts_enabled: join(getArr(d, "security_alerts")),
+    alert_owner: str(d.who_receives_alerts),
+    incident_checklist: str(d.hack_checklist),
+    incident_contacts: join(getArr(d, "first_call")),
+    past_incidents: join(getArr(d, "past_incidents")),
+    incident_details: str(d.incident_details),
+    legal_contract_requirements: str(d.legal_requirements),
+    customer_security_requests: join(getArr(d, "customer_security_ask")),
+    dpa_usage: str(d.dpa_with_vendors),
+    vendor_security_check: str(d.vendor_security_check),
+    training_cadence: str(d.security_training),
+    phishing_tests: str(d.phishing_tests),
+    cyber_insurance: str(d.cyber_insurance),
+    security_checkups: str(d.security_checkup),
     ai_executive_summary: "",
     ai_findings: "",
     ai_recommendations: "",
@@ -1287,11 +1386,11 @@ function getDefaultReportTemplateBodyFlare() {
       <div class="section-title"><h2>1) Report Metadata</h2></div>
       <div class="meta-grid">
         <div class="kv"><label>Company</label><div>{{company}}</div></div>
-        <div class="kv"><label>Website</label><div><a href="{{website_href}}" target="_blank" rel="noopener">{{website_url}}</a></div></div>
+        <div class="kv"><label>Website</label><div>{{website_cell_html}}</div></div>
         <div class="kv"><label>Prepared for</label><div>{{name}} — {{role}}</div></div>
         <div class="kv"><label>Prepared by</label><div>Flare</div></div>
         <div class="kv"><label>Assessment Date</label><div>{{report_date}}</div></div>
-        <div class="kv"><label>Scope</label><div>{{units_range}} units across {{countries}}</div></div>
+        <div class="kv"><label>Scope</label><div>{{people_range}} people using company systems; Work setup: {{work_setup}}; Primary region: {{primary_region}}</div></div>
         <div class="kv"><label>Language/Locale</label><div>{{language}}</div></div>
       </div>
     </section>
@@ -1303,8 +1402,8 @@ function getDefaultReportTemplateBodyFlare() {
       <h3>Priority Recommendations (0–90 days)</h3>
       <div class="ai-recommendations">{{ai_recommendations}}</div>
       <div class="grid-2">
-        <div class="kpi"><div><strong>Estimated Budget Range</strong><br><small class="muted">[Notes on scope]</small></div><div>[Currency + range]</div></div>
-        <div class="kpi"><div><strong>Target Timeline</strong><br><small class="muted">[e.g. Core items within 90 days]</small></div><div>[Start date / cadence]</div></div>
+        <div class="kpi"><div><strong>Estimated Budget Range</strong><br><small class="muted">From assessment</small></div><div>{{budget_range}}</div></div>
+        <div class="kpi"><div><strong>Target Timeline</strong><br><small class="muted">From assessment</small></div><div>{{timeline}}</div></div>
       </div>
     </section>
     <section class="card">
@@ -1315,120 +1414,184 @@ function getDefaultReportTemplateBodyFlare() {
         <li>Company Name: {{company}}</li>
         <li>Contact: {{name}} — {{email}}</li>
         <li>Role: {{role}}</li>
+        <li>Public website: {{public_website}}</li>
+        <li>Website platform: {{website_platform}}</li>
+        <li>Website admin access: {{website_admin_access}}</li>
+        <li>Website updates: {{website_updates}}</li>
       </ul>
       <h3>3.2 Access Control</h3>
-      <ul><li>Authentication Method(s): [Password / SSO / MFA / Biometric]</li><li>MFA Enabled: [Yes / No]</li><li>Password Policy: [Basic / Standard / Strong / None]</li><li>Access Review Frequency: [Quarterly / Semi-annual / Annual / Ad-hoc / Never]</li></ul>
+      <ul>
+        <li>Logins/users count: {{login_count}}</li>
+        <li>Outside access: {{outside_access}}</li>
+        <li>MFA on email: {{mfa_email}}</li>
+        <li>MFA on important tools: {{mfa_critical}}</li>
+        <li>Password sharing: {{shared_passwords}}</li>
+        <li>Password manager use: {{password_manager}}</li>
+        <li>Admin access spread: {{admin_access}}</li>
+        <li>Offboarding speed: {{offboarding_speed}}</li>
+        <li>Account recovery readiness: {{account_recovery}}</li>
+        <li>List of important tools + owners: {{tool_owner_list}}</li>
+      </ul>
       <h3>3.3 Network Security</h3>
-      <ul><li>Firewall Solution: [Enterprise / SMB / Cloud-native / None]</li><li>VPN Usage: [Always / Sometimes / Never]</li><li>Network Segmentation: [Yes / Partial / No]</li><li>Intrusion Detection: [IDS/IPS / EDR / None]</li></ul>
+      <ul>
+        <li>Work setup: {{work_setup}}</li>
+        <li>VPN usage: {{vpn_usage}}</li>
+        <li>Office Wi‑Fi security: {{wifi_security}}</li>
+        <li>Guest Wi‑Fi separation: {{guest_wifi}}</li>
+      </ul>
       <h3>3.4 Data Protection</h3>
-      <ul><li>Encryption at Rest: [Yes / Partial / No]</li><li>Encryption in Transit: [Yes / Partial / No]</li><li>Backup Frequency: [Daily / Weekly / Monthly / Never]</li><li>Backup Testing: [Regular / Occasional / Never]</li><li>Data Classification: [Yes / Partial / No]</li></ul>
+      <ul>
+        <li>Customer data types handled: {{customer_data_types}}</li>
+        <li>Employee data types stored: {{employee_data_types}}</li>
+        <li>Storage locations: {{data_locations}}</li>
+        <li>Data deletion/retention approach: {{data_retention}}</li>
+        <li>Customer data request readiness (find/delete): {{dsar_readiness}}</li>
+        <li>Device encryption: {{device_encryption}}</li>
+        <li>Secure file sharing practice: {{secure_sharing}}</li>
+        <li>Privacy policy/notice: {{privacy_notice}}</li>
+        <li>Limit who can access sensitive data: {{limit_sensitive_access}}</li>
+        <li>Backups: {{backup_status}} — Frequency: {{backup_frequency}} — Restore tested: {{backup_tested}}</li>
+      </ul>
       <h3>3.5 Endpoint Security</h3>
-      <ul><li>Antivirus / EPP: [Enterprise / Consumer / None]</li><li>Endpoint Detection (EDR/XDR): [Yes / No]</li><li>Patch Management: [Automated / Manual / Ad-hoc / None]</li><li>Mobile Device Management: [Yes / Partial / No]</li></ul>
-      <h3>3.6 Security Monitoring</h3>
-      <ul><li>SIEM / Log Management: [SIEM / Cloud-native / Basic logs / None]</li><li>Log Retention: [90+ days / 30–90 / &lt;30 / None]</li><li>Incident Response Plan: [Yes, documented / Informal / No]</li><li>Vulnerability Scanning: [Regular / Occasional / Never]</li></ul>
+      <ul>
+        <li>Endpoint protection: {{endpoint_protection}}</li>
+        <li>Updates/patching: {{update_cadence}}</li>
+        <li>Device encryption: {{device_encryption}}</li>
+        <li>Screen lock: {{screen_lock}}</li>
+        <li>BYOD allowed: {{byod}} — Required protections: {{byod_requirements}}</li>
+        <li>Device inventory exists: {{device_inventory}}</li>
+      </ul>
+      <h3>3.6 Alerts &amp; Incident Readiness</h3>
+      <ul>
+        <li>Alerts enabled: {{alerts_enabled}}</li>
+        <li>Alert owner assigned: {{alert_owner}}</li>
+        <li>Incident checklist exists: {{incident_checklist}}</li>
+        <li>Who to contact first: {{incident_contacts}}</li>
+        <li>Past incidents: {{past_incidents}}</li>
+        <li>Incident details: {{incident_details}}</li>
+      </ul>
       <h3>3.7 Compliance &amp; Policies</h3>
-      <ul><li>Compliance Frameworks: [SOC 2 / ISO 27001 / HIPAA / PCI DSS / GDPR / None]</li><li>Security Policies: [Documented / Partial / None]</li><li>Security Training: [Regular / Annual / None]</li><li>Third-Party Risk Management: [Yes / Partial / No]</li></ul>
+      <ul>
+        <li>Legal/contract requirements known: {{legal_contract_requirements}}</li>
+        <li>Customer security requests: {{customer_security_requests}}</li>
+        <li>DPA usage: {{dpa_usage}}</li>
+        <li>Vendor security check before purchase: {{vendor_security_check}}</li>
+        <li>Training cadence: {{training_cadence}}</li>
+        <li>Phishing simulations: {{phishing_tests}}</li>
+        <li>Cyber insurance status: {{cyber_insurance}}</li>
+        <li>Security checkup frequency: {{security_checkups}}</li>
+      </ul>
       <h3>3.8 Additional Information</h3>
-      <ul><li>Recent Security Incidents: [Client free-text or "None reported"]</li><li>Security Concerns: {{message}}</li><li>Additional Comments: [Client free-text]</li></ul>
+      <ul>
+        <li>Past incidents / details: {{incident_details}}</li>
+        <li>Security concerns: {{message}}</li>
+      </ul>
     </section>
     <section class="card">
       <h2>4) Risk Scoring Framework</h2>
-      <p class="muted">Scale (0–5): 0=Not implemented, 1=Ad-hoc, 2=Basic, 3=Defined, 4=Managed, 5=Optimized. Risk: 0–1.4 Low &middot; 1.5–2.9 Moderate &middot; 3.0–3.9 High &middot; 4.0–5.0 Critical</p>
+      <p class="muted">Scale (0–5): 0=Not implemented, 1=Ad-hoc, 2=Basic, 3=Defined, 4=Managed, 5=Optimized. Domains aligned to assessment. Overall posture may be derived from answers (or use Basic/Standard/Strong if no numeric scoring).</p>
       <div class="grid-2">
         <div class="kpi"><div>Access Control: [x/5]</div><div><span class="pill">[Level]</span></div></div>
         <div class="kpi"><div>Network Security: [x/5]</div><div><span class="pill">[Level]</span></div></div>
         <div class="kpi"><div>Data Protection: [x/5]</div><div><span class="pill">[Level]</span></div></div>
         <div class="kpi"><div>Endpoint Security: [x/5]</div><div><span class="pill">[Level]</span></div></div>
-        <div class="kpi"><div>Security Monitoring: [x/5]</div><div><span class="pill">[Level]</span></div></div>
+        <div class="kpi"><div>Alerts &amp; Incident Readiness: [x/5]</div><div><span class="pill">[Level]</span></div></div>
         <div class="kpi"><div>Compliance &amp; Policies: [x/5]</div><div><span class="pill">[Level]</span></div></div>
       </div>
-      <div class="kpi" style="margin-top:12px;"><div><strong>Overall Risk Score (weighted): [x.xx/5]</strong></div><div><span class="pill">[Overall Level]</span></div></div>
+      <div class="kpi" style="margin-top:12px;"><div><strong>Overall Posture: [Early / Basic / Developing / Strong] or weighted score when scoring is implemented</strong></div><div><span class="pill">[Level]</span></div></div>
     </section>
     <section class="card">
       <h2>5) Key Findings &amp; Gaps (Evidence-Based)</h2>
+      <p class="muted">Evidence format: Quote question ID and answer (e.g. Evidence: 3.4 MFA for email = &quot;No&quot;; 3.3 Password sharing = &quot;Sometimes&quot;). Gaps should reflect SMB controls (MFA, password manager, backups, alerts owner, updates), not enterprise-only (SIEM, IDS, vuln scanning) unless added to assessment.</p>
       <h3>5.1 Access Control</h3>
-      <ul><li><strong>Strengths:</strong> [List strengths]</li><li><strong>Gaps:</strong> [List gaps]</li><li><strong>Impact:</strong> [Operational / Security / Compliance]</li><li><strong>Evidence:</strong> [Quote assessment Section 3.2]</li><li><strong>Risk Rating:</strong> <span class="pill">[Level]</span></li><li><strong>Remediation:</strong> <ul><li>[Action 1]</li><li>[Action 2]</li></ul></li></ul>
+      <ul><li><strong>Strengths:</strong> [From {{mfa_email}}, {{password_manager}}, {{admin_access}}]</li><li><strong>Gaps:</strong> [e.g. MFA not everywhere, password sharing, no password manager]</li><li><strong>Evidence:</strong> [Quote QIDs and answers from Section 3.2]</li><li><strong>Remediation:</strong> MFA everywhere (Google/Microsoft built-in), password manager (e.g. Bitwarden), stop sharing passwords</li></ul>
       <h3>5.2 Network Security</h3>
-      <ul><li><strong>Strengths:</strong> [List strengths]</li><li><strong>Gaps:</strong> [List gaps]</li><li><strong>Impact:</strong> [Impact type]</li><li><strong>Evidence:</strong> [Quote Section 3.3]</li><li><strong>Risk Rating:</strong> <span class="pill">[Level]</span></li><li><strong>Remediation:</strong> <ul><li>[Content]</li></ul></li></ul>
+      <ul><li><strong>Strengths:</strong> [From {{wifi_security}}, {{vpn_usage}}, {{guest_wifi}}]</li><li><strong>Gaps:</strong> [e.g. Wi‑Fi/guest separation, VPN usage]</li><li><strong>Evidence:</strong> [Quote QIDs from Section 3.3]</li><li><strong>Remediation:</strong> [SMB-appropriate steps]</li></ul>
       <h3>5.3 Data Protection</h3>
-      <ul><li><strong>Strengths:</strong> [List strengths]</li><li><strong>Gaps:</strong> [List gaps]</li><li><strong>Risk Rating:</strong> <span class="pill">[Level]</span></li><li><strong>Remediation:</strong> <ul><li>[Content]</li></ul></li></ul>
+      <ul><li><strong>Strengths:</strong> [From {{backup_status}}, {{device_encryption}}, {{dsar_readiness}}]</li><li><strong>Gaps:</strong> [e.g. backups not tested, no retention approach]</li><li><strong>Evidence:</strong> [Quote QIDs from Section 3.4]</li><li><strong>Remediation:</strong> Backups + restore test; limit access to sensitive data</li></ul>
       <h3>5.4 Endpoint Security</h3>
-      <ul><li><strong>Strengths:</strong> [List strengths]</li><li><strong>Gaps:</strong> [List gaps]</li><li><strong>Risk Rating:</strong> <span class="pill">[Level]</span></li><li><strong>Remediation:</strong> <ul><li>[Content]</li></ul></li></ul>
-      <h3>5.5 Security Monitoring</h3>
-      <ul><li><strong>Strengths:</strong> [List strengths]</li><li><strong>Gaps:</strong> [List gaps]</li><li><strong>Risk Rating:</strong> <span class="pill">[Level]</span></li><li><strong>Remediation:</strong> <ul><li>[Content]</li></ul></li></ul>
+      <ul><li><strong>Strengths:</strong> [From {{endpoint_protection}}, {{update_cadence}}, {{screen_lock}}]</li><li><strong>Gaps:</strong> [e.g. updates not automatic, no device inventory]</li><li><strong>Evidence:</strong> [Quote QIDs from Section 3.5]</li><li><strong>Remediation:</strong> Automatic updates; Windows/macOS built-in security + encryption</li></ul>
+      <h3>5.5 Alerts &amp; Incident Readiness</h3>
+      <ul><li><strong>Strengths:</strong> [From {{alerts_enabled}}, {{alert_owner}}, {{incident_checklist}}]</li><li><strong>Gaps:</strong> [e.g. alerts not enabled, no owner, no checklist]</li><li><strong>Evidence:</strong> [Quote QIDs from Section 3.6]</li><li><strong>Remediation:</strong> Turn on login/bank/payment alerts; assign owner; simple incident checklist</li></ul>
       <h3>5.6 Compliance &amp; Policies</h3>
-      <ul><li><strong>Strengths:</strong> [List strengths]</li><li><strong>Gaps:</strong> [List gaps]</li><li><strong>Risk Rating:</strong> <span class="pill">[Level]</span></li><li><strong>Remediation:</strong> <ul><li>[Content]</li></ul></li></ul>
+      <ul><li><strong>Strengths:</strong> [From {{legal_contract_requirements}}, {{training_cadence}}, {{cyber_insurance}}]</li><li><strong>Gaps:</strong> [e.g. vendor checks, DPAs, training cadence]</li><li><strong>Evidence:</strong> [Quote QIDs from Section 3.7]</li><li><strong>Remediation:</strong> [Conditional: payments → PCI-lite; customers ask for security → DPAs/vendor check]</li></ul>
     </section>
     <section class="card">
       <h2>6) Prioritized Action Plan</h2>
+      <p class="muted">Actions are conditional: e.g. if no public website, omit website hardening; if no payments, omit payment fraud actions; if no BYOD, skip BYOD controls. Timeline from assessment: {{timeline}}. Budget: {{budget_range}}.</p>
       <h3>6.1 Quick Wins (0–30 days)</h3>
-      <ul><li>[Action 1] <div class="muted">Owner: [Role] &middot; Effort: [S/M/L] &middot; Cost: [$/$$/$$$] &middot; Impact: [High/Med/Low]</div></li><li>[Action 2] <div class="muted">Owner: [Role] &middot; Effort: [S/M/L] &middot; Cost: [$/$$/$$$]</div></li></ul>
+      <ul><li>Enable MFA on email and critical tools</li><li>Stop password sharing; introduce password manager</li><li>Turn on login/bank/payment alerts and assign an owner</li><li>Enable automatic updates and device encryption where possible</li></ul>
       <h3>6.2 Near-Term (31–90 days)</h3>
-      <ul><li>[Action 3] <div class="muted">Owner: [Role] &middot; Effort: [S/M/L] &middot; Impact: [High/Med/Low]</div></li></ul>
+      <ul><li>Backups in place + run a restore test</li><li>Reduce admin accounts; offboarding checklist</li><li>Simple list of important tools + owners</li></ul>
       <h3>6.3 Mid-Term (3–6 months)</h3>
-      <ul><li>[Action 4] <div class="muted">Owner: [Role] &middot; Effort: [S/M/L]</div></li></ul>
+      <ul><li>Review access to important tools every 6–12 months (or when staff changes)</li><li>Vendor/DPA checks if customers ask for security</li></ul>
       <h3>6.4 Long-Term (6–12 months)</h3>
-      <ul><li>[Action 5] <div class="muted">Owner: [Role] &middot; Effort: [S/M/L]</div></li></ul>
+      <ul><li>Security checkup cadence; training and phishing tests</li><li>Cyber insurance review</li></ul>
     </section>
     <section class="card">
       <h2>7) Policy, Process, and Controls Upgrades</h2>
+      <p class="muted">SMB-friendly: every 6–12 months or when staff changes; simple checklist + shared doc. Show only when relevant (e.g. payments → PCI-lite; website → update ownership; backups → restore practice).</p>
       <ul>
-        <li>Access Control Policy: [Adopt/Update] — MFA mandate, SSO, least privilege, quarterly reviews</li>
-        <li>Joiner-Mover-Leaver (JML) SOP: [Define/Automate] — provisioning, offboarding SLA</li>
-        <li>Password Management SOP: [Deploy/Enforce] — enterprise password manager, shared vault policy</li>
-        <li>Data Retention &amp; DSAR SOP: [Define/Document] — timelines per regime, purge workflow</li>
-        <li>Backup &amp; Recovery: [Document/Test] — RPO/RTO targets, encryption, restoration drills</li>
-        <li>Incident Response Plan: [Create/Refine] — triage, comms, vendor escalation, forensics</li>
-        <li>Vendor Risk Management: [Implement] — DPAs, security review cadence, incident clauses</li>
-        <li>PCI/Security for Payments: [Scope reduction/SAQ] — tokenization, 3DS, AVS/CVV enforcement</li>
+        <li>Access control: MFA everywhere, reduce admin accounts, stop sharing passwords, offboarding checklist</li>
+        <li>Password management: password manager (e.g. Bitwarden), no shared credentials</li>
+        <li>Backups and restore: document what you backup, frequency, and run a restore test</li>
+        <li>Alerts and incidents: assign alert owner, simple &quot;hacked account&quot; checklist, who to call first</li>
+        <li>Vendor/DPA: check before purchase; DPAs when customers ask for security</li>
+        <li>Website (if applicable): update ownership, limit admin access, enable protections</li>
+        <li>Payments (if applicable): fraud controls, chargeback alerts</li>
       </ul>
     </section>
     <section class="card">
       <h2>8) Monitoring, Metrics, and Alerts</h2>
+      <p class="muted">SMB metrics derived from assessment answers.</p>
       <ul>
-        <li>IAM — MFA Coverage: [Current %] &rarr; Target: [Target %]</li>
-        <li>IAM — Shared Credentials: [Current count] &rarr; Target: 0</li>
-        <li>Data — DSAR SLA: [Current days] &rarr; Target: [&le; days]</li>
-        <li>Payments — Chargeback Rate: [Current %] &rarr; Target: [Target %]</li>
-        <li>Ops — Backup Success Rate: [Current %] &rarr; Target: [Target %]</li>
-        <li>Operations — Incident MTTR: [Current] &rarr; Target: [Target]</li>
-        <li>Operations — Post-incident Reviews: [Current %] &rarr; Target: [Target % of P1/P2]</li>
+        <li>MFA coverage: {{mfa_email}} (email); {{mfa_critical}} (other tools) &rarr; Target: enabled on all key tools</li>
+        <li>Password sharing: {{shared_passwords}} &rarr; Target: Never</li>
+        <li>Backups: {{backup_status}} — Frequency: {{backup_frequency}} — Restore tested: {{backup_tested}}</li>
+        <li>Updates: {{update_cadence}} &rarr; Target: automatic where possible</li>
+        <li>Alerts owner assigned: {{alert_owner}} &rarr; Target: clearly assigned</li>
+        <li>Payment fraud controls: (show only if payments apply)</li>
       </ul>
     </section>
     <section class="card">
       <h2>9) Tooling &amp; Integration Recommendations</h2>
+      <p class="muted">SMB defaults: Google Workspace / Microsoft 365 built-in MFA and security settings (not Okta by default). Password manager: Bitwarden. Endpoint: Windows Security / macOS built-in + auto updates. Website: Cloudflare free, WordPress auto-updates (if applicable).</p>
       <ul>
-        <li>IAM/SSO/MFA: [e.g. Okta / Entra ID / Google Workspace] — [fit notes]</li>
-        <li>Password Manager: [e.g. 1Password / LastPass Business / Bitwarden] — [deployment notes]</li>
-        <li>Payments/Fraud: [e.g. Stripe Radar, Adyen 3DS, Chargeback alerts] — [policy notes]</li>
-        <li>Data Protection: [DLP / encryption key mgmt / backup provider] — [notes]</li>
-        <li>Monitoring/Logging: [SIEM/logging choice] — [events to capture, alert routing]</li>
-        <li>Automation: [Webhook/Zapier/SCIM] — [JML/offboarding automation]</li>
+        <li>Identity/MFA: Google Workspace or Microsoft 365 built-in security defaults + MFA</li>
+        <li>Password Manager: Bitwarden (or 1Password for teams)</li>
+        <li>Endpoint: Built-in (Windows Security / macOS) + automatic updates; configuration checklist before considering paid EDR</li>
+        <li>Alerts: Built-in alerts (email, bank, key tools) first; assign owner</li>
+        <li>Website (if applicable): WordPress hardening, Cloudflare free plan, plugin hygiene</li>
+        <li>Payments (if applicable): Stripe Radar, chargeback alerts</li>
       </ul>
     </section>
     <section class="card">
       <h2>10) Assumptions, Constraints, and Data Quality</h2>
-      <ul><li>Missing or Unclear Inputs: [List fields not provided or "N/A"]</li><li>Assumptions Made: [List assumptions]</li><li>Confidence Level: [High/Medium/Low] — Reason: [Text]</li></ul>
+      <ul>
+        <li>Data missing because not applicable: e.g. payment questions skipped if no payments; website questions skipped if no public website</li>
+        <li>Not sure / blank: Count of &quot;Not sure&quot; and unanswered fields may lower confidence</li>
+        <li>Confidence Level: [High/Medium/Low] — Based on % completed, &quot;Not sure&quot; on key controls (MFA, backups, updates, alerts owner)</li>
+      </ul>
     </section>
     <section class="card">
       <h2>11) Appendix: Raw Assessment Responses</h2>
-      <p class="muted">Aligned to the assessment sections.</p>
+      <p class="muted">Traceability: QID-style references support Evidence in Section 5.</p>
       <h3>Company Information</h3>
-      <ul><li>Company, Contact, Role: {{company}}, {{name}}, {{role}}</li></ul>
-      <h3>Access Control</h3>
-      <ul><li>Authentication, MFA, Password Policy, Access Review: [From assessment]</li></ul>
-      <h3>Network Security</h3>
-      <ul><li>Firewall, VPN, Segmentation, Intrusion Detection: [From assessment]</li></ul>
-      <h3>Data Protection</h3>
-      <ul><li>Encryption, Backups, Data Classification: [From assessment]</li></ul>
-      <h3>Endpoint Security</h3>
-      <ul><li>Antivirus, EDR, Patch Management, MDM: [From assessment]</li></ul>
-      <h3>Security Monitoring</h3>
-      <ul><li>SIEM, Log Retention, Incident Response, Vuln Scanning: [From assessment]</li></ul>
-      <h3>Compliance &amp; Policies</h3>
-      <ul><li>Frameworks, Policies, Training, Third-Party Risk: [From assessment]</li></ul>
-      <h3>Additional Information</h3>
-      <ul><li>Recent Incidents, Concerns, Comments: {{message}}</li></ul>
+      <ul><li>Company: {{company}} — Contact: {{name}} — Role: {{role}} — Public website: {{public_website}} — Platform: {{website_platform}} — Updates: {{website_updates}}</li></ul>
+      <h3>Access Control (Section 3)</h3>
+      <ul><li>MFA email: {{mfa_email}} — MFA other tools: {{mfa_critical}} — Password sharing: {{shared_passwords}} — Password manager: {{password_manager}} — Admin access: {{admin_access}} — Offboarding: {{offboarding_speed}} — Account recovery: {{account_recovery}} — Tool/account list: {{tool_owner_list}}</li></ul>
+      <h3>Network (Section 6)</h3>
+      <ul><li>Work setup: {{work_setup}} — VPN: {{vpn_usage}} — Wi‑Fi: {{wifi_security}} — Guest Wi‑Fi: {{guest_wifi}}</li></ul>
+      <h3>Data Protection (Section 4)</h3>
+      <ul><li>Customer data: {{customer_data_types}} — Employee data: {{employee_data_types}} — Stored where: {{data_locations}} — Retention: {{data_retention}} — DSAR readiness: {{dsar_readiness}} — Encryption: {{device_encryption}} — Secure sharing: {{secure_sharing}} — Privacy notice: {{privacy_notice}} — Backups: {{backup_status}} / {{backup_frequency}} / {{backup_tested}}</li></ul>
+      <h3>Endpoint (Sections 3, 6)</h3>
+      <ul><li>Protection: {{endpoint_protection}} — Updates: {{update_cadence}} — Screen lock: {{screen_lock}} — BYOD: {{byod}} / {{byod_requirements}} — Device inventory: {{device_inventory}}</li></ul>
+      <h3>Alerts &amp; Incident Readiness (Section 7)</h3>
+      <ul><li>Alerts enabled: {{alerts_enabled}} — Owner: {{alert_owner}} — Checklist: {{incident_checklist}} — First contact: {{incident_contacts}} — Past incidents: {{past_incidents}} — Details: {{incident_details}}</li></ul>
+      <h3>Compliance &amp; Policies (Section 8)</h3>
+      <ul><li>Legal requirements: {{legal_contract_requirements}} — Customer security asks: {{customer_security_requests}} — DPA: {{dpa_usage}} — Vendor check: {{vendor_security_check}} — Training: {{training_cadence}} — Cyber insurance: {{cyber_insurance}} — Checkups: {{security_checkups}}</li></ul>
+      <h3>Additional</h3>
+      <ul><li>Timeline: {{timeline}} — Budget: {{budget_range}} — Concerns: {{message}}</li></ul>
     </section>
   </div>
   <script>

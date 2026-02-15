@@ -148,6 +148,17 @@
       </div>
       <div id="tab-templates" class="tab-content d-none">
         <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-light"><h2 class="h6 mb-0">Email (Resend)</h2></div>
+          <div class="card-body">
+            <p class="text-muted small">Check if Resend is configured and working. Sends a test email to the address below.</p>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+              <input type="email" id="test-email-to" class="form-control form-control-sm" placeholder="your@email.com" style="max-width:240px;">
+              <button type="button" id="test-email-btn" class="btn btn-outline-primary btn-sm">Send test email</button>
+              <span id="test-email-message" class="text-muted small"></span>
+            </div>
+          </div>
+        </div>
+        <div class="card border-0 shadow-sm mb-4">
           <div class="card-header bg-light"><h2 class="h6 mb-0">Report HTML template</h2></div>
           <div class="card-body">
             <p class="text-muted small">Full HTML for the generated report. Placeholders: <code>{{name}}</code> <code>{{company}}</code> <code>{{email}}</code> <code>{{role}}</code> <code>{{service}}</code> <code>{{message}}</code> <code>{{report_date}}</code> <code>{{website_url}}</code> <code>{{units_range}}</code> <code>{{countries}}</code> <code>{{language}}</code>. Leave empty to use the built-in Flare template.</p>
@@ -417,6 +428,43 @@
         const w = window.open('', '_blank');
         w.document.write(body);
         w.document.close();
+      });
+
+      document.getElementById('test-email-btn').addEventListener('click', async function () {
+        var toEl = document.getElementById('test-email-to');
+        var msgEl = document.getElementById('test-email-message');
+        var btn = document.getElementById('test-email-btn');
+        var to = (toEl && toEl.value) ? toEl.value.trim() : '';
+        msgEl.textContent = '';
+        if (!to) {
+          msgEl.textContent = 'Enter an email address.';
+          msgEl.classList.remove('text-success');
+          msgEl.classList.add('text-danger');
+          return;
+        }
+        btn.disabled = true;
+        try {
+          var res = await fetch(WORKER_URL + '/api/admin/test-email', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ to: to })
+          });
+          var data = await res.json().catch(function () { return {}; });
+          if (data.ok) {
+            msgEl.textContent = 'Sent. Check ' + to + ' (and spam).';
+            msgEl.classList.remove('text-danger');
+            msgEl.classList.add('text-success');
+          } else {
+            msgEl.textContent = data.error || 'Failed to send';
+            msgEl.classList.remove('text-success');
+            msgEl.classList.add('text-danger');
+          }
+        } catch (e) {
+          msgEl.textContent = e.message || 'Request failed';
+          msgEl.classList.remove('text-success');
+          msgEl.classList.add('text-danger');
+        }
+        btn.disabled = false;
       });
 
       if (getToken()) {

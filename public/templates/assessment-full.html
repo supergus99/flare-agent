@@ -61,6 +61,7 @@
     .form-group.error { border-left: 3px solid var(--error); padding-left: 1rem; }
     .form-group.error label { color: var(--error); }
     input.error, select.error, textarea.error { border-color: var(--error); box-shadow: 0 0 0 3px rgba(248,113,113,0.2); }
+    .label-hover { cursor: help; margin-left: 0.25rem; opacity: 0.85; font-size: 0.9em; }
     .assessment-link-error-panel { margin-top: 1.5rem; padding: 1.5rem; background: rgba(248,113,113,0.1); border: 1px solid var(--error); border-radius: 12px; }
     .assessment-link-error-panel[hidden] { display: none !important; }
     .assessment-link-error-title { color: var(--error); margin: 0 0 0.75rem 0; font-size: 1.125rem; }
@@ -94,13 +95,13 @@
         <div class="progress-bar">
             <div class="progress-steps" id="progressSteps">
                 <div class="progress-step active" data-step="1">Company</div>
-                <div class="progress-step" data-step="2">Platforms</div>
-                <div class="progress-step" data-step="3">Access</div>
+                <div class="progress-step" data-step="2">Systems</div>
+                <div class="progress-step" data-step="3">Accounts</div>
                 <div class="progress-step" data-step="4">Data</div>
                 <div class="progress-step" data-step="5">Payments</div>
-                <div class="progress-step" data-step="6">Network</div>
-                <div class="progress-step" data-step="7">Monitoring</div>
-                <div class="progress-step" data-step="8">Compliance</div>
+                <div class="progress-step" data-step="6">Devices</div>
+                <div class="progress-step" data-step="7">Alerts</div>
+                <div class="progress-step" data-step="8">Legal</div>
                 <div class="progress-step" data-step="9">Concerns</div>
                 <div class="progress-step" data-step="10">Consent</div>
             </div>
@@ -115,7 +116,7 @@
             <input type="text" name="website" style="position: absolute; left: -9999px;" tabindex="-1" autocomplete="off">
             <input type="hidden" id="access_hash" name="access_hash" value=""><input type="hidden" id="token" name="token" value=""><input type="hidden" id="service" name="service" value="">
 
-            <!-- Section 1: Company & Contact -->
+            <!-- Section 1: Company & Contact Information -->
             <div class="assessment-section active" data-section="1">
                 <div class="section-header">
                     <div class="section-number">1</div>
@@ -123,186 +124,201 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="verification_code">Access code (optional)</label><input type="text" id="verification_code" name="verification_code" maxlength="64" placeholder="Filled from your link if present">
-                    <small class="help-text">Enter the 8-character code from your welcome email</small>
+                    <label for="verification_code">Access code (optional)</label>
+                    <input type="text" id="verification_code" name="verification_code" maxlength="64" placeholder="Filled from your link if present">
+                    <small class="help-text">Enter the 6-character code from your welcome email</small>
                 </div>
 
                 <div class="form-group">
-                    <label for="company_name">Company Name <span class="required">*</span></label>
-                    <input type="text" id="company_name" name="company_name" required maxlength="200">
+                    <label for="contact_name">1.1 Contact name <span class="required">*</span> <span class="label-hover" title="Who we should address in the report and follow-ups.">ⓘ</span></label>
+                    <input type="text" id="contact_name" name="contact_name" required maxlength="200">
                 </div>
 
                 <div class="form-group">
-                    <label for="contact_name">Contact Name <span class="required">*</span></label>
-                    <input type="text" id="contact_name" name="contact_name" required maxlength="100">
-                </div>
-
-                <div class="form-group">
-                    <label for="email">Email <span class="required">*</span></label>
+                    <label for="email">1.2 Contact email <span class="required">*</span> <span class="label-hover" title="Where we'll send results and any clarification questions.">ⓘ</span></label>
                     <input type="email" id="email" name="email" required maxlength="255" autocomplete="email">
                 </div>
 
                 <div class="form-group">
-                    <label for="role">Your Role <span class="required">*</span></label>
+                    <label for="company_name">Company name (optional)</label>
+                    <input type="text" id="company_name" name="company_name" maxlength="200">
+                </div>
+
+                <div class="form-group">
+                    <label for="role">1.3 Your role <span class="required">*</span> <span class="label-hover" title="Helps tailor recommendations to what you control day-to-day.">ⓘ</span></label>
                     <select id="role" name="role" required>
                         <option value="">Select your role</option>
-                        <option value="Owner">Owner</option>
+                        <option value="Owner/Founder">Owner/Founder</option>
+                        <option value="Executive/Leader">Executive/Leader</option>
                         <option value="Operations">Operations</option>
-                        <option value="Security/IT">Security/IT</option>
                         <option value="Finance">Finance</option>
-                        <option value="Co-host">Co-host</option>
+                        <option value="IT/Tech">IT/Tech</option>
+                        <option value="Admin/Office Manager">Admin/Office Manager</option>
                         <option value="Other">Other</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="phone">Phone</label>
-                    <input type="tel" id="phone" name="phone" pattern="[0-9+\-\s()]+" maxlength="50">
-                </div>
-
-                <div class="form-group">
-                    <label for="units_total">Total Units Managed <span class="required">*</span></label>
-                    <select id="units_total" name="units_total" required>
-                        <option value="">Select range</option>
-                        <option value="1-5">1-5</option>
-                        <option value="6-20">6-20</option>
-                        <option value="21-50">21-50</option>
-                        <option value="51-100">51-100</option>
-                        <option value="101-250">101-250</option>
-                        <option value="250+">250+</option>
+                    <label for="number_of_people">1.4 Number of people who use company systems <span class="required">*</span> <span class="label-hover" title="Affects how much access control and training you typically need.">ⓘ</span></label>
+                    <select id="number_of_people" name="number_of_people" required>
+                        <option value="">Select</option>
+                        <option value="1">1</option>
+                        <option value="2-5">2–5</option>
+                        <option value="6-10">6–10</option>
+                        <option value="11-20">11–20</option>
+                        <option value="21-50">21–50</option>
+                        <option value="51-100">51–100</option>
+                        <option value="100+">100+</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="bookings_month">Monthly Bookings <span class="required">*</span></label>
-                    <input type="number" id="bookings_month" name="bookings_month" required min="0" step="1">
+                    <label for="industry">1.5 Industry <span class="label-hover" title="Some industries have extra security or privacy requirements.">ⓘ</span></label>
+                    <select id="industry" name="industry">
+                        <option value="">Select</option>
+                        <option value="Retail">Retail</option>
+                        <option value="Professional Services">Professional Services</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Technology">Technology</option>
+                        <option value="Manufacturing">Manufacturing</option>
+                        <option value="Hospitality">Hospitality</option>
+                        <option value="Real Estate">Real Estate</option>
+                        <option value="Education">Education</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Other">Other</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
-                    <label>Regions Operated</label>
-                    <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="region_us" name="regions_operated[]" value="US">
-                            <label for="region_us">United States</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="region_ca" name="regions_operated[]" value="CA">
-                            <label for="region_ca">Canada</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="region_uk" name="regions_operated[]" value="UK">
-                            <label for="region_uk">United Kingdom</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="region_eu" name="regions_operated[]" value="EU">
-                            <label for="region_eu">European Union</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="region_other" name="regions_operated[]" value="Other">
-                            <label for="region_other">Other</label>
-                        </div>
-                    </div>
-                    <span class="help-text">Required if managing more than 1 property</span>
+                    <label for="business_type">1.6 Business type <span class="label-hover" title="Helps identify legal/contract needs and insurance considerations.">ⓘ</span></label>
+                    <select id="business_type" name="business_type">
+                        <option value="">Select</option>
+                        <option value="Sole Proprietor">Sole Proprietor</option>
+                        <option value="Partnership">Partnership</option>
+                        <option value="LLC">LLC</option>
+                        <option value="Corporation">Corporation</option>
+                        <option value="Non-profit">Non-profit</option>
+                        <option value="Other">Other</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
-                    <label>Peak Seasonality (Optional)</label>
-                    <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="season_jan" name="seasonality[]" value="January">
-                            <label for="season_jan">January</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="season_feb" name="seasonality[]" value="February">
-                            <label for="season_feb">February</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="season_mar" name="seasonality[]" value="March">
-                            <label for="season_mar">March</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="season_apr" name="seasonality[]" value="April">
-                            <label for="season_apr">April</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="season_may" name="seasonality[]" value="May">
-                            <label for="season_may">May</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="season_jun" name="seasonality[]" value="June">
-                            <label for="season_jun">June</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="season_jul" name="seasonality[]" value="July">
-                            <label for="season_jul">July</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="season_aug" name="seasonality[]" value="August">
-                            <label for="season_aug">August</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="season_sep" name="seasonality[]" value="September">
-                            <label for="season_sep">September</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="season_oct" name="seasonality[]" value="October">
-                            <label for="season_oct">October</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="season_nov" name="seasonality[]" value="November">
-                            <label for="season_nov">November</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="season_dec" name="seasonality[]" value="December">
-                            <label for="season_dec">December</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Do you have a website? <span class="required">*</span></label>
+                    <label>1.7 Do you have a public website? <span class="required">*</span> <span class="label-hover" title="Websites are a common target for hacks and scams.">ⓘ</span></label>
                     <div class="radio-group">
                         <div class="radio-item">
-                            <input type="radio" id="website_yes" name="website_present" value="Yes" required>
-                            <label for="website_yes">Yes</label>
+                            <input type="radio" id="public_website_yes" name="public_website" value="Yes" required>
+                            <label for="public_website_yes">Yes</label>
                         </div>
                         <div class="radio-item">
-                            <input type="radio" id="website_no" name="website_present" value="No" required>
-                            <label for="website_no">No</label>
+                            <input type="radio" id="public_website_no" name="public_website" value="No">
+                            <label for="public_website_no">No</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="public_website_not_sure" name="public_website" value="Not sure">
+                            <label for="public_website_not_sure">Not sure</label>
                         </div>
                     </div>
                 </div>
 
-                <div class="conditional-field" id="website_stack_field">
+                <div class="conditional-field" id="website_platform_field" data-show-if="public_website=Yes">
                     <div class="form-group">
-                        <label>Website Platform</label>
-                        <div class="checkbox-group">
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="stack_wordpress" name="website_stack[]" value="WordPress">
-                                <label for="stack_wordpress">WordPress</label>
+                        <label for="website_platform">1.8 Website platform <span class="label-hover" title="Different platforms have different security best practices.">ⓘ</span></label>
+                        <select id="website_platform" name="website_platform">
+                            <option value="">Select</option>
+                            <option value="WordPress">WordPress</option>
+                            <option value="Squarespace">Squarespace</option>
+                            <option value="Wix">Wix</option>
+                            <option value="Shopify">Shopify</option>
+                            <option value="Webflow">Webflow</option>
+                            <option value="Custom built">Custom built</option>
+                            <option value="Marketplace profile only (no website)">Marketplace profile only (no website)</option>
+                            <option value="Not sure">Not sure</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="conditional-field" id="website_url_field" data-show-if="public_website=Yes">
+                    <div class="form-group">
+                        <label for="website_url">Website URL <span class="label-hover" title="Your public website address for the report.">ⓘ</span></label>
+                        <input type="url" id="website_url" name="website_url" maxlength="500" placeholder="https://example.com">
+                    </div>
+                </div>
+
+                <div class="conditional-field" id="website_admin_access_field" data-show-if="public_website=Yes">
+                    <div class="form-group">
+                        <label>1.9 Who can log in to manage the website (admin access)? <span class="label-hover" title="Too many admin accounts increases risk.">ⓘ</span></label>
+                        <div class="radio-group">
+                            <div class="radio-item">
+                                <input type="radio" id="website_admin_only_me" name="website_admin_access" value="Only me">
+                                <label for="website_admin_only_me">Only me</label>
                             </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="stack_squarespace" name="website_stack[]" value="Squarespace">
-                                <label for="stack_squarespace">Squarespace</label>
+                            <div class="radio-item">
+                                <input type="radio" id="website_admin_few" name="website_admin_access" value="A few trusted people">
+                                <label for="website_admin_few">A few trusted people</label>
                             </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="stack_wix" name="website_stack[]" value="Wix">
-                                <label for="stack_wix">Wix</label>
+                            <div class="radio-item">
+                                <input type="radio" id="website_admin_many" name="website_admin_access" value="Many people">
+                                <label for="website_admin_many">Many people</label>
                             </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="stack_shopify" name="website_stack[]" value="Shopify">
-                                <label for="stack_shopify">Shopify</label>
+                            <div class="radio-item">
+                                <input type="radio" id="website_admin_vendor" name="website_admin_access" value="An outside vendor/agency">
+                                <label for="website_admin_vendor">An outside vendor/agency</label>
                             </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="stack_custom" name="website_stack[]" value="Custom">
-                                <label for="stack_custom">Custom</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="stack_not_sure" name="website_stack[]" value="Not sure">
-                                <label for="stack_not_sure">Not sure</label>
+                            <div class="radio-item">
+                                <input type="radio" id="website_admin_not_sure" name="website_admin_access" value="Not sure">
+                                <label for="website_admin_not_sure">Not sure</label>
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <div class="conditional-field" id="website_updates_field" data-show-if="public_website=Yes">
+                    <div class="form-group">
+                        <label>1.10 Who handles website updates/maintenance? <span class="label-hover" title="Outdated plugins/themes are a common reason sites get hacked.">ⓘ</span></label>
+                        <div class="radio-group">
+                            <div class="radio-item">
+                                <input type="radio" id="website_updates_we" name="website_updates" value="We do">
+                                <label for="website_updates_we">We do</label>
+                            </div>
+                            <div class="radio-item">
+                                <input type="radio" id="website_updates_vendor" name="website_updates" value="Vendor/agency does">
+                                <label for="website_updates_vendor">Vendor/agency does</label>
+                            </div>
+                            <div class="radio-item">
+                                <input type="radio" id="website_updates_nobody" name="website_updates" value="Nobody regularly">
+                                <label for="website_updates_nobody">Nobody regularly</label>
+                            </div>
+                            <div class="radio-item">
+                                <input type="radio" id="website_updates_not_sure" name="website_updates" value="Not sure">
+                                <label for="website_updates_not_sure">Not sure</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Countries/regions where you operate or serve customers <span class="label-hover" title="Helps tailor regional and legal guidance.">ⓘ</span></label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item"><input type="checkbox" id="region_us" name="operating_regions[]" value="US"><label for="region_us">United States</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="region_ca" name="operating_regions[]" value="Canada"><label for="region_ca">Canada</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="region_uk" name="operating_regions[]" value="UK"><label for="region_uk">United Kingdom</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="region_eu" name="operating_regions[]" value="EU"><label for="region_eu">European Union</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="region_au" name="operating_regions[]" value="Australia"><label for="region_au">Australia</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="region_other" name="operating_regions[]" value="Other"><label for="region_other">Other</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="region_not_sure" name="operating_regions[]" value="Not sure"><label for="region_not_sure">Not sure</label></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="report_language">Preferred language for the report <span class="label-hover" title="Language for the written report.">ⓘ</span></label>
+                    <select id="report_language" name="report_language">
+                        <option value="">Select (optional)</option>
+                        <option value="English">English</option>
+                        <option value="Spanish">Spanish</option>
+                        <option value="Portuguese">Portuguese</option>
+                        <option value="French">French</option>
+                        <option value="Other">Other</option>
+                    </select>
                 </div>
 
                 <div class="form-navigation">
@@ -311,264 +327,168 @@
                 </div>
             </div>
 
-            <!-- Section 2: Platforms & Tooling (Simplified) -->
+            <!-- Section 2: Systems & Tools You Use -->
             <div class="assessment-section" data-section="2">
                 <div class="section-header">
                     <div class="section-number">2</div>
-                    <h2 class="section-title">Platforms & Tooling</h2>
+                    <h2 class="section-title">Systems &amp; Tools You Use</h2>
                 </div>
 
                 <div class="form-group">
-                    <label>Booking Platforms</label>
-                    <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="platform_airbnb" name="booking_platforms[]" value="Airbnb">
-                            <label for="platform_airbnb">Airbnb</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="platform_vrbo" name="booking_platforms[]" value="Vrbo">
-                            <label for="platform_vrbo">Vrbo</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="platform_booking" name="booking_platforms[]" value="Booking.com">
-                            <label for="platform_booking">Booking.com</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="platform_direct" name="booking_platforms[]" value="direct_website">
-                            <label for="platform_direct">Direct Website</label>
+                    <label for="email_provider">2.1 Email provider <span class="label-hover" title="Email is the most common entry point for attackers.">ⓘ</span></label>
+                    <select id="email_provider" name="email_provider">
+                        <option value="">Select</option>
+                        <option value="Google Workspace/Gmail">Google Workspace/Gmail</option>
+                        <option value="Microsoft 365/Outlook">Microsoft 365/Outlook</option>
+                        <option value="Apple iCloud">Apple iCloud</option>
+                        <option value="Yahoo">Yahoo</option>
+                        <option value="Self-hosted">Self-hosted</option>
+                        <option value="Other">Other</option>
+                        <option value="Not sure">Not sure</option>
+                    </select>
+                </div>
+
+                <div class="conditional-field" id="self_hosted_email_field" data-show-if="email_provider=Self-hosted">
+                    <div class="form-group">
+                        <label>2.2 If self-hosted email, who manages it? <span class="label-hover" title="Self-hosted email needs strong patching and monitoring.">ⓘ</span></label>
+                        <div class="radio-group">
+                            <div class="radio-item">
+                                <input type="radio" id="self_hosted_internal" name="self_hosted_who_manages" value="Internal person">
+                                <label for="self_hosted_internal">Internal person</label>
+                            </div>
+                            <div class="radio-item">
+                                <input type="radio" id="self_hosted_msp" name="self_hosted_who_manages" value="IT provider/MSP">
+                                <label for="self_hosted_msp">IT provider/MSP</label>
+                            </div>
+                            <div class="radio-item">
+                                <input type="radio" id="self_hosted_hosting" name="self_hosted_who_manages" value="Hosting company">
+                                <label for="self_hosted_hosting">Hosting company</label>
+                            </div>
+                            <div class="radio-item">
+                                <input type="radio" id="self_hosted_not_sure" name="self_hosted_who_manages" value="Not sure">
+                                <label for="self_hosted_not_sure">Not sure</label>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label>PMS / Channel Manager</label>
+                    <label>2.3 Where do you store work files? (select all that apply) <span class="label-hover" title="We're looking for where important data lives so we can recommend safe access and backups.">ⓘ</span></label>
                     <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="pms_guesty" name="pms_channel_manager[]" value="Guesty">
-                            <label for="pms_guesty">Guesty</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="pms_hostfully" name="pms_channel_manager[]" value="Hostfully">
-                            <label for="pms_hostfully">Hostfully</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="pms_hospitable" name="pms_channel_manager[]" value="Hospitable">
-                            <label for="pms_hospitable">Hospitable</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="pms_none" name="pms_channel_manager[]" value="None">
-                            <label for="pms_none">None</label>
-                        </div>
+                        <div class="checkbox-item"><input type="checkbox" id="store_google" name="store_work_files[]" value="Google Drive"><label for="store_google">Google Drive</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="store_onedrive" name="store_work_files[]" value="Microsoft OneDrive/SharePoint"><label for="store_onedrive">Microsoft OneDrive/SharePoint</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="store_dropbox" name="store_work_files[]" value="Dropbox"><label for="store_dropbox">Dropbox</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="store_box" name="store_work_files[]" value="Box"><label for="store_box">Box</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="store_icloud" name="store_work_files[]" value="iCloud Drive"><label for="store_icloud">iCloud Drive</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="store_local" name="store_work_files[]" value="Local computers"><label for="store_local">Local computers</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="store_usb" name="store_work_files[]" value="External drive/USB"><label for="store_usb">External drive/USB</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="store_email" name="store_work_files[]" value="Email inboxes"><label for="store_email">Email inboxes</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="store_paper" name="store_work_files[]" value="Paper only"><label for="store_paper">Paper only</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="store_other" name="store_work_files[]" value="Other"><label for="store_other">Other</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="store_not_sure" name="store_work_files[]" value="Not sure"><label for="store_not_sure">Not sure</label></div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label>Payment Processors</label>
+                    <label>2.4 How do you chat or meet for work? (select all that apply) <span class="label-hover" title="These tools can leak data if guest access and sharing aren't controlled.">ⓘ</span></label>
                     <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="payment_stripe" name="payment_processors[]" value="Stripe">
-                            <label for="payment_stripe">Stripe</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="payment_paypal" name="payment_processors[]" value="PayPal">
-                            <label for="payment_paypal">PayPal</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="payment_adyen" name="payment_processors[]" value="Adyen">
-                            <label for="payment_adyen">Adyen</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="payment_platform" name="payment_processors[]" value="Platform Payouts only">
-                            <label for="payment_platform">Platform Payouts only</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="payment_other" name="payment_processors[]" value="Other">
-                            <label for="payment_other">Other</label>
-                        </div>
+                        <div class="checkbox-item"><input type="checkbox" id="chat_teams" name="chat_meet[]" value="Microsoft Teams"><label for="chat_teams">Microsoft Teams</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="chat_slack" name="chat_meet[]" value="Slack"><label for="chat_slack">Slack</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="chat_zoom" name="chat_meet[]" value="Zoom"><label for="chat_zoom">Zoom</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="chat_meet" name="chat_meet[]" value="Google Meet"><label for="chat_meet">Google Meet</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="chat_whatsapp" name="chat_meet[]" value="WhatsApp"><label for="chat_whatsapp">WhatsApp</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="chat_discord" name="chat_meet[]" value="Discord"><label for="chat_discord">Discord</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="chat_other" name="chat_meet[]" value="Other"><label for="chat_other">Other</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="chat_none" name="chat_meet[]" value="None"><label for="chat_none">None</label></div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label>Guest Screening Tools</label>
+                    <label for="track_customers">2.5 How do you track customers/clients? <span class="label-hover" title="Customer data protection depends on where you keep it.">ⓘ</span></label>
+                    <select id="track_customers" name="track_customers">
+                        <option value="">Select</option>
+                        <option value="CRM tool">CRM tool</option>
+                        <option value="Spreadsheets">Spreadsheets</option>
+                        <option value="Email only">Email only</option>
+                        <option value="POS system">POS system</option>
+                        <option value="Other">Other</option>
+                        <option value="None">None</option>
+                        <option value="Not sure">Not sure</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="accounting_tool">2.6 Accounting/invoicing tool <span class="label-hover" title="Finance tools are a top target for fraud.">ⓘ</span></label>
+                    <select id="accounting_tool" name="accounting_tool">
+                        <option value="">Select</option>
+                        <option value="QuickBooks">QuickBooks</option>
+                        <option value="Xero">Xero</option>
+                        <option value="FreshBooks">FreshBooks</option>
+                        <option value="Wave">Wave</option>
+                        <option value="Sage">Sage</option>
+                        <option value="Spreadsheets">Spreadsheets</option>
+                        <option value="Other">Other</option>
+                        <option value="None">None</option>
+                        <option value="Not sure">Not sure</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="payment_processing">2.7 Payment processing (how customers pay you) <span class="label-hover" title="Determines fraud risk and whether card-security rules may apply.">ⓘ</span></label>
+                    <select id="payment_processing" name="payment_processing">
+                        <option value="">Select</option>
+                        <option value="Stripe">Stripe</option>
+                        <option value="PayPal">PayPal</option>
+                        <option value="Square">Square</option>
+                        <option value="Shopify Payments">Shopify Payments</option>
+                        <option value="Authorize.net">Authorize.net</option>
+                        <option value="Bank transfer/ACH">Bank transfer/ACH</option>
+                        <option value="Cash/Check">Cash/Check</option>
+                        <option value="Other">Other</option>
+                        <option value="Not applicable">Not applicable</option>
+                        <option value="Not sure">Not sure</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>2.8 Other tools used for the business (select all that apply) <span class="label-hover" title="This helps find important systems that are easy to overlook.">ⓘ</span></label>
                     <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="screening_autohost" name="guest_screening[]" value="Autohost">
-                            <label for="screening_autohost">Autohost</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="screening_superhog" name="guest_screening[]" value="Superhog">
-                            <label for="screening_superhog">Superhog</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="screening_safely" name="guest_screening[]" value="Safely">
-                            <label for="screening_safely">Safely</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="screening_autocomplete" name="guest_screening[]" value="Autocomplete/Other">
-                            <label for="screening_autocomplete">Autocomplete/Other</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="screening_none" name="guest_screening[]" value="None">
-                            <label for="screening_none">None</label>
-                        </div>
+                        <div class="checkbox-item"><input type="checkbox" id="other_payroll" name="other_tools[]" value="Payroll/HR"><label for="other_payroll">Payroll/HR</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="other_email_mkt" name="other_tools[]" value="Email marketing"><label for="other_email_mkt">Email marketing</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="other_pm" name="other_tools[]" value="Project management"><label for="other_pm">Project management</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="other_support" name="other_tools[]" value="Customer support/ticketing"><label for="other_support">Customer support/ticketing</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="other_ecommerce" name="other_tools[]" value="E-commerce"><label for="other_ecommerce">E-commerce</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="other_scheduling" name="other_tools[]" value="Scheduling/booking"><label for="other_scheduling">Scheduling/booking</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="other_pos" name="other_tools[]" value="POS"><label for="other_pos">POS</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="other_wiki" name="other_tools[]" value="Documentation/wiki"><label for="other_wiki">Documentation/wiki</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="other_design" name="other_tools[]" value="Design tools"><label for="other_design">Design tools</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="other_files" name="other_tools[]" value="File sharing"><label for="other_files">File sharing</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="other_other" name="other_tools[]" value="Other"><label for="other_other">Other</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="other_none" name="other_tools[]" value="None"><label for="other_none">None</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="other_not_sure" name="other_tools[]" value="Not sure"><label for="other_not_sure">Not sure</label></div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label>Smart Lock Systems</label>
-                    <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="lock_august" name="smart_locks[]" value="August">
-                            <label for="lock_august">August</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="lock_yale" name="smart_locks[]" value="Yale">
-                            <label for="lock_yale">Yale</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="lock_schlage" name="smart_locks[]" value="Schlage">
-                            <label for="lock_schlage">Schlage</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="lock_nuki" name="smart_locks[]" value="Nuki">
-                            <label for="lock_nuki">Nuki</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="lock_igloo" name="smart_locks[]" value="IglooHome">
-                            <label for="lock_igloo">IglooHome</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="lock_remotelock" name="smart_locks[]" value="RemoteLock">
-                            <label for="lock_remotelock">RemoteLock</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="lock_keypads" name="smart_locks[]" value="Keypads offline">
-                            <label for="lock_keypads">Keypads offline</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="lock_physical" name="smart_locks[]" value="Physical keys">
-                            <label for="lock_physical">Physical keys</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="lock_other" name="smart_locks[]" value="Other">
-                            <label for="lock_other">Other</label>
-                        </div>
-                    </div>
+                    <label for="tools_count">2.9 About how many online tools/accounts does the business use? <span class="label-hover" title="More tools usually means more logins to secure and more chances for account takeovers.">ⓘ</span></label>
+                    <select id="tools_count" name="tools_count">
+                        <option value="">Select</option>
+                        <option value="1-5">1–5</option>
+                        <option value="6-10">6–10</option>
+                        <option value="11-20">11–20</option>
+                        <option value="21-50">21–50</option>
+                        <option value="50+">50+</option>
+                        <option value="Not sure">Not sure</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
-                    <label>Noise Monitoring</label>
-                    <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="noise_minut" name="noise_monitoring[]" value="Minut">
-                            <label for="noise_minut">Minut</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="noise_noiseaware" name="noise_monitoring[]" value="NoiseAware">
-                            <label for="noise_noiseaware">NoiseAware</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="noise_none" name="noise_monitoring[]" value="None">
-                            <label for="noise_none">None</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="noise_other" name="noise_monitoring[]" value="Other">
-                            <label for="noise_other">Other</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Cameras/CCTV <span class="required">*</span></label>
+                    <label for="custom_software">2.10 Do you use any custom software, scripts, or databases? <span class="label-hover" title="Custom systems may need extra protection and backups.">ⓘ</span></label>
                     <div class="radio-group">
-                        <div class="radio-item">
-                            <input type="radio" id="cameras_yes" name="cameras_cctv" value="Yes" required>
-                            <label for="cameras_yes">Yes</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="cameras_no" name="cameras_cctv" value="No" required>
-                            <label for="cameras_no">No</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Accounting Tools</label>
-                    <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="accounting_quickbooks" name="accounting_tools[]" value="QuickBooks">
-                            <label for="accounting_quickbooks">QuickBooks</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="accounting_xero" name="accounting_tools[]" value="Xero">
-                            <label for="accounting_xero">Xero</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="accounting_wave" name="accounting_tools[]" value="Wave">
-                            <label for="accounting_wave">Wave</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="accounting_other" name="accounting_tools[]" value="Other">
-                            <label for="accounting_other">Other</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="accounting_none" name="accounting_tools[]" value="None">
-                            <label for="accounting_none">None</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Calendar Sync</label>
-                    <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="calendar_ical" name="calendar_sync[]" value="iCal">
-                            <label for="calendar_ical">iCal</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="calendar_pms" name="calendar_sync[]" value="PMS API">
-                            <label for="calendar_pms">PMS API</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="calendar_channel" name="calendar_sync[]" value="Channel Manager">
-                            <label for="calendar_channel">Channel Manager</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="calendar_manual" name="calendar_sync[]" value="Manual only">
-                            <label for="calendar_manual">Manual only</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="integrations_count">Total 3rd-Party Integrations <span class="required">*</span></label>
-                    <input type="number" id="integrations_count" name="integrations_count" required min="0" step="1">
-                    <span class="help-text">Including Zapier, API connections, webhooks, etc.</span>
-                </div>
-
-                <div class="form-group">
-                    <label>Integration Types</label>
-                    <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="integration_api" name="integration_types[]" value="API">
-                            <label for="integration_api">API</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="integration_ical" name="integration_types[]" value="iCal">
-                            <label for="integration_ical">iCal</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="integration_webhooks" name="integration_types[]" value="Webhooks">
-                            <label for="integration_webhooks">Webhooks</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="integration_zapier" name="integration_types[]" value="Zapier/Make">
-                            <label for="integration_zapier">Zapier/Make</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="integration_csv" name="integration_types[]" value="Manual CSV">
-                            <label for="integration_csv">Manual CSV</label>
-                        </div>
+                        <div class="radio-item"><input type="radio" id="custom_no" name="custom_software" value="No"><label for="custom_no">No</label></div>
+                        <div class="radio-item"><input type="radio" id="custom_internal" name="custom_software" value="Yes (internal only)"><label for="custom_internal">Yes (internal only)</label></div>
+                        <div class="radio-item"><input type="radio" id="custom_customer" name="custom_software" value="Yes (customer-facing)"><label for="custom_customer">Yes (customer-facing)</label></div>
+                        <div class="radio-item"><input type="radio" id="custom_not_sure" name="custom_software" value="Not sure"><label for="custom_not_sure">Not sure</label></div>
                     </div>
                 </div>
 
@@ -578,209 +498,135 @@
                 </div>
             </div>
 
-            <!-- Section 3: Identity & Access (Key Fields) -->
+            <!-- Section 3: Accounts, Passwords & Sign-In Security -->
             <div class="assessment-section" data-section="3">
                 <div class="section-header">
                     <div class="section-number">3</div>
-                    <h2 class="section-title">Identity, Access & Authentication</h2>
+                    <h2 class="section-title">Accounts, Passwords &amp; Sign-In Security</h2>
                 </div>
 
                 <div class="form-group">
-                    <label for="users_internal_count">Internal Users Count</label>
-                    <input type="number" id="users_internal_count" name="users_internal_count" min="0" step="1">
-                </div>
-
-                <div class="form-group">
-                    <label>External User Roles</label>
-                    <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="external_cohosts" name="users_external_roles[]" value="Co-hosts">
-                            <label for="external_cohosts">Co-hosts</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="external_vas" name="users_external_roles[]" value="VAs">
-                            <label for="external_vas">VAs</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="external_cleaners" name="users_external_roles[]" value="Cleaners">
-                            <label for="external_cleaners">Cleaners</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="external_maintenance" name="users_external_roles[]" value="Maintenance">
-                            <label for="external_maintenance">Maintenance</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="external_owners" name="users_external_roles[]" value="Property Owners">
-                            <label for="external_owners">Property Owners</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="external_vendors" name="users_external_roles[]" value="Other vendors">
-                            <label for="external_vendors">Other vendors</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Shared Credentials <span class="required">*</span></label>
-                    <div class="radio-group">
-                        <div class="radio-item">
-                            <input type="radio" id="shared_never" name="shared_credentials" value="Never" required>
-                            <label for="shared_never">Never</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="shared_sometimes" name="shared_credentials" value="Sometimes" required>
-                            <label for="shared_sometimes">Sometimes</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="shared_often" name="shared_credentials" value="Often" required>
-                            <label for="shared_often">Often</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>MFA on Airbnb <span class="required">*</span></label>
-                    <div class="radio-group">
-                        <div class="radio-item">
-                            <input type="radio" id="mfa_airbnb_all" name="mfa_airbnb" value="Enforced for all users" required>
-                            <label for="mfa_airbnb_all">Enforced for all users</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="mfa_airbnb_some" name="mfa_airbnb" value="Some users" required>
-                            <label for="mfa_airbnb_some">Some users</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="mfa_airbnb_none" name="mfa_airbnb" value="Not enabled" required>
-                            <label for="mfa_airbnb_none">Not enabled</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="mfa_airbnb_na" name="mfa_airbnb" value="Not applicable" required>
-                            <label for="mfa_airbnb_na">Not applicable</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>MFA on PMS <span class="required">*</span></label>
-                    <div class="radio-group">
-                        <div class="radio-item">
-                            <input type="radio" id="mfa_pms_all" name="mfa_pms" value="Enforced for all users" required>
-                            <label for="mfa_pms_all">Enforced for all users</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="mfa_pms_some" name="mfa_pms" value="Some users" required>
-                            <label for="mfa_pms_some">Some users</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="mfa_pms_none" name="mfa_pms" value="Not enabled" required>
-                            <label for="mfa_pms_none">Not enabled</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="mfa_pms_na" name="mfa_pms" value="Not applicable" required>
-                            <label for="mfa_pms_na">Not applicable</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>MFA on Primary Email <span class="required">*</span></label>
-                    <div class="radio-group">
-                        <div class="radio-item">
-                            <input type="radio" id="mfa_email_all" name="mfa_email_primary" value="Enforced for all users" required>
-                            <label for="mfa_email_all">Enforced for all users</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="mfa_email_some" name="mfa_email_primary" value="Some users" required>
-                            <label for="mfa_email_some">Some users</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="mfa_email_none" name="mfa_email_primary" value="Not enabled" required>
-                            <label for="mfa_email_none">Not enabled</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="mfa_email_na" name="mfa_email_primary" value="Not applicable" required>
-                            <label for="mfa_email_na">Not applicable</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Password Manager Use <span class="required">*</span></label>
-                    <div class="radio-group">
-                        <div class="radio-item">
-                            <input type="radio" id="pm_org" name="password_manager_use" value="Organization-wide" required>
-                            <label for="pm_org">Organization-wide</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="pm_some" name="password_manager_use" value="Some users" required>
-                            <label for="pm_some">Some users</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="pm_none" name="password_manager_use" value="None" required>
-                            <label for="pm_none">None</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Least Privilege Access <span class="required">*</span></label>
-                    <div class="radio-group">
-                        <div class="radio-item">
-                            <input type="radio" id="privilege_role" name="least_privilege" value="Role-based per user" required>
-                            <label for="privilege_role">Role-based per user</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="privilege_shared" name="least_privilege" value="Shared roles/logins" required>
-                            <label for="privilege_shared">Shared roles/logins</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="privilege_everyone" name="least_privilege" value="Everyone has high access" required>
-                            <label for="privilege_everyone">Everyone has high access</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="offboarding_time">Offboarding Time <span class="required">*</span></label>
-                    <select id="offboarding_time" name="offboarding_time" required>
+                    <label for="login_count">3.1 How many people have a login to company tools? <span class="label-hover" title="Helps size the access-control plan.">ⓘ</span></label>
+                    <select id="login_count" name="login_count">
                         <option value="">Select</option>
-                        <option value="<24h">&lt;24 hours</option>
-                        <option value="1–3 days">1–3 days</option>
-                        <option value=">3 days">&gt;3 days</option>
-                        <option value="No formal process">No formal process</option>
+                        <option value="1">1</option>
+                        <option value="2-5">2–5</option>
+                        <option value="6-10">6–10</option>
+                        <option value="11-20">11–20</option>
+                        <option value="21-50">21–50</option>
+                        <option value="50+">50+</option>
+                        <option value="Not sure">Not sure</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label>Device Policy</label>
+                    <label>3.2 Do any outside people have access to your systems? (select all that apply) <span class="label-hover" title="Outside access is common—and often not removed when no longer needed.">ⓘ</span></label>
                     <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="device_company" name="device_policy[]" value="Company devices">
-                            <label for="device_company">Company devices</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="device_mdm" name="device_policy[]" value="MDM/Mobile device mgmt">
-                            <label for="device_mdm">MDM/Mobile device mgmt</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="device_screen" name="device_policy[]" value="Screen lock + Auto-logout">
-                            <label for="device_screen">Screen lock + Auto-logout</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="device_none" name="device_policy[]" value="No policy">
-                            <label for="device_none">No policy</label>
-                        </div>
+                        <div class="checkbox-item"><input type="checkbox" id="outside_it" name="outside_access[]" value="IT support/MSP"><label for="outside_it">IT support/MSP</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="outside_accountant" name="outside_access[]" value="Accountant/bookkeeper"><label for="outside_accountant">Accountant/bookkeeper</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="outside_contractors" name="outside_access[]" value="Contractors/freelancers"><label for="outside_contractors">Contractors/freelancers</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="outside_marketing" name="outside_access[]" value="Marketing agency"><label for="outside_marketing">Marketing agency</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="outside_webdev" name="outside_access[]" value="Web developer"><label for="outside_webdev">Web developer</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="outside_other" name="outside_access[]" value="Other"><label for="outside_other">Other</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="outside_none" name="outside_access[]" value="None"><label for="outside_none">None</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="outside_not_sure" name="outside_access[]" value="Not sure"><label for="outside_not_sure">Not sure</label></div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="emergency_access">Emergency Access <span class="required">*</span></label>
-                    <select id="emergency_access" name="emergency_access" required>
-                        <option value="">Select</option>
-                        <option value="Documented break-glass account">Documented break-glass account</option>
-                        <option value="Ad-hoc sharing">Ad-hoc sharing</option>
-                        <option value="None documented">None documented</option>
-                    </select>
+                    <label>3.3 Do people ever share passwords? <span class="required">*</span> <span class="label-hover" title="Shared passwords make it hard to track actions and increase risk.">ⓘ</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item"><input type="radio" id="share_never" name="share_passwords" value="Never" required><label for="share_never">Never</label></div>
+                        <div class="radio-item"><input type="radio" id="share_rarely" name="share_passwords" value="Rarely"><label for="share_rarely">Rarely</label></div>
+                        <div class="radio-item"><input type="radio" id="share_sometimes" name="share_passwords" value="Sometimes"><label for="share_sometimes">Sometimes</label></div>
+                        <div class="radio-item"><input type="radio" id="share_often" name="share_passwords" value="Often"><label for="share_often">Often</label></div>
+                        <div class="radio-item"><input type="radio" id="share_not_sure" name="share_passwords" value="Not sure"><label for="share_not_sure">Not sure</label></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>3.4 Do you require 2-step verification (MFA) for email? <span class="required">*</span> <span class="label-hover" title="MFA is one of the biggest protections against phishing.">ⓘ</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item"><input type="radio" id="mfa_email_everyone" name="mfa_email" value="Yes (everyone)" required><label for="mfa_email_everyone">Yes (everyone)</label></div>
+                        <div class="radio-item"><input type="radio" id="mfa_email_some" name="mfa_email" value="Yes (some people)"><label for="mfa_email_some">Yes (some people)</label></div>
+                        <div class="radio-item"><input type="radio" id="mfa_email_no" name="mfa_email" value="No"><label for="mfa_email_no">No</label></div>
+                        <div class="radio-item"><input type="radio" id="mfa_email_not_sure" name="mfa_email" value="Not sure"><label for="mfa_email_not_sure">Not sure</label></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>3.5 Do you require MFA for other important tools (accounting, file storage, payroll, website admin)? <span class="required">*</span> <span class="label-hover" title="Attackers often move from email into finance and file storage.">ⓘ</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item"><input type="radio" id="mfa_other_most" name="mfa_other_tools" value="Yes (most important tools)" required><label for="mfa_other_most">Yes (most important tools)</label></div>
+                        <div class="radio-item"><input type="radio" id="mfa_other_some" name="mfa_other_tools" value="Yes (some tools)"><label for="mfa_other_some">Yes (some tools)</label></div>
+                        <div class="radio-item"><input type="radio" id="mfa_other_no" name="mfa_other_tools" value="No"><label for="mfa_other_no">No</label></div>
+                        <div class="radio-item"><input type="radio" id="mfa_other_not_sure" name="mfa_other_tools" value="Not sure"><label for="mfa_other_not_sure">Not sure</label></div>
+                        <div class="radio-item"><input type="radio" id="mfa_other_na" name="mfa_other_tools" value="Not applicable"><label for="mfa_other_na">Not applicable</label></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>3.6 Do you use a password manager? <span class="required">*</span> <span class="label-hover" title="Password managers help avoid reused or weak passwords.">ⓘ</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item"><input type="radio" id="pm_everyone" name="password_manager" value="Yes (everyone)" required><label for="pm_everyone">Yes (everyone)</label></div>
+                        <div class="radio-item"><input type="radio" id="pm_some" name="password_manager" value="Yes (some people)"><label for="pm_some">Yes (some people)</label></div>
+                        <div class="radio-item"><input type="radio" id="pm_no" name="password_manager" value="No"><label for="pm_no">No</label></div>
+                        <div class="radio-item"><input type="radio" id="pm_not_sure" name="password_manager" value="Not sure"><label for="pm_not_sure">Not sure</label></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>3.7 Who has "admin" or highest-level access in your tools? <span class="required">*</span> <span class="label-hover" title="Fewer admins usually means fewer big security incidents.">ⓘ</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item"><input type="radio" id="admin_need" name="admin_access" value="Only people who need it" required><label for="admin_need">Only people who need it</label></div>
+                        <div class="radio-item"><input type="radio" id="admin_few" name="admin_access" value="A few people"><label for="admin_few">A few people</label></div>
+                        <div class="radio-item"><input type="radio" id="admin_many" name="admin_access" value="Many people"><label for="admin_many">Many people</label></div>
+                        <div class="radio-item"><input type="radio" id="admin_everyone" name="admin_access" value="Everyone"><label for="admin_everyone">Everyone</label></div>
+                        <div class="radio-item"><input type="radio" id="admin_not_sure" name="admin_access" value="Not sure"><label for="admin_not_sure">Not sure</label></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>3.8 When someone leaves (employee or contractor), how fast do you remove access? <span class="required">*</span> <span class="label-hover" title="Old accounts are a common way attackers get in.">ⓘ</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item"><input type="radio" id="offboard_same_day" name="offboard_speed" value="Same day" required><label for="offboard_same_day">Same day</label></div>
+                        <div class="radio-item"><input type="radio" id="offboard_1_3" name="offboard_speed" value="1-3 days"><label for="offboard_1_3">1–3 days</label></div>
+                        <div class="radio-item"><input type="radio" id="offboard_3_plus" name="offboard_speed" value="More than 3 days"><label for="offboard_3_plus">More than 3 days</label></div>
+                        <div class="radio-item"><input type="radio" id="offboard_no_process" name="offboard_speed" value="No set process"><label for="offboard_no_process">No set process</label></div>
+                        <div class="radio-item"><input type="radio" id="offboard_na" name="offboard_speed" value="Not applicable"><label for="offboard_na">Not applicable</label></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>3.9 Do work devices use a screen lock (PIN/password/biometric)? <span class="label-hover" title="Protects you if a laptop/phone is lost or stolen.">ⓘ</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item"><input type="radio" id="screenlock_all" name="screen_lock" value="Yes (all)"><label for="screenlock_all">Yes (all)</label></div>
+                        <div class="radio-item"><input type="radio" id="screenlock_some" name="screen_lock" value="Some devices"><label for="screenlock_some">Some devices</label></div>
+                        <div class="radio-item"><input type="radio" id="screenlock_no" name="screen_lock" value="No"><label for="screenlock_no">No</label></div>
+                        <div class="radio-item"><input type="radio" id="screenlock_not_sure" name="screen_lock" value="Not sure"><label for="screenlock_not_sure">Not sure</label></div>
+                        <div class="radio-item"><input type="radio" id="screenlock_na" name="screen_lock" value="Not applicable"><label for="screenlock_na">Not applicable</label></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>3.10 If someone loses access (lost phone, MFA problem), do you have a safe way to recover accounts? <span class="required">*</span> <span class="label-hover" title="Prevents insecure emergency password sharing and downtime.">ⓘ</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item"><input type="radio" id="recover_written" name="account_recovery" value="Yes (written steps)" required><label for="recover_written">Yes (written steps)</label></div>
+                        <div class="radio-item"><input type="radio" id="recover_backup_codes" name="account_recovery" value="Yes (we keep backup codes safely)"><label for="recover_backup_codes">Yes (we keep backup codes safely)</label></div>
+                        <div class="radio-item"><input type="radio" id="recover_figure_out" name="account_recovery" value="We figure it out each time"><label for="recover_figure_out">We figure it out each time</label></div>
+                        <div class="radio-item"><input type="radio" id="recover_no" name="account_recovery" value="No"><label for="recover_no">No</label></div>
+                        <div class="radio-item"><input type="radio" id="recover_not_sure" name="account_recovery" value="Not sure"><label for="recover_not_sure">Not sure</label></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="accounts_inventory">3.11 Do you have a list of all your important accounts/tools and who owns them? <span class="label-hover" title="Helps prevent unknown accounts and missed offboarding.">ⓘ</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item"><input type="radio" id="inventory_yes" name="accounts_inventory" value="Yes"><label for="inventory_yes">Yes</label></div>
+                        <div class="radio-item"><input type="radio" id="inventory_partial" name="accounts_inventory" value="Partially"><label for="inventory_partial">Partially</label></div>
+                        <div class="radio-item"><input type="radio" id="inventory_no" name="accounts_inventory" value="No"><label for="inventory_no">No</label></div>
+                        <div class="radio-item"><input type="radio" id="inventory_not_sure" name="accounts_inventory" value="Not sure"><label for="inventory_not_sure">Not sure</label></div>
+                    </div>
                 </div>
 
                 <div class="form-navigation">
@@ -789,173 +635,136 @@
                 </div>
             </div>
 
-            <!-- Section 4: Data & Privacy (Key Fields) -->
+            <!-- Section 4: Data & Privacy -->
             <div class="assessment-section" data-section="4">
                 <div class="section-header">
                     <div class="section-number">4</div>
-                    <h2 class="section-title">Data & Privacy</h2>
+                    <h2 class="section-title">Data &amp; Privacy</h2>
                 </div>
 
                 <div class="form-group">
-                    <label>Guest Data Types Collected</label>
+                    <label>4.1 What customer/client data do you handle? (select all that apply) <span class="label-hover" title="The more sensitive the data, the more protection you should use.">ⓘ</span></label>
                     <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="data_name" name="guest_data_types[]" value="Full name">
-                            <label for="data_name">Full name</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="data_email" name="guest_data_types[]" value="Email">
-                            <label for="data_email">Email</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="data_phone" name="guest_data_types[]" value="Phone">
-                            <label for="data_phone">Phone</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="data_id" name="guest_data_types[]" value="ID/Passport">
-                            <label for="data_id">ID/Passport</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="data_payment" name="guest_data_types[]" value="Payment tokens">
-                            <label for="data_payment">Payment tokens</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="data_selfie" name="guest_data_types[]" value="Selfies/ID scans">
-                            <label for="data_selfie">Selfies/ID scans</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="data_access" name="guest_data_types[]" value="Access codes">
-                            <label for="data_access">Access codes</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="data_other" name="guest_data_types[]" value="Other">
-                            <label for="data_other">Other</label>
-                        </div>
+                        <div class="checkbox-item"><input type="checkbox" id="cust_name" name="customer_data[]" value="Name/contact details"><label for="cust_name">Name/contact details</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="cust_payment" name="customer_data[]" value="Payment info"><label for="cust_payment">Payment info</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="cust_history" name="customer_data[]" value="Purchase history"><label for="cust_history">Purchase history</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="cust_health" name="customer_data[]" value="Health info"><label for="cust_health">Health info</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="cust_financial" name="customer_data[]" value="Financial info"><label for="cust_financial">Financial info</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="cust_id" name="customer_data[]" value="ID documents"><label for="cust_id">ID documents</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="cust_children" name="customer_data[]" value="Children's data"><label for="cust_children">Children's data</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="cust_creds" name="customer_data[]" value="Login credentials"><label for="cust_creds">Login credentials</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="cust_none" name="customer_data[]" value="None"><label for="cust_none">None</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="cust_not_sure" name="customer_data[]" value="Not sure"><label for="cust_not_sure">Not sure</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="cust_other" name="customer_data[]" value="Other"><label for="cust_other">Other</label></div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label>Data Storage Locations</label>
+                    <label>4.2 What employee/contractor data do you store? (select all that apply) <span class="label-hover" title="Employee data is sensitive and often targeted.">ⓘ</span></label>
                     <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="storage_pms" name="data_storage_locations[]" value="PMS/CM">
-                            <label for="storage_pms">PMS/CM</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="storage_gdrive" name="data_storage_locations[]" value="Google Drive">
-                            <label for="storage_gdrive">Google Drive</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="storage_dropbox" name="data_storage_locations[]" value="Dropbox">
-                            <label for="storage_dropbox">Dropbox</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="storage_local" name="data_storage_locations[]" value="Local devices">
-                            <label for="storage_local">Local devices</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="storage_db" name="data_storage_locations[]" value="Custom DB">
-                            <label for="storage_db">Custom DB</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="storage_email" name="data_storage_locations[]" value="Email inbox">
-                            <label for="storage_email">Email inbox</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="storage_other" name="data_storage_locations[]" value="Other">
-                            <label for="storage_other">Other</label>
-                        </div>
+                        <div class="checkbox-item"><input type="checkbox" id="emp_contact" name="employee_data[]" value="Contact info"><label for="emp_contact">Contact info</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="emp_tax" name="employee_data[]" value="Tax ID/SSN"><label for="emp_tax">Tax ID/SSN</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="emp_bank" name="employee_data[]" value="Bank details"><label for="emp_bank">Bank details</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="emp_payroll" name="employee_data[]" value="Payroll info"><label for="emp_payroll">Payroll info</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="emp_benefits" name="employee_data[]" value="Benefits/health info"><label for="emp_benefits">Benefits/health info</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="emp_reviews" name="employee_data[]" value="Performance reviews"><label for="emp_reviews">Performance reviews</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="emp_none" name="employee_data[]" value="None"><label for="emp_none">None</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="emp_not_sure" name="employee_data[]" value="Not sure"><label for="emp_not_sure">Not sure</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="emp_other" name="employee_data[]" value="Other"><label for="emp_other">Other</label></div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="retention_policy">Data Retention Policy <span class="required">*</span></label>
-                    <select id="retention_policy" name="retention_policy" required>
-                        <option value="">Select</option>
-                        <option value="Documented periods per data type">Documented periods per data type</option>
-                        <option value="General retention only">General retention only</option>
-                        <option value="None documented">None documented</option>
-                    </select>
+                    <label>4.3 Where is your most important data stored? (select all that apply) <span class="label-hover" title="We use this to recommend backups and access controls.">ⓘ</span></label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item"><input type="checkbox" id="important_cloud" name="important_data_stored[]" value="Google/Microsoft cloud"><label for="important_cloud">Google/Microsoft cloud</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="important_dropbox" name="important_data_stored[]" value="Dropbox/Box"><label for="important_dropbox">Dropbox/Box</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="important_local" name="important_data_stored[]" value="Local computers"><label for="important_local">Local computers</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="important_usb" name="important_data_stored[]" value="External drive/USB"><label for="important_usb">External drive/USB</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="important_email" name="important_data_stored[]" value="Email inboxes"><label for="important_email">Email inboxes</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="important_paper" name="important_data_stored[]" value="Paper"><label for="important_paper">Paper</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="important_db" name="important_data_stored[]" value="Custom database/app"><label for="important_db">Custom database/app</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="important_not_sure" name="important_data_stored[]" value="Not sure"><label for="important_not_sure">Not sure</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="important_other" name="important_data_stored[]" value="Other"><label for="important_other">Other</label></div>
+                    </div>
                 </div>
 
                 <div class="form-group">
-                    <label>DSAR Process <span class="required">*</span></label>
+                    <label>4.4 Do you delete data when you no longer need it? <span class="required">*</span> <span class="label-hover" title="Keeping less data lowers risk and cleanup work after incidents.">ⓘ</span></label>
                     <div class="radio-group">
-                        <div class="radio-item">
-                            <input type="radio" id="dsar_tested" name="dsar_process" value="Documented + tested" required>
-                            <label for="dsar_tested">Documented + tested</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="dsar_doc" name="dsar_process" value="Documented only" required>
-                            <label for="dsar_doc">Documented only</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="dsar_ad_hoc" name="dsar_process" value="Ad-hoc" required>
-                            <label for="dsar_ad_hoc">Ad-hoc</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="dsar_none" name="dsar_process" value="None" required>
-                            <label for="dsar_none">None</label>
-                        </div>
+                        <div class="radio-item"><input type="radio" id="delete_rules" name="delete_data" value="Yes (we have rules)" required><label for="delete_rules">Yes (we have rules)</label></div>
+                        <div class="radio-item"><input type="radio" id="delete_informal" name="delete_data" value="Yes (informal)"><label for="delete_informal">Yes (informal)</label></div>
+                        <div class="radio-item"><input type="radio" id="delete_forever" name="delete_data" value="We keep it forever"><label for="delete_forever">We keep it forever</label></div>
+                        <div class="radio-item"><input type="radio" id="delete_not_sure" name="delete_data" value="Not sure"><label for="delete_not_sure">Not sure</label></div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="data_residency">Data Residency</label>
-                    <select id="data_residency" name="data_residency">
+                    <label>4.5 If a customer asks "what data do you have about me?" can you find it and delete it if required? <span class="required">*</span> <span class="label-hover" title="Helps assess readiness for common privacy laws and customer requests.">ⓘ</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item"><input type="radio" id="dsar_yes" name="customer_data_request" value="Yes (we have a process)" required><label for="dsar_yes">Yes (we have a process)</label></div>
+                        <div class="radio-item"><input type="radio" id="dsar_sometimes" name="customer_data_request" value="Sometimes"><label for="dsar_sometimes">Sometimes</label></div>
+                        <div class="radio-item"><input type="radio" id="dsar_no" name="customer_data_request" value="No"><label for="dsar_no">No</label></div>
+                        <div class="radio-item"><input type="radio" id="dsar_not_sure" name="customer_data_request" value="Not sure"><label for="dsar_not_sure">Not sure</label></div>
+                        <div class="radio-item"><input type="radio" id="dsar_na" name="customer_data_request" value="Not applicable"><label for="dsar_na">Not applicable</label></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="data_hosted">4.6 Do you know where your data is hosted (country/region)? <span class="label-hover" title="Some contracts and laws care where data is stored.">ⓘ</span></label>
+                    <select id="data_hosted" name="data_hosted">
                         <option value="">Select</option>
-                        <option value="EU">EU</option>
                         <option value="US">US</option>
+                        <option value="Canada">Canada</option>
+                        <option value="EU">EU</option>
+                        <option value="UK">UK</option>
                         <option value="Mixed">Mixed</option>
                         <option value="Not sure">Not sure</option>
+                        <option value="Not applicable">Not applicable</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="intl_guests_pct">International Guests Percentage</label>
-                    <select id="intl_guests_pct" name="intl_guests_pct">
-                        <option value="">Select</option>
-                        <option value="<10%">&lt;10%</option>
-                        <option value="10–30%">10–30%</option>
-                        <option value="30–60%">30–60%</option>
-                        <option value=">60%">&gt;60%</option>
-                        <option value="Not sure">Not sure</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Public Privacy Policy <span class="required">*</span></label>
+                    <label>4.7 Are laptops/phones that access business data encrypted? <span class="label-hover" title="Encryption helps if devices are lost or stolen.">ⓘ</span></label>
                     <div class="radio-group">
-                        <div class="radio-item">
-                            <input type="radio" id="privacy_yes" name="privacy_policy_public" value="Yes" required>
-                            <label for="privacy_yes">Yes</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="privacy_no" name="privacy_policy_public" value="No" required>
-                            <label for="privacy_no">No</label>
-                        </div>
+                        <div class="radio-item"><input type="radio" id="encrypt_all" name="devices_encrypted" value="Yes (all)"><label for="encrypt_all">Yes (all)</label></div>
+                        <div class="radio-item"><input type="radio" id="encrypt_some" name="devices_encrypted" value="Some"><label for="encrypt_some">Some</label></div>
+                        <div class="radio-item"><input type="radio" id="encrypt_no" name="devices_encrypted" value="No"><label for="encrypt_no">No</label></div>
+                        <div class="radio-item"><input type="radio" id="encrypt_not_sure" name="devices_encrypted" value="Not sure"><label for="encrypt_not_sure">Not sure</label></div>
+                        <div class="radio-item"><input type="radio" id="encrypt_na" name="devices_encrypted" value="Not applicable"><label for="encrypt_na">Not applicable</label></div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label>CCTV Disclosure <span class="required">*</span></label>
+                    <label>4.8 Do you use secure sharing for files (avoid sending sensitive files by email when possible)? <span class="label-hover" title="Email forwarding and accidental sharing are common leak causes.">ⓘ</span></label>
                     <div class="radio-group">
-                        <div class="radio-item">
-                            <input type="radio" id="cctv_listing" name="cctv_disclosure" value="Yes on listings + at property" required>
-                            <label for="cctv_listing">Yes on listings + at property</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="cctv_property" name="cctv_disclosure" value="Only at property" required>
-                            <label for="cctv_property">Only at property</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="cctv_no" name="cctv_disclosure" value="No/Not sure" required>
-                            <label for="cctv_no">No/Not sure</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="cctv_na" name="cctv_disclosure" value="Not applicable" required>
-                            <label for="cctv_na">Not applicable</label>
-                        </div>
+                        <div class="radio-item"><input type="radio" id="secure_yes" name="secure_file_sharing" value="Yes"><label for="secure_yes">Yes</label></div>
+                        <div class="radio-item"><input type="radio" id="secure_sometimes" name="secure_file_sharing" value="Sometimes"><label for="secure_sometimes">Sometimes</label></div>
+                        <div class="radio-item"><input type="radio" id="secure_no" name="secure_file_sharing" value="No"><label for="secure_no">No</label></div>
+                        <div class="radio-item"><input type="radio" id="secure_not_sure" name="secure_file_sharing" value="Not sure"><label for="secure_not_sure">Not sure</label></div>
+                        <div class="radio-item"><input type="radio" id="secure_na" name="secure_file_sharing" value="Not applicable"><label for="secure_na">Not applicable</label></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>4.9 Do you have a privacy policy/notice (on your website or shared with customers)? <span class="label-hover" title="Helps with transparency and customer trust.">ⓘ</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item"><input type="radio" id="privacy_yes" name="privacy_policy" value="Yes"><label for="privacy_yes">Yes</label></div>
+                        <div class="radio-item"><input type="radio" id="privacy_no" name="privacy_policy" value="No"><label for="privacy_no">No</label></div>
+                        <div class="radio-item"><input type="radio" id="privacy_in_progress" name="privacy_policy" value="In progress"><label for="privacy_in_progress">In progress</label></div>
+                        <div class="radio-item"><input type="radio" id="privacy_na" name="privacy_policy" value="Not applicable"><label for="privacy_na">Not applicable</label></div>
+                        <div class="radio-item"><input type="radio" id="privacy_not_sure" name="privacy_policy" value="Not sure"><label for="privacy_not_sure">Not sure</label></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>4.10 Do you limit who can access sensitive data (finance, HR, customer lists)? <span class="label-hover" title="Reduces damage if one account is compromised.">ⓘ</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item"><input type="radio" id="limit_yes" name="limit_sensitive_access" value="Yes"><label for="limit_yes">Yes</label></div>
+                        <div class="radio-item"><input type="radio" id="limit_somewhat" name="limit_sensitive_access" value="Somewhat"><label for="limit_somewhat">Somewhat</label></div>
+                        <div class="radio-item"><input type="radio" id="limit_no" name="limit_sensitive_access" value="No"><label for="limit_no">No</label></div>
+                        <div class="radio-item"><input type="radio" id="limit_not_sure" name="limit_sensitive_access" value="Not sure"><label for="limit_not_sure">Not sure</label></div>
+                        <div class="radio-item"><input type="radio" id="limit_na" name="limit_sensitive_access" value="Not applicable"><label for="limit_na">Not applicable</label></div>
                     </div>
                 </div>
 
@@ -965,83 +774,107 @@
                 </div>
             </div>
 
-            <!-- Section 5: Payments & Fraud (Key Fields) -->
+            <!-- Section 5: Payments & Fraud Controls -->
             <div class="assessment-section" data-section="5">
                 <div class="section-header">
                     <div class="section-number">5</div>
-                    <h2 class="section-title">Payments & Fraud</h2>
+                    <h2 class="section-title">Payments &amp; Fraud Controls</h2>
                 </div>
 
                 <div class="form-group">
-                    <label for="card_handling">Card Handling <span class="required">*</span></label>
-                    <select id="card_handling" name="card_handling" required>
-                        <option value="">Select</option>
-                        <option value="Platform-only payments">Platform-only payments</option>
-                        <option value="Stripe/processor without staff card entry">Stripe/processor without staff card entry</option>
-                        <option value="Staff manually enter card data">Staff manually enter card data</option>
-                        <option value="Card data stored locally">Card data stored locally</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>3D Secure (3DS) <span class="required">*</span></label>
+                    <label>5.1 Do you accept payments from customers? <span class="required">*</span> <span class="label-hover" title="If you don't take payments, we'll skip payment-specific questions.">ⓘ</span></label>
                     <div class="radio-group">
-                        <div class="radio-item">
-                            <input type="radio" id="three_ds_always" name="three_ds" value="Always" required>
-                            <label for="three_ds_always">Always</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="three_ds_high" name="three_ds" value="When high risk" required>
-                            <label for="three_ds_high">When high risk</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="three_ds_none" name="three_ds" value="Not used/Not sure" required>
-                            <label for="three_ds_none">Not used/Not sure</label>
+                        <div class="radio-item"><input type="radio" id="accept_payments_yes" name="accept_payments" value="Yes" required><label for="accept_payments_yes">Yes</label></div>
+                        <div class="radio-item"><input type="radio" id="accept_payments_no" name="accept_payments" value="No"><label for="accept_payments_no">No</label></div>
+                        <div class="radio-item"><input type="radio" id="accept_payments_na" name="accept_payments" value="Not applicable (we don't sell/charge)"><label for="accept_payments_na">Not applicable (we don't sell/charge)</label></div>
+                        <div class="radio-item"><input type="radio" id="accept_payments_not_sure" name="accept_payments" value="Not sure"><label for="accept_payments_not_sure">Not sure</label></div>
+                    </div>
+                </div>
+
+                <div class="conditional-field" id="how_accept_payments_field" data-show-if="accept_payments=Yes">
+                    <div class="form-group">
+                        <label for="how_accept_payments">5.2 How do you accept payments? <span class="label-hover" title="Different payment methods have different fraud risks.">ⓘ</span></label>
+                        <select id="how_accept_payments" name="how_accept_payments">
+                            <option value="">Select</option>
+                            <option value="Payment processor (Stripe/PayPal/Square/Shopify)">Payment processor (Stripe/PayPal/Square/Shopify)</option>
+                            <option value="Bank transfer/ACH">Bank transfer/ACH</option>
+                            <option value="Cash/check">Cash/check</option>
+                            <option value="Invoicing tool">Invoicing tool</option>
+                            <option value="Multiple methods">Multiple methods</option>
+                            <option value="Other">Other</option>
+                            <option value="Not sure">Not sure</option>
+                            <option value="Not applicable">Not applicable</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="conditional-field" id="card_numbers_direct_field" data-show-if="accept_payments=Yes">
+                    <div class="form-group">
+                        <label>5.3 Do you ever receive card numbers directly (email/text/chat/phone)? <span class="label-hover" title="Handling card numbers directly increases risk and may trigger extra requirements.">ⓘ</span></label>
+                        <div class="radio-group">
+                            <div class="radio-item"><input type="radio" id="card_never" name="card_numbers_direct" value="Never"><label for="card_never">Never</label></div>
+                            <div class="radio-item"><input type="radio" id="card_sometimes" name="card_numbers_direct" value="Sometimes"><label for="card_sometimes">Sometimes</label></div>
+                            <div class="radio-item"><input type="radio" id="card_often" name="card_numbers_direct" value="Often"><label for="card_often">Often</label></div>
+                            <div class="radio-item"><input type="radio" id="card_not_sure" name="card_numbers_direct" value="Not sure"><label for="card_not_sure">Not sure</label></div>
+                            <div class="radio-item"><input type="radio" id="card_na" name="card_numbers_direct" value="Not applicable"><label for="card_na">Not applicable</label></div>
                         </div>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="pci_scope">PCI Compliance Scope</label>
-                    <select id="pci_scope" name="pci_scope">
-                        <option value="">Select</option>
-                        <option value="SAQ A">SAQ A</option>
-                        <option value="SAQ A-EP">SAQ A-EP</option>
-                        <option value="Not sure">Not sure</option>
-                        <option value="Not applicable">Not applicable</option>
-                    </select>
+                <div class="conditional-field" id="store_card_field" data-show-if="accept_payments=Yes">
+                    <div class="form-group">
+                        <label>5.4 Do you store credit card details anywhere? <span class="label-hover" title="Storing card data creates significant risk and usually should be avoided.">ⓘ</span></label>
+                        <div class="radio-group">
+                            <div class="radio-item"><input type="radio" id="store_card_no" name="store_card_details" value="No"><label for="store_card_no">No</label></div>
+                            <div class="radio-item"><input type="radio" id="store_card_tool" name="store_card_details" value="Yes (in a tool)"><label for="store_card_tool">Yes (in a tool)</label></div>
+                            <div class="radio-item"><input type="radio" id="store_card_written" name="store_card_details" value="Yes (written down)"><label for="store_card_written">Yes (written down)</label></div>
+                            <div class="radio-item"><input type="radio" id="store_card_not_sure" name="store_card_details" value="Not sure"><label for="store_card_not_sure">Not sure</label></div>
+                            <div class="radio-item"><input type="radio" id="store_card_na" name="store_card_details" value="Not applicable"><label for="store_card_na">Not applicable</label></div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="chargeback_rate">Chargeback Rate</label>
-                    <select id="chargeback_rate" name="chargeback_rate">
-                        <option value="">Select</option>
-                        <option value="<0.5%">&lt;0.5%</option>
-                        <option value="0.5–1%">0.5–1%</option>
-                        <option value=">1%">&gt;1%</option>
-                        <option value="Not sure">Not sure</option>
-                    </select>
+                <div class="conditional-field" id="fraud_protection_field" data-show-if="accept_payments=Yes">
+                    <div class="form-group">
+                        <label>5.5 Fraud protection steps you use (select all that apply) <span class="label-hover" title="Helps prevent invoice fraud and business email compromise.">ⓘ</span></label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item"><input type="checkbox" id="fraud_alerts" name="fraud_protection[]" value="Bank/payment alerts"><label for="fraud_alerts">Bank/payment alerts</label></div>
+                            <div class="checkbox-item"><input type="checkbox" id="fraud_two_person" name="fraud_protection[]" value="Two-person approval for large payments"><label for="fraud_two_person">Two-person approval for large payments</label></div>
+                            <div class="checkbox-item"><input type="checkbox" id="fraud_verify" name="fraud_protection[]" value="Vendor verification (call-back)"><label for="fraud_verify">Vendor verification (call-back)</label></div>
+                            <div class="checkbox-item"><input type="checkbox" id="fraud_limits" name="fraud_protection[]" value="Spending limits/cards"><label for="fraud_limits">Spending limits/cards</label></div>
+                            <div class="checkbox-item"><input type="checkbox" id="fraud_recon" name="fraud_protection[]" value="Regular reconciliation"><label for="fraud_recon">Regular reconciliation</label></div>
+                            <div class="checkbox-item"><input type="checkbox" id="fraud_separate" name="fraud_protection[]" value="Separate accounts for roles"><label for="fraud_separate">Separate accounts for roles</label></div>
+                            <div class="checkbox-item"><input type="checkbox" id="fraud_none" name="fraud_protection[]" value="None"><label for="fraud_none">None</label></div>
+                            <div class="checkbox-item"><input type="checkbox" id="fraud_not_sure" name="fraud_protection[]" value="Not sure"><label for="fraud_not_sure">Not sure</label></div>
+                            <div class="checkbox-item"><input type="checkbox" id="fraud_na" name="fraud_protection[]" value="Not applicable"><label for="fraud_na">Not applicable</label></div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label>Payout Controls</label>
-                    <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="payout_banking" name="payout_controls[]" value="Banking change approvals">
-                            <label for="payout_banking">Banking change approvals</label>
+                <div class="conditional-field" id="payment_scam_attempt_field" data-show-if="accept_payments=Yes">
+                    <div class="form-group">
+                        <label>5.6 Have you had a payment or invoice scam attempt in the last 2 years? <span class="label-hover" title="Past attempts help prioritize controls and training.">ⓘ</span></label>
+                        <div class="radio-group">
+                            <div class="radio-item"><input type="radio" id="scam_lost" name="payment_scam_attempt" value="Yes (lost money)"><label for="scam_lost">Yes (lost money)</label></div>
+                            <div class="radio-item"><input type="radio" id="scam_caught" name="payment_scam_attempt" value="Yes (caught in time)"><label for="scam_caught">Yes (caught in time)</label></div>
+                            <div class="radio-item"><input type="radio" id="scam_no" name="payment_scam_attempt" value="No"><label for="scam_no">No</label></div>
+                            <div class="radio-item"><input type="radio" id="scam_not_sure" name="payment_scam_attempt" value="Not sure"><label for="scam_not_sure">Not sure</label></div>
+                            <div class="radio-item"><input type="radio" id="scam_na" name="payment_scam_attempt" value="Not applicable"><label for="scam_na">Not applicable</label></div>
                         </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="payout_dual" name="payout_controls[]" value="Dual control">
-                            <label for="payout_dual">Dual control</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="payout_alerts" name="payout_controls[]" value="Alerts on payout changes">
-                            <label for="payout_alerts">Alerts on payout changes</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="payout_none" name="payout_controls[]" value="None">
-                            <label for="payout_none">None</label>
-                        </div>
+                    </div>
+                </div>
+
+                <div class="conditional-field" id="amount_lost_field" data-show-if="payment_scam_attempt=Yes (lost money)">
+                    <div class="form-group">
+                        <label for="amount_lost">5.7 If yes, approximate amount lost (optional) <span class="label-hover" title="Helps estimate business impact and appropriate safeguards.">ⓘ</span></label>
+                        <select id="amount_lost" name="amount_lost">
+                            <option value="">Select</option>
+                            <option value="<$500">&lt;$500</option>
+                            <option value="$500-$2,000">$500–$2,000</option>
+                            <option value="$2,000-$10,000">$2,000–$10,000</option>
+                            <option value="$10,000+">$10,000+</option>
+                            <option value="Prefer not to say">Prefer not to say</option>
+                        </select>
                     </div>
                 </div>
 
@@ -1051,123 +884,117 @@
                 </div>
             </div>
 
-            <!-- Section 6: Property Tech & Network (Key Fields) -->
+            <!-- Section 6: Devices, Wi‑Fi & Updates -->
             <div class="assessment-section" data-section="6">
                 <div class="section-header">
                     <div class="section-number">6</div>
-                    <h2 class="section-title">Property Tech & Network</h2>
+                    <h2 class="section-title">Devices, Wi‑Fi &amp; Updates</h2>
                 </div>
 
                 <div class="form-group">
-                    <label for="router_management">Router Management</label>
-                    <select id="router_management" name="router_management">
+                    <label for="work_location">6.1 Where do people work from? <span class="label-hover" title="Work location affects Wi‑Fi and device security needs.">ⓘ</span></label>
+                    <select id="work_location" name="work_location">
                         <option value="">Select</option>
-                        <option value="ISP-managed">ISP-managed</option>
-                        <option value="You manage">You manage</option>
-                        <option value="Vendor-managed">Vendor-managed</option>
+                        <option value="Physical office">Physical office</option>
+                        <option value="Home office">Home office</option>
+                        <option value="Fully remote">Fully remote</option>
+                        <option value="Hybrid">Hybrid</option>
+                        <option value="Co-working">Co-working</option>
                         <option value="Not sure">Not sure</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label>Default Passwords Changed <span class="required">*</span></label>
+                    <label>6.2 Do you allow personal devices for work (BYOD)? <span class="label-hover" title="BYOD can be safe, but needs a few basic rules.">ⓘ</span></label>
                     <div class="radio-group">
-                        <div class="radio-item">
-                            <input type="radio" id="passwords_all" name="default_passwords_changed" value="All devices" required>
-                            <label for="passwords_all">All devices</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="passwords_some" name="default_passwords_changed" value="Some devices" required>
-                            <label for="passwords_some">Some devices</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="passwords_none" name="default_passwords_changed" value="Not changed/Not sure" required>
-                            <label for="passwords_none">Not changed/Not sure</label>
+                        <div class="radio-item"><input type="radio" id="byod_yes" name="byod" value="Yes"><label for="byod_yes">Yes</label></div>
+                        <div class="radio-item"><input type="radio" id="byod_no" name="byod" value="No"><label for="byod_no">No</label></div>
+                        <div class="radio-item"><input type="radio" id="byod_some" name="byod" value="Some roles"><label for="byod_some">Some roles</label></div>
+                        <div class="radio-item"><input type="radio" id="byod_not_sure" name="byod" value="Not sure"><label for="byod_not_sure">Not sure</label></div>
+                        <div class="radio-item"><input type="radio" id="byod_na" name="byod" value="Not applicable"><label for="byod_na">Not applicable</label></div>
+                    </div>
+                </div>
+
+                <div class="conditional-field" id="byod_protections_field" data-show-if="byod=Yes|Some roles">
+                    <div class="form-group">
+                        <label>6.3 If BYOD is allowed, do you require basic protections on personal devices? <span class="label-hover" title="These are simple ways to reduce risk without being too strict.">ⓘ</span></label>
+                        <div class="radio-group">
+                            <div class="radio-item"><input type="radio" id="byod_screen" name="byod_protections" value="Screen lock"><label for="byod_screen">Screen lock</label></div>
+                            <div class="radio-item"><input type="radio" id="byod_updates" name="byod_protections" value="Auto updates"><label for="byod_updates">Auto updates</label></div>
+                            <div class="radio-item"><input type="radio" id="byod_encrypt" name="byod_protections" value="Device encryption"><label for="byod_encrypt">Device encryption</label></div>
+                            <div class="radio-item"><input type="radio" id="byod_apps" name="byod_protections" value="Work apps only (no full-device control)"><label for="byod_apps">Work apps only (no full-device control)</label></div>
+                            <div class="radio-item"><input type="radio" id="byod_prot_nothing" name="byod_protections" value="We don't require anything"><label for="byod_prot_nothing">We don't require anything</label></div>
+                            <div class="radio-item"><input type="radio" id="byod_prot_not_sure" name="byod_protections" value="Not sure"><label for="byod_prot_not_sure">Not sure</label></div>
+                            <div class="radio-item"><input type="radio" id="byod_prot_na" name="byod_protections" value="Not applicable"><label for="byod_prot_na">Not applicable</label></div>
                         </div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="firmware_updates">Firmware Updates</label>
-                    <select id="firmware_updates" name="firmware_updates">
+                    <label>6.4 Do you use a VPN? <span class="label-hover" title="Often optional for modern cloud tools, but can help in some setups.">ⓘ</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item"><input type="radio" id="vpn_required" name="vpn" value="Yes (required)"><label for="vpn_required">Yes (required)</label></div>
+                        <div class="radio-item"><input type="radio" id="vpn_sometimes" name="vpn" value="Yes (sometimes)"><label for="vpn_sometimes">Yes (sometimes)</label></div>
+                        <div class="radio-item"><input type="radio" id="vpn_no" name="vpn" value="No"><label for="vpn_no">No</label></div>
+                        <div class="radio-item"><input type="radio" id="vpn_not_sure" name="vpn" value="Not sure"><label for="vpn_not_sure">Not sure</label></div>
+                        <div class="radio-item"><input type="radio" id="vpn_na" name="vpn" value="Not applicable"><label for="vpn_na">Not applicable</label></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="wifi_security">6.5 If you have office Wi‑Fi, what security setting is used? <span class="label-hover" title="Older Wi‑Fi settings are easier to break into.">ⓘ</span></label>
+                    <select id="wifi_security" name="wifi_security">
                         <option value="">Select</option>
-                        <option value="Automatic">Automatic</option>
-                        <option value="Quarterly">Quarterly</option>
-                        <option value="Ad-hoc">Ad-hoc</option>
-                        <option value="Never/Not sure">Never/Not sure</option>
+                        <option value="WPA3">WPA3</option>
+                        <option value="WPA2">WPA2</option>
+                        <option value="Older/none">Older/none</option>
+                        <option value="Not sure">Not sure</option>
+                        <option value="Not applicable">Not applicable</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label>Network Segmentation</label>
-                    <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="network_guest" name="network_segmentation[]" value="Separate guest Wi-Fi">
-                            <label for="network_guest">Separate guest Wi-Fi</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="network_iot" name="network_segmentation[]" value="Separate IoT network">
-                            <label for="network_iot">Separate IoT network</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="network_flat" name="network_segmentation[]" value="Single flat network">
-                            <label for="network_flat">Single flat network</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="network_not_sure" name="network_segmentation[]" value="Not sure">
-                            <label for="network_not_sure">Not sure</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="lock_code_generation">Lock Code Generation <span class="required">*</span></label>
-                    <select id="lock_code_generation" name="lock_code_generation" required>
-                        <option value="">Select</option>
-                        <option value="Automatic per booking via PMS">Automatic per booking via PMS</option>
-                        <option value="Manual per booking">Manual per booking</option>
-                        <option value="One static code">One static code</option>
-                        <option value="Physical keys only">Physical keys only</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Backup Entry Method</label>
-                    <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="backup_lockbox" name="backup_entry_method[]" value="Lockbox">
-                            <label for="backup_lockbox">Lockbox</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="backup_master" name="backup_entry_method[]" value="Master physical key">
-                            <label for="backup_master">Master physical key</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="backup_support" name="backup_entry_method[]" value="24/7 support">
-                            <label for="backup_support">24/7 support</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="backup_none" name="backup_entry_method[]" value="None">
-                            <label for="backup_none">None</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Key Inventory Tracking</label>
+                    <label>6.6 Do you have a guest Wi‑Fi (separate from work devices)? <span class="label-hover" title="Keeps visitor/IoT devices away from business devices.">ⓘ</span></label>
                     <div class="radio-group">
-                        <div class="radio-item">
-                            <input type="radio" id="key_systematic" name="key_inventory_tracking" value="Systematic tracking">
-                            <label for="key_systematic">Systematic tracking</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="key_ad_hoc" name="key_inventory_tracking" value="Ad-hoc">
-                            <label for="key_ad_hoc">Ad-hoc</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="key_none" name="key_inventory_tracking" value="None/Not applicable">
-                            <label for="key_none">None/Not applicable</label>
-                        </div>
+                        <div class="radio-item"><input type="radio" id="guest_wifi_yes" name="guest_wifi" value="Yes"><label for="guest_wifi_yes">Yes</label></div>
+                        <div class="radio-item"><input type="radio" id="guest_wifi_no" name="guest_wifi" value="No"><label for="guest_wifi_no">No</label></div>
+                        <div class="radio-item"><input type="radio" id="guest_wifi_not_sure" name="guest_wifi" value="Not sure"><label for="guest_wifi_not_sure">Not sure</label></div>
+                        <div class="radio-item"><input type="radio" id="guest_wifi_na" name="guest_wifi" value="Not applicable"><label for="guest_wifi_na">Not applicable</label></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>6.7 What protection is on computers? <span class="label-hover" title="Helps reduce malware and ransomware risk.">ⓘ</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item"><input type="radio" id="protection_builtin" name="computer_protection" value="Built-in only (Windows/macOS)"><label for="protection_builtin">Built-in only (Windows/macOS)</label></div>
+                        <div class="radio-item"><input type="radio" id="protection_av" name="computer_protection" value="Paid antivirus"><label for="protection_av">Paid antivirus</label></div>
+                        <div class="radio-item"><input type="radio" id="protection_edr" name="computer_protection" value="Business endpoint/EDR"><label for="protection_edr">Business endpoint/EDR</label></div>
+                        <div class="radio-item"><input type="radio" id="protection_none" name="computer_protection" value="None"><label for="protection_none">None</label></div>
+                        <div class="radio-item"><input type="radio" id="protection_not_sure" name="computer_protection" value="Not sure"><label for="protection_not_sure">Not sure</label></div>
+                        <div class="radio-item"><input type="radio" id="protection_na" name="computer_protection" value="Not applicable"><label for="protection_na">Not applicable</label></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>6.8 How are updates handled on computers/phones? <span class="label-hover" title="Updates fix known security holes.">ⓘ</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item"><input type="radio" id="updates_auto" name="updates_handled" value="Automatic"><label for="updates_auto">Automatic</label></div>
+                        <div class="radio-item"><input type="radio" id="updates_regular" name="updates_handled" value="Regular (at least monthly)"><label for="updates_regular">Regular (at least monthly)</label></div>
+                        <div class="radio-item"><input type="radio" id="updates_sometimes" name="updates_handled" value="Sometimes"><label for="updates_sometimes">Sometimes</label></div>
+                        <div class="radio-item"><input type="radio" id="updates_rarely" name="updates_handled" value="Rarely/Never"><label for="updates_rarely">Rarely/Never</label></div>
+                        <div class="radio-item"><input type="radio" id="updates_not_sure" name="updates_handled" value="Not sure"><label for="updates_not_sure">Not sure</label></div>
+                        <div class="radio-item"><input type="radio" id="updates_na" name="updates_handled" value="Not applicable"><label for="updates_na">Not applicable</label></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>6.9 Do you know what devices are used for work (an inventory list)? <span class="label-hover" title="If you don't know what devices exist, it's hard to secure them.">ⓘ</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item"><input type="radio" id="device_inv_yes" name="device_inventory" value="Yes"><label for="device_inv_yes">Yes</label></div>
+                        <div class="radio-item"><input type="radio" id="device_inv_partial" name="device_inventory" value="Partially"><label for="device_inv_partial">Partially</label></div>
+                        <div class="radio-item"><input type="radio" id="device_inv_no" name="device_inventory" value="No"><label for="device_inv_no">No</label></div>
+                        <div class="radio-item"><input type="radio" id="device_inv_not_sure" name="device_inventory" value="Not sure"><label for="device_inv_not_sure">Not sure</label></div>
+                        <div class="radio-item"><input type="radio" id="device_inv_na" name="device_inventory" value="Not applicable"><label for="device_inv_na">Not applicable</label></div>
                     </div>
                 </div>
 
@@ -1177,117 +1004,139 @@
                 </div>
             </div>
 
-            <!-- Section 7: Monitoring & Response (Key Fields) -->
+            <!-- Section 7: Alerts, Backups & Handling Problems -->
             <div class="assessment-section" data-section="7">
                 <div class="section-header">
                     <div class="section-number">7</div>
-                    <h2 class="section-title">Monitoring, Incidents & Response</h2>
+                    <h2 class="section-title">Alerts, Backups &amp; Handling Problems</h2>
                 </div>
 
                 <div class="form-group">
-                    <label>Security Monitoring</label>
+                    <label>7.1 Do you have security alerts turned on? (select all that apply) <span class="label-hover" title="Alerts are a simple substitute for expensive monitoring.">ⓘ</span></label>
                     <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="monitor_login" name="security_monitoring[]" value="Login alerts">
-                            <label for="monitor_login">Login alerts</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="monitor_failed" name="security_monitoring[]" value="Failed login alerts">
-                            <label for="monitor_failed">Failed login alerts</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="monitor_payout" name="security_monitoring[]" value="Payout change alerts">
-                            <label for="monitor_payout">Payout change alerts</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="monitor_none" name="security_monitoring[]" value="None">
-                            <label for="monitor_none">None</label>
-                        </div>
+                        <div class="checkbox-item"><input type="checkbox" id="alerts_email" name="security_alerts[]" value="Email login alerts"><label for="alerts_email">Email login alerts</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="alerts_mfa" name="security_alerts[]" value="MFA/2-step prompts"><label for="alerts_mfa">MFA/2-step prompts</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="alerts_breach" name="security_alerts[]" value="Password breach alerts"><label for="alerts_breach">Password breach alerts</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="alerts_bank" name="security_alerts[]" value="Bank/payment alerts"><label for="alerts_bank">Bank/payment alerts</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="alerts_website" name="security_alerts[]" value="Website alerts"><label for="alerts_website">Website alerts</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="alerts_av" name="security_alerts[]" value="Antivirus alerts"><label for="alerts_av">Antivirus alerts</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="alerts_none" name="security_alerts[]" value="None"><label for="alerts_none">None</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="alerts_not_sure" name="security_alerts[]" value="Not sure"><label for="alerts_not_sure">Not sure</label></div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label>Incident Response Plan <span class="required">*</span></label>
+                    <label for="who_receives_alerts">7.2 Who receives and acts on alerts? <span class="label-hover" title="Alerts only help if someone is responsible for responding.">ⓘ</span></label>
+                    <select id="who_receives_alerts" name="who_receives_alerts">
+                        <option value="">Select</option>
+                        <option value="Owner">Owner</option>
+                        <option value="IT person/MSP">IT person/MSP</option>
+                        <option value="Office manager/admin">Office manager/admin</option>
+                        <option value="Multiple people">Multiple people</option>
+                        <option value="Nobody assigned">Nobody assigned</option>
+                        <option value="Not sure">Not sure</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>7.3 If an account gets hacked, do you have a simple written checklist of what to do? <span class="required">*</span> <span class="label-hover" title="A short checklist reduces panic and speeds up recovery.">ⓘ</span></label>
                     <div class="radio-group">
-                        <div class="radio-item">
-                            <input type="radio" id="irp_tested" name="incident_response_plan" value="Documented + tested" required>
-                            <label for="irp_tested">Documented + tested</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="irp_doc" name="incident_response_plan" value="Documented only" required>
-                            <label for="irp_doc">Documented only</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="irp_ad_hoc" name="incident_response_plan" value="Ad-hoc" required>
-                            <label for="irp_ad_hoc">Ad-hoc</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="irp_none" name="incident_response_plan" value="None" required>
-                            <label for="irp_none">None</label>
-                        </div>
+                        <div class="radio-item"><input type="radio" id="checklist_yes" name="hack_checklist" value="Yes (written and easy to find)" required><label for="checklist_yes">Yes (written and easy to find)</label></div>
+                        <div class="radio-item"><input type="radio" id="checklist_idea" name="hack_checklist" value="We have an idea but not written"><label for="checklist_idea">We have an idea but not written</label></div>
+                        <div class="radio-item"><input type="radio" id="checklist_no" name="hack_checklist" value="No"><label for="checklist_no">No</label></div>
+                        <div class="radio-item"><input type="radio" id="checklist_not_sure" name="hack_checklist" value="Not sure"><label for="checklist_not_sure">Not sure</label></div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label>Past Security Incidents</label>
+                    <label>7.4 Do you know who you would call first if something goes wrong? (select all that apply) <span class="label-hover" title="Knowing the right contacts reduces downtime and financial losses.">ⓘ</span></label>
                     <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="incident_takeover" name="past_incidents[]" value="Account takeover">
-                            <label for="incident_takeover">Account takeover</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="incident_hijack" name="past_incidents[]" value="Listing hijack">
-                            <label for="incident_hijack">Listing hijack</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="incident_payout" name="past_incidents[]" value="Payout diversion">
-                            <label for="incident_payout">Payout diversion</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="incident_data" name="past_incidents[]" value="Data exposure">
-                            <label for="incident_data">Data exposure</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="incident_access" name="past_incidents[]" value="Unauthorized property access">
-                            <label for="incident_access">Unauthorized property access</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="incident_fraud" name="past_incidents[]" value="Fraud/chargebacks">
-                            <label for="incident_fraud">Fraud/chargebacks</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="incident_none" name="past_incidents[]" value="None">
-                            <label for="incident_none">None</label>
-                        </div>
+                        <div class="checkbox-item"><input type="checkbox" id="call_it" name="first_call[]" value="IT support/MSP"><label for="call_it">IT support/MSP</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="call_web" name="first_call[]" value="Website host/dev"><label for="call_web">Website host/dev</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="call_bank" name="first_call[]" value="Bank"><label for="call_bank">Bank</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="call_processor" name="first_call[]" value="Payment processor"><label for="call_processor">Payment processor</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="call_insurance" name="first_call[]" value="Cyber insurance"><label for="call_insurance">Cyber insurance</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="call_lawyer" name="first_call[]" value="Lawyer"><label for="call_lawyer">Lawyer</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="call_nobody" name="first_call[]" value="Nobody identified"><label for="call_nobody">Nobody identified</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="call_not_sure" name="first_call[]" value="Not sure"><label for="call_not_sure">Not sure</label></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>7.5 Have you had any of these in the last 2 years? (select all that apply) <span class="label-hover" title="Past events help us focus the report on your biggest risks.">ⓘ</span></label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item"><input type="checkbox" id="past_phishing" name="past_incidents[]" value="Phishing attempt"><label for="past_phishing">Phishing attempt</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="past_takeover" name="past_incidents[]" value="Email account takeover"><label for="past_takeover">Email account takeover</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="past_invoice" name="past_incidents[]" value="Invoice/payment fraud attempt"><label for="past_invoice">Invoice/payment fraud attempt</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="past_malware" name="past_incidents[]" value="Malware/ransomware"><label for="past_malware">Malware/ransomware</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="past_website" name="past_incidents[]" value="Website hacked"><label for="past_website">Website hacked</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="past_leak" name="past_incidents[]" value="Data leak/shared by mistake"><label for="past_leak">Data leak/shared by mistake</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="past_device" name="past_incidents[]" value="Lost/stolen device"><label for="past_device">Lost/stolen device</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="incident_none" name="past_incidents[]" value="None"><label for="incident_none">None</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="past_not_sure" name="past_incidents[]" value="Not sure"><label for="past_not_sure">Not sure</label></div>
                     </div>
                 </div>
 
                 <div class="conditional-field" id="incident_details_field">
                     <div class="form-group">
-                        <label for="incident_details">Incident Details</label>
-                        <textarea id="incident_details" name="incident_details" rows="4" maxlength="2000" placeholder="Date, impact, systems affected, actions taken"></textarea>
-                        <span class="help-text">Please provide details about the incidents: date, impact, systems affected, and actions taken</span>
+                        <label for="incident_details">7.6 Incident details (short text) <span class="label-hover" title="What happened, when, and what you did to fix it.">ⓘ</span></label>
+                        <textarea id="incident_details" name="incident_details" rows="4" maxlength="2000" placeholder="What happened, when, and what you did to fix it"></textarea>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label>Backups Critical Data <span class="required">*</span></label>
+                    <label>7.7 Do you back up important business data? <span class="required">*</span> <span class="label-hover" title="Backups are the main protection against ransomware and accidental deletion.">ⓘ</span></label>
                     <div class="radio-group">
-                        <div class="radio-item">
-                            <input type="radio" id="backup_tested" name="backups_critical_data" value="Automated + tested restores" required>
-                            <label for="backup_tested">Automated + tested restores</label>
+                        <div class="radio-item"><input type="radio" id="backup_auto" name="backup_method" value="Yes (automatic)" required><label for="backup_auto">Yes (automatic)</label></div>
+                        <div class="radio-item"><input type="radio" id="backup_manual" name="backup_method" value="Yes (manual)"><label for="backup_manual">Yes (manual)</label></div>
+                        <div class="radio-item"><input type="radio" id="backup_cloud" name="backup_method" value="We rely on cloud tools only (Google/Microsoft/etc.)"><label for="backup_cloud">We rely on cloud tools only (Google/Microsoft/etc.)</label></div>
+                        <div class="radio-item"><input type="radio" id="backup_none" name="backup_method" value="No"><label for="backup_none">No</label></div>
+                        <div class="radio-item"><input type="radio" id="backup_not_sure" name="backup_method" value="Not sure"><label for="backup_not_sure">Not sure</label></div>
+                        <div class="radio-item"><input type="radio" id="backup_na" name="backup_method" value="Not applicable"><label for="backup_na">Not applicable</label></div>
+                    </div>
+                </div>
+
+                <div class="conditional-field" id="backup_data_field" data-show-if="backup_method=Yes (automatic)|Yes (manual)|We rely on cloud tools only (Google/Microsoft/etc.)">
+                    <div class="form-group">
+                        <label>7.8 What data is included in backups? (select all that apply) <span class="label-hover" title="Many businesses back up some things but miss critical systems.">ⓘ</span></label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item"><input type="checkbox" id="backup_data_computer" name="backup_data[]" value="Computer files"><label for="backup_data_computer">Computer files</label></div>
+                            <div class="checkbox-item"><input type="checkbox" id="backup_data_cloud" name="backup_data[]" value="Cloud files"><label for="backup_data_cloud">Cloud files</label></div>
+                            <div class="checkbox-item"><input type="checkbox" id="backup_data_accounting" name="backup_data[]" value="Accounting data"><label for="backup_data_accounting">Accounting data</label></div>
+                            <div class="checkbox-item"><input type="checkbox" id="backup_data_crm" name="backup_data[]" value="Customer lists/CRM exports"><label for="backup_data_crm">Customer lists/CRM exports</label></div>
+                            <div class="checkbox-item"><input type="checkbox" id="backup_data_website" name="backup_data[]" value="Website"><label for="backup_data_website">Website</label></div>
+                            <div class="checkbox-item"><input type="checkbox" id="backup_data_db" name="backup_data[]" value="Databases"><label for="backup_data_db">Databases</label></div>
+                            <div class="checkbox-item"><input type="checkbox" id="backup_data_not_sure" name="backup_data[]" value="We're not sure"><label for="backup_data_not_sure">We're not sure</label></div>
+                            <div class="checkbox-item"><input type="checkbox" id="backup_data_na" name="backup_data[]" value="Not applicable"><label for="backup_data_na">Not applicable</label></div>
                         </div>
-                        <div class="radio-item">
-                            <input type="radio" id="backup_auto" name="backups_critical_data" value="Automated only" required>
-                            <label for="backup_auto">Automated only</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="backup_manual" name="backups_critical_data" value="Manual" required>
-                            <label for="backup_manual">Manual</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="backup_none" name="backups_critical_data" value="None" required>
-                            <label for="backup_none">None</label>
+                    </div>
+                </div>
+
+                <div class="conditional-field" id="backup_frequency_field" data-show-if="backup_method=Yes (automatic)|Yes (manual)">
+                    <div class="form-group">
+                        <label for="backup_frequency">7.9 How often are backups updated? <span class="label-hover" title="This affects how much data you could lose in a recovery.">ⓘ</span></label>
+                        <select id="backup_frequency" name="backup_frequency">
+                            <option value="">Select</option>
+                            <option value="Continuous">Continuous</option>
+                            <option value="Daily">Daily</option>
+                            <option value="Weekly">Weekly</option>
+                            <option value="Monthly">Monthly</option>
+                            <option value="Rarely">Rarely</option>
+                            <option value="Not sure">Not sure</option>
+                            <option value="Not applicable">Not applicable</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="conditional-field" id="backup_tested_field" data-show-if="backup_method=Yes (automatic)|Yes (manual)|We rely on cloud tools only (Google/Microsoft/etc.)">
+                    <div class="form-group">
+                        <label>7.10 Have you tested restoring a file to confirm backups work? <span class="required">*</span> <span class="label-hover" title="Untested backups often fail when you need them most.">ⓘ</span></label>
+                        <div class="radio-group">
+                            <div class="radio-item"><input type="radio" id="restore_3m" name="backup_tested" value="Yes (within last 3 months)"><label for="restore_3m">Yes (within last 3 months)</label></div>
+                            <div class="radio-item"><input type="radio" id="restore_older" name="backup_tested" value="Yes (more than 3 months ago)"><label for="restore_older">Yes (more than 3 months ago)</label></div>
+                            <div class="radio-item"><input type="radio" id="restore_never" name="backup_tested" value="Never"><label for="restore_never">Never</label></div>
+                            <div class="radio-item"><input type="radio" id="restore_not_sure" name="backup_tested" value="Not sure"><label for="restore_not_sure">Not sure</label></div>
+                            <div class="radio-item"><input type="radio" id="restore_na" name="backup_tested" value="Not applicable"><label for="restore_na">Not applicable</label></div>
                         </div>
                     </div>
                 </div>
@@ -1298,84 +1147,109 @@
                 </div>
             </div>
 
-            <!-- Section 8: Compliance (Key Fields) -->
+            <!-- Section 8: Legal/Contracts, Vendors, Insurance & Training -->
             <div class="assessment-section" data-section="8">
                 <div class="section-header">
                     <div class="section-number">8</div>
-                    <h2 class="section-title">Compliance, Insurance & Contracts</h2>
+                    <h2 class="section-title">Legal/Contracts, Vendors, Insurance &amp; Training</h2>
                 </div>
 
                 <div class="form-group">
-                    <label>Regulatory Frameworks</label>
-                    <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="reg_gdpr" name="regulatory_frameworks[]" value="GDPR">
-                            <label for="reg_gdpr">GDPR</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="reg_ccpa" name="regulatory_frameworks[]" value="CCPA/CPRA">
-                            <label for="reg_ccpa">CCPA/CPRA</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="reg_pipeda" name="regulatory_frameworks[]" value="PIPEDA">
-                            <label for="reg_pipeda">PIPEDA</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="reg_none" name="regulatory_frameworks[]" value="None/Not sure">
-                            <label for="reg_none">None/Not sure</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Vendor Security Requirements</label>
-                    <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="vendor_dpa" name="vendor_security_requirements[]" value="DPA in place">
-                            <label for="vendor_dpa">DPA in place</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="vendor_addendum" name="vendor_security_requirements[]" value="Security addendum">
-                            <label for="vendor_addendum">Security addendum</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="vendor_review" name="vendor_security_requirements[]" value="Annual review">
-                            <label for="vendor_review">Annual review</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="vendor_none" name="vendor_security_requirements[]" value="None">
-                            <label for="vendor_none">None</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="staff_training_security">Staff Security Training</label>
-                    <select id="staff_training_security" name="staff_training_security">
+                    <label for="legal_requirements">8.1 Do you have any legal or contract security/privacy requirements? <span class="label-hover" title="Helps identify whether rules like GDPR/HIPAA/PCI may apply.">ⓘ</span></label>
+                    <select id="legal_requirements" name="legal_requirements">
                         <option value="">Select</option>
-                        <option value="Quarterly">Quarterly</option>
-                        <option value="Annual">Annual</option>
-                        <option value="Ad-hoc">Ad-hoc</option>
-                        <option value="None">None</option>
+                        <option value="None that we know of">None that we know of</option>
+                        <option value="Customers ask for security">Customers ask for security</option>
+                        <option value="We handle health data">We handle health data</option>
+                        <option value="We handle payment cards">We handle payment cards</option>
+                        <option value="We work with government/regulated clients">We work with government/regulated clients</option>
+                        <option value="Not sure">Not sure</option>
+                        <option value="Not applicable">Not applicable</option>
                     </select>
                 </div>
 
-                <div class="form-group">
-                    <label>Cyber Insurance <span class="required">*</span></label>
-                    <div class="radio-group">
-                        <div class="radio-item">
-                            <input type="radio" id="insurance_yes_ir" name="cyber_insurance" value="Yes with incident response coverage" required>
-                            <label for="insurance_yes_ir">Yes with incident response coverage</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="insurance_yes_basic" name="cyber_insurance" value="Yes basic" required>
-                            <label for="insurance_yes_basic">Yes basic</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="insurance_no" name="cyber_insurance" value="No" required>
-                            <label for="insurance_no">No</label>
+                <div class="conditional-field" id="customer_security_ask_field" data-show-if="legal_requirements=Customers ask for security">
+                    <div class="form-group">
+                        <label>8.2 If customers ask for security, what do they ask for? (select all that apply) <span class="label-hover" title="Helps prioritize the most common buyer requirements.">ⓘ</span></label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item"><input type="checkbox" id="ask_questionnaire" name="customer_security_ask[]" value="Security questionnaire"><label for="ask_questionnaire">Security questionnaire</label></div>
+                            <div class="checkbox-item"><input type="checkbox" id="ask_dpa" name="customer_security_ask[]" value="Data processing agreement (DPA)"><label for="ask_dpa">Data processing agreement (DPA)</label></div>
+                            <div class="checkbox-item"><input type="checkbox" id="ask_training" name="customer_security_ask[]" value="Proof of training"><label for="ask_training">Proof of training</label></div>
+                            <div class="checkbox-item"><input type="checkbox" id="ask_mfa" name="customer_security_ask[]" value="MFA requirement"><label for="ask_mfa">MFA requirement</label></div>
+                            <div class="checkbox-item"><input type="checkbox" id="ask_audit" name="customer_security_ask[]" value="Audit report (SOC 2/ISO)"><label for="ask_audit">Audit report (SOC 2/ISO)</label></div>
+                            <div class="checkbox-item"><input type="checkbox" id="ask_other" name="customer_security_ask[]" value="Other"><label for="ask_other">Other</label></div>
+                            <div class="checkbox-item"><input type="checkbox" id="ask_not_sure" name="customer_security_ask[]" value="Not sure"><label for="ask_not_sure">Not sure</label></div>
+                            <div class="checkbox-item"><input type="checkbox" id="ask_na" name="customer_security_ask[]" value="Not applicable"><label for="ask_na">Not applicable</label></div>
                         </div>
                     </div>
+                </div>
+
+                <div class="form-group">
+                    <label>8.3 Do you sign DPAs or privacy terms with vendors/clients? <span class="label-hover" title="DPAs clarify who is responsible for protecting data.">ⓘ</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item"><input type="radio" id="dpa_often" name="dpa_with_vendors" value="Often"><label for="dpa_often">Often</label></div>
+                        <div class="radio-item"><input type="radio" id="dpa_sometimes" name="dpa_with_vendors" value="Sometimes"><label for="dpa_sometimes">Sometimes</label></div>
+                        <div class="radio-item"><input type="radio" id="dpa_never" name="dpa_with_vendors" value="Never"><label for="dpa_never">Never</label></div>
+                        <div class="radio-item"><input type="radio" id="dpa_not_sure" name="dpa_with_vendors" value="Not sure"><label for="dpa_not_sure">Not sure</label></div>
+                        <div class="radio-item"><input type="radio" id="dpa_na" name="dpa_with_vendors" value="Not applicable"><label for="dpa_na">Not applicable</label></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>8.4 Before you buy a new tool/vendor, do you do a quick security check? <span class="label-hover" title="A small checklist prevents picking risky tools.">ⓘ</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item"><input type="radio" id="vendor_check_yes" name="vendor_security_check" value="Yes (we have a checklist)"><label for="vendor_check_yes">Yes (we have a checklist)</label></div>
+                        <div class="radio-item"><input type="radio" id="vendor_check_sometimes" name="vendor_security_check" value="Sometimes"><label for="vendor_check_sometimes">Sometimes</label></div>
+                        <div class="radio-item"><input type="radio" id="vendor_check_no" name="vendor_security_check" value="No"><label for="vendor_check_no">No</label></div>
+                        <div class="radio-item"><input type="radio" id="vendor_check_not_sure" name="vendor_security_check" value="Not sure"><label for="vendor_check_not_sure">Not sure</label></div>
+                        <div class="radio-item"><input type="radio" id="vendor_check_na" name="vendor_security_check" value="Not applicable"><label for="vendor_check_na">Not applicable</label></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>8.5 Do you and staff get basic security training (scams, phishing, safe passwords, MFA)? <span class="label-hover" title="Training reduces successful phishing and payment scams.">ⓘ</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item"><input type="radio" id="training_onboard" name="security_training" value="Onboarding + yearly"><label for="training_onboard">Onboarding + yearly</label></div>
+                        <div class="radio-item"><input type="radio" id="training_yearly" name="security_training" value="Yearly only"><label for="training_yearly">Yearly only</label></div>
+                        <div class="radio-item"><input type="radio" id="training_sometimes" name="security_training" value="Sometimes/ad-hoc"><label for="training_sometimes">Sometimes/ad-hoc</label></div>
+                        <div class="radio-item"><input type="radio" id="training_none" name="security_training" value="None"><label for="training_none">None</label></div>
+                        <div class="radio-item"><input type="radio" id="training_solo" name="security_training" value="Not applicable (solo)"><label for="training_solo">Not applicable (solo)</label></div>
+                        <div class="radio-item"><input type="radio" id="training_not_sure" name="security_training" value="Not sure"><label for="training_not_sure">Not sure</label></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>8.6 Do you run phishing practice tests or simulated phishing? <span class="label-hover" title="Optional for small teams, but helpful if phishing is a frequent issue.">ⓘ</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item"><input type="radio" id="phishing_yes" name="phishing_tests" value="Yes"><label for="phishing_yes">Yes</label></div>
+                        <div class="radio-item"><input type="radio" id="phishing_no" name="phishing_tests" value="No"><label for="phishing_no">No</label></div>
+                        <div class="radio-item"><input type="radio" id="phishing_not_sure" name="phishing_tests" value="Not sure"><label for="phishing_not_sure">Not sure</label></div>
+                        <div class="radio-item"><input type="radio" id="phishing_na" name="phishing_tests" value="Not applicable"><label for="phishing_na">Not applicable</label></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>8.7 Do you have cyber insurance? <span class="required">*</span> <span class="label-hover" title="Some policies include help lines and recovery services.">ⓘ</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item"><input type="radio" id="cyber_ins_ir" name="cyber_insurance" value="Yes (includes incident response support)" required><label for="cyber_ins_ir">Yes (includes incident response support)</label></div>
+                        <div class="radio-item"><input type="radio" id="cyber_ins_basic" name="cyber_insurance" value="Yes (basic coverage)"><label for="cyber_ins_basic">Yes (basic coverage)</label></div>
+                        <div class="radio-item"><input type="radio" id="cyber_ins_no" name="cyber_insurance" value="No"><label for="cyber_ins_no">No</label></div>
+                        <div class="radio-item"><input type="radio" id="cyber_ins_not_sure" name="cyber_insurance" value="Not sure"><label for="cyber_ins_not_sure">Not sure</label></div>
+                        <div class="radio-item"><input type="radio" id="cyber_ins_na" name="cyber_insurance" value="Not applicable"><label for="cyber_ins_na">Not applicable</label></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="security_checkup">8.8 How often do you do a "security checkup" of your settings and access? <span class="label-hover" title="Regular checkups catch weak settings before attackers do.">ⓘ</span></label>
+                    <select id="security_checkup" name="security_checkup">
+                        <option value="">Select</option>
+                        <option value="Quarterly">Quarterly</option>
+                        <option value="Twice a year">Twice a year</option>
+                        <option value="Yearly">Yearly</option>
+                        <option value="Only when something breaks">Only when something breaks</option>
+                        <option value="Never">Never</option>
+                        <option value="Not sure">Not sure</option>
+                    </select>
                 </div>
 
                 <div class="form-navigation">
@@ -1384,58 +1258,56 @@
                 </div>
             </div>
 
-            <!-- Section 9: Concerns -->
+            <!-- Section 9: Concerns, Goals & Constraints -->
             <div class="assessment-section" data-section="9">
                 <div class="section-header">
                     <div class="section-number">9</div>
-                    <h2 class="section-title">Current Concerns & Priorities</h2>
+                    <h2 class="section-title">Concerns, Goals &amp; Constraints</h2>
                 </div>
 
                 <div class="form-group">
-                    <label>Top Concerns</label>
+                    <label>9.1 Top security concerns (select up to 3) <span class="label-hover" title="Helps us prioritize the action plan.">ⓘ</span></label>
                     <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="concern_account" name="top_concerns[]" value="Account security">
-                            <label for="concern_account">Account security</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="concern_data" name="top_concerns[]" value="Data privacy">
-                            <label for="concern_data">Data privacy</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="concern_payments" name="top_concerns[]" value="Payments/fraud">
-                            <label for="concern_payments">Payments/fraud</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="concern_staff" name="top_concerns[]" value="Staff access">
-                            <label for="concern_staff">Staff access</label>
-                        </div>
+                        <div class="checkbox-item"><input type="checkbox" id="concern_email" name="top_concerns[]" value="Email hacking"><label for="concern_email">Email hacking</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="concern_payment" name="top_concerns[]" value="Payment/invoice scams"><label for="concern_payment">Payment/invoice scams</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="concern_ransomware" name="top_concerns[]" value="Ransomware"><label for="concern_ransomware">Ransomware</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="concern_devices" name="top_concerns[]" value="Lost devices"><label for="concern_devices">Lost devices</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="concern_website" name="top_concerns[]" value="Website security"><label for="concern_website">Website security</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="concern_client" name="top_concerns[]" value="Client requirements"><label for="concern_client">Client requirements</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="concern_vendor" name="top_concerns[]" value="Vendor risk"><label for="concern_vendor">Vendor risk</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="concern_remote" name="top_concerns[]" value="Remote work"><label for="concern_remote">Remote work</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="concern_expertise" name="top_concerns[]" value="Lack of expertise/time"><label for="concern_expertise">Lack of expertise/time</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="concern_other" name="top_concerns[]" value="Other"><label for="concern_other">Other</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="concern_not_sure" name="top_concerns[]" value="Not sure"><label for="concern_not_sure">Not sure</label></div>
                     </div>
+                    <span class="help-text">Select up to 3</span>
                 </div>
 
                 <div class="form-group">
-                    <label for="describe_concerns">Describe Your Concerns (Optional)</label>
-                    <textarea id="describe_concerns" name="describe_concerns" rows="4" maxlength="2000"></textarea>
+                    <label for="describe_concerns">9.2 Describe your concerns (optional text) <span class="label-hover" title="Any recent events, worries, or near misses.">ⓘ</span></label>
+                    <textarea id="describe_concerns" name="describe_concerns" rows="4" maxlength="2000" placeholder="Any recent events, worries, or near misses"></textarea>
                 </div>
 
                 <div class="form-group">
-                    <label for="priority_timeline">Priority Timeline</label>
-                    <select id="priority_timeline" name="priority_timeline">
+                    <label for="improvements_timeline">9.3 When do you want to make improvements? <span class="label-hover" title="We'll match recommendations to your timeline.">ⓘ</span></label>
+                    <select id="improvements_timeline" name="improvements_timeline">
                         <option value="">Select</option>
-                        <option value="Immediate (0–30 days)">Immediate (0–30 days)</option>
-                        <option value="Short term (30–90)">Short term (30–90)</option>
-                        <option value="Medium (3–6 months)">Medium (3–6 months)</option>
+                        <option value="0-30 days">0–30 days</option>
+                        <option value="1-3 months">1–3 months</option>
+                        <option value="3-6 months">3–6 months</option>
+                        <option value="6-12 months">6–12 months</option>
+                        <option value="Just exploring">Just exploring</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="budget_band">Budget Band</label>
-                    <select id="budget_band" name="budget_band">
+                    <label for="budget_range">9.4 Budget range (optional) <span class="label-hover" title="Helps us recommend free/low-cost tools first when needed.">ⓘ</span></label>
+                    <select id="budget_range" name="budget_range">
                         <option value="">Select</option>
                         <option value="<$1k">&lt;$1k</option>
-                        <option value="$1–5k">$1–5k</option>
-                        <option value="$5–20k">$5–20k</option>
-                        <option value="$20–50k">$20–50k</option>
+                        <option value="$1-5k">$1–5k</option>
+                        <option value="$5-20k">$5–20k</option>
+                        <option value="$20-50k">$20–50k</option>
                         <option value=">$50k">&gt;$50k</option>
                         <option value="Undisclosed">Undisclosed</option>
                     </select>
@@ -1447,49 +1319,46 @@
                 </div>
             </div>
 
-            <!-- Section 10: Consent -->
+            <!-- Section 10: Consent & Next Steps -->
             <div class="assessment-section" data-section="10">
                 <div class="section-header">
                     <div class="section-number">10</div>
-                    <h2 class="section-title">Consent & Next Steps</h2>
+                    <h2 class="section-title">Consent &amp; Next Steps</h2>
                 </div>
 
                 <div class="form-group">
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="consent_assessment" name="consent_assessment" required>
-                        <label for="consent_assessment">I consent to security assessment based on provided information <span class="required">*</span></label>
+                    <label>10.1 I consent to this security assessment <span class="required">*</span> <span class="label-hover" title="Required to proceed.">ⓘ</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item"><input type="radio" id="consent_yes" name="consent_assessment" value="Yes" required><label for="consent_yes">Yes</label></div>
+                        <div class="radio-item"><input type="radio" id="consent_no" name="consent_assessment" value="No"><label for="consent_no">No</label></div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="contact_permission" name="contact_permission">
-                        <label for="contact_permission">Allow follow-up to clarify answers</label>
+                    <label>10.2 May we contact you to clarify answers? <span class="label-hover" title="Sometimes a quick follow-up improves the accuracy of the report.">ⓘ</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item"><input type="radio" id="contact_yes" name="contact_permission" value="Yes"><label for="contact_yes">Yes</label></div>
+                        <div class="radio-item"><input type="radio" id="contact_no" name="contact_permission" value="No"><label for="contact_no">No</label></div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="preferred_contact">Preferred Contact Method</label>
+                    <label for="preferred_contact">10.3 Preferred contact method <span class="label-hover" title="How you'd like us to reach you.">ⓘ</span></label>
                     <select id="preferred_contact" name="preferred_contact">
                         <option value="">Select</option>
                         <option value="Email">Email</option>
                         <option value="Phone">Phone</option>
-                        <option value="WhatsApp">WhatsApp</option>
-                        <option value="Telegram">Telegram</option>
+                        <option value="Video call">Video call</option>
+                        <option value="No preference">No preference</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label>NDA Required <span class="required">*</span></label>
+                    <label>10.4 NDA required? <span class="required">*</span> <span class="label-hover" title="If yes, we can provide or sign one before deeper review.">ⓘ</span></label>
                     <div class="radio-group">
-                        <div class="radio-item">
-                            <input type="radio" id="nda_yes" name="nda_required" value="Yes" required>
-                            <label for="nda_yes">Yes</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="nda_no" name="nda_required" value="No" required>
-                            <label for="nda_no">No</label>
-                        </div>
+                        <div class="radio-item"><input type="radio" id="nda_yes" name="nda_required" value="Yes" required><label for="nda_yes">Yes</label></div>
+                        <div class="radio-item"><input type="radio" id="nda_no" name="nda_required" value="No"><label for="nda_no">No</label></div>
+                        <div class="radio-item"><input type="radio" id="nda_not_sure" name="nda_required" value="Not sure"><label for="nda_not_sure">Not sure</label></div>
                     </div>
                 </div>
 
@@ -1646,6 +1515,7 @@
         if (raw[k] !== undefined) { if (!Array.isArray(raw[k])) raw[k] = [raw[k]]; raw[k].push(v); }
         else raw[k] = v;
       }
+      if (String(raw.consent_assessment || '').trim() === 'No') { alert('You must consent to the assessment to submit.'); return; }
       var payload = {
         access_hash: (accessHashEl && accessHashEl.value) ? accessHashEl.value.trim() : undefined,
         verification_code: (function() { try { return sessionStorage.getItem('assessment_code_value') || undefined; } catch(e) { return undefined; } })(),
@@ -1693,37 +1563,38 @@
 </script>
 <script>
 (function() {
+  function getFieldValue(fieldName) {
+    var el = document.querySelector('input[name="' + fieldName + '"]:checked, select[name="' + fieldName + '"]');
+    if (!el) return '';
+    return (el.value || '').trim();
+  }
   function toggleConditionals() {
-    var websiteField = document.getElementById('website_stack_field');
-    var websiteYes = document.getElementById('website_yes');
-    if (websiteField && websiteYes) {
-      if (websiteYes.checked) websiteField.classList.add('show');
-      else websiteField.classList.remove('show');
-    }
+    document.querySelectorAll('.conditional-field[data-show-if]').forEach(function(block) {
+      var rule = (block.getAttribute('data-show-if') || '').trim();
+      if (!rule) return;
+      var parts = rule.split('=');
+      var fieldName = (parts[0] || '').trim();
+      var allowedValues = (parts[1] || '').split('|').map(function(v) { return v.trim(); }).filter(Boolean);
+      var current = getFieldValue(fieldName);
+      var show = allowedValues.indexOf(current) !== -1;
+      if (show) block.classList.add('show');
+      else block.classList.remove('show');
+    });
     var incidentField = document.getElementById('incident_details_field');
-    var pastIncidents = document.querySelectorAll('input[name="past_incidents[]"]:not(#incident_none)');
-    if (incidentField && pastIncidents.length) {
-      var anyChecked = Array.prototype.some.call(pastIncidents, function(cb) { return cb.checked; });
-      if (anyChecked) incidentField.classList.add('show');
+    if (incidentField && !incidentField.getAttribute('data-show-if')) {
+      var pastOpts = document.querySelectorAll('input[name="past_incidents[]"]');
+      var pastNone = document.querySelector('input[name="past_incidents[]"][value="None"]');
+      var anyOther = Array.prototype.some.call(pastOpts, function(cb) { return cb.checked && cb !== pastNone; });
+      if (anyOther) incidentField.classList.add('show');
       else incidentField.classList.remove('show');
     }
   }
   function initConditionals() {
-    var websiteYes = document.getElementById('website_yes');
-    var websiteNo = document.getElementById('website_no');
-    if (websiteYes && websiteNo) {
-      websiteYes.addEventListener('change', toggleConditionals);
-      websiteNo.addEventListener('change', toggleConditionals);
+    var form = document.getElementById('assessmentForm');
+    if (form) {
+      form.addEventListener('change', toggleConditionals);
+      form.addEventListener('input', toggleConditionals);
     }
-    document.querySelectorAll('input[name="past_incidents[]"]').forEach(function(cb) {
-      cb.addEventListener('change', function() {
-        var incidentNone = document.getElementById('incident_none');
-        if (incidentNone && incidentNone.checked) {
-          document.querySelectorAll('input[name="past_incidents[]"]:not(#incident_none)').forEach(function(c) { c.checked = false; });
-        }
-        toggleConditionals();
-      });
-    });
     toggleConditionals();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initConditionals);
