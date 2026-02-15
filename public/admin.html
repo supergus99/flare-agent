@@ -148,6 +148,19 @@
       </div>
       <div id="tab-templates" class="tab-content d-none">
         <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-light"><h2 class="h6 mb-0">Claude API key</h2></div>
+          <div class="card-body">
+            <p class="text-muted small mb-2">Anthropic Claude API key for AI-generated report content (executive summary, findings, recommendations). Stored securely in the database. You can also set it via Worker secret <code>CLAUDE_API_KEY</code> or <code>ANTHROPIC_API_KEY</code>; the key from settings takes precedence.</p>
+            <div class="mb-2">
+              <label for="settings-claude-api-key" class="form-label">Claude API key</label>
+              <input type="password" id="settings-claude-api-key" class="form-control form-control-sm font-monospace" placeholder="sk-ant-..." autocomplete="off" style="max-width: 28rem;">
+              <div id="settings-claude-status" class="form-text">Status: loading…</div>
+            </div>
+            <button type="button" id="settings-api-key-save" class="btn btn-primary btn-sm">Save API key</button>
+            <span id="settings-api-key-message" class="ms-2 text-muted small"></span>
+          </div>
+        </div>
+        <div class="card border-0 shadow-sm mb-4">
           <div class="card-header bg-light"><h2 class="h6 mb-0">Email (Resend)</h2></div>
           <div class="card-body">
             <p class="text-muted small">Check if Resend is configured and working. Sends a test email to the address below.</p>
@@ -161,7 +174,11 @@
         <div class="card border-0 shadow-sm mb-4">
           <div class="card-header bg-light"><h2 class="h6 mb-0">Report HTML template</h2></div>
           <div class="card-body">
-            <p class="text-muted small">Full HTML for the generated report. Placeholders: <code>{{name}}</code> <code>{{company}}</code> <code>{{email}}</code> <code>{{role}}</code> <code>{{service}}</code> <code>{{message}}</code> <code>{{report_date}}</code> <code>{{website_url}}</code> <code>{{units_range}}</code> <code>{{countries}}</code> <code>{{language}}</code>. Leave empty to use the built-in Flare template.</p>
+            <p class="text-muted small">Full HTML for the generated report. Placeholders include <code>{{name}}</code> <code>{{company}}</code> <code>{{a.mfa_email}}</code> <code>{{meta.confidence_level}}</code> and many more. Leave empty to use the built-in Flare template.</p>
+            <div class="mb-2">
+              <button type="button" id="tpl-report-load-default" class="btn btn-outline-primary btn-sm">Load default report template</button>
+              <span id="tpl-report-load-message" class="ms-2 text-muted small"></span>
+            </div>
             <textarea id="tpl-report-body" class="form-control font-monospace" rows="18" placeholder="<!DOCTYPE html>..."></textarea>
             <div class="mt-2">
               <button type="button" id="tpl-report-preview" class="btn btn-outline-secondary">Preview</button>
@@ -312,6 +329,13 @@
             });
           });
         } else if (tab === 'templates') {
+          const settingsRes = await fetch(WORKER_URL + '/api/admin/settings', { headers: authHeaders() });
+          if (settingsRes.status === 401) { setToken(null); showLogin(); return; }
+          try {
+            const settingsData = await settingsRes.json();
+            const statusEl = document.getElementById('settings-claude-status');
+            if (statusEl) statusEl.textContent = settingsData.claude_api_key_set ? 'Status: Configured' : 'Status: Not set';
+          } catch (_) {}
           const rRes = await fetch(WORKER_URL + '/api/admin/report-template', { headers: authHeaders() });
           if (rRes.status === 401) { setToken(null); showLogin(); return; }
           const rData = await rRes.json();
@@ -381,6 +405,45 @@
         } catch (e) {
           msg.textContent = e.message || 'Error';
           msg.classList.add('text-danger');
+        }
+      });
+
+      document.getElementById('settings-api-key-save').addEventListener('click', async function () {
+        const msg = document.getElementById('settings-api-key-message');
+        const statusEl = document.getElementById('settings-claude-status');
+        const input = document.getElementById('settings-claude-api-key');
+        msg.textContent = 'Saving…';
+        try {
+          const res = await fetch(WORKER_URL + '/api/admin/settings', {
+            method: 'PUT',
+            headers: authHeaders(),
+            body: JSON.stringify({ claude_api_key: input.value || '' })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            msg.textContent = 'Saved.';
+            if (statusEl) statusEl.textContent = (input.value && input.value.trim()) ? 'Status: Configured' : 'Status: Not set';
+            input.value = '';
+          } else {
+            msg.textContent = data.error || 'Failed';
+          }
+        } catch (e) {
+          msg.textContent = e.message || 'Error';
+        }
+      });
+
+      document.getElementById('tpl-report-load-default').addEventListener('click', async function () {
+        const msg = document.getElementById('tpl-report-load-message');
+        msg.textContent = 'Loading...';
+        try {
+          const res = await fetch(WORKER_URL + '/api/admin/report-template', { headers: authHeaders() });
+          if (res.status === 401) { setToken(null); showLogin(); return; }
+          const data = await res.json();
+          const defaultBody = data.defaultBody || '';
+          document.getElementById('tpl-report-body').value = defaultBody;
+          msg.textContent = defaultBody ? 'Loaded. Click Save to use as the live template.' : 'No default template returned.';
+        } catch (e) {
+          msg.textContent = e.message || 'Load failed.';
         }
       });
 

@@ -891,6 +891,37 @@ export default {
       return new Response("", { status: 404 });
     }
 
+    if (url.pathname === "/api/admin/settings" && env.DB) {
+      const admin = await requireAdmin(request, env);
+      if (!admin) return json({ error: "Unauthorized" }, 401);
+      if (request.method === "GET") {
+        try {
+          const claudeKey = await getSetting(env.DB, "claude_api_key");
+          return json({
+            ok: true,
+            claude_api_key_set: !!(claudeKey && String(claudeKey).trim()),
+          });
+        } catch (e) {
+          return json({ ok: true, claude_api_key_set: false });
+        }
+      }
+      if (request.method === "PUT" || request.method === "POST") {
+        try {
+          const body = await request.json().catch(() => ({}));
+          if (body.claude_api_key !== undefined) {
+            const val = String(body.claude_api_key ?? "").trim();
+            await env.DB.prepare(
+              "INSERT INTO automation_settings (setting_key, setting_value, updated_at) VALUES ('claude_api_key', ?, datetime('now')) ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = datetime('now')"
+            ).bind(val).run();
+          }
+          return json({ ok: true, message: "Settings saved" });
+        } catch (e) {
+          return json({ error: e.message }, 500);
+        }
+      }
+      return json({ error: "Method not allowed" }, 405);
+    }
+
     if (url.pathname === "/api/admin/report-template" && env.DB) {
       const admin = await requireAdmin(request, env);
       if (!admin) return json({ error: "Unauthorized" }, 401);
@@ -898,7 +929,7 @@ export default {
         try {
           const row = await env.DB.prepare("SELECT body, updated_at FROM report_templates WHERE id = 1 LIMIT 1").first();
           const body = row?.body ?? null;
-          const defaultBody = body == null || body === "" ? getDefaultReportTemplateBody() : null;
+          const defaultBody = getDefaultReportTemplateBody();
           return json({ ok: true, data: body, defaultBody, updated_at: row?.updated_at ?? null });
         } catch (e) {
           return json({ ok: true, data: null, defaultBody: getDefaultReportTemplateBody() });
@@ -1015,9 +1046,10 @@ async function handleGenerateReport(env, body) {
 
   const data = typeof submission.assessment_data === "string" ? JSON.parse(submission.assessment_data || "{}") : (submission.assessment_data || {});
   const reportVars = buildReportVars(submission, data);
-  if (env.OPENAI_API_KEY) {
+  const claudeApiKey = (await getSetting(env.DB, "claude_api_key")) || env.CLAUDE_API_KEY || env.ANTHROPIC_API_KEY || "";
+  if (claudeApiKey) {
     try {
-      const aiVars = await callOpenAIForReport(env, submission, data, reportVars);
+      const aiVars = await callClaudeForReport(claudeApiKey, env, submission, data, reportVars);
       Object.assign(reportVars, aiVars);
     } catch (_) {}
   }
@@ -1165,29 +1197,30 @@ async function handleSendApprovedReport(env, body) {
   } catch (_) {}
 }
 
-async function callOpenAIForReport(env, submission, data, reportVars) {
+async function callClaudeForReport(apiKey, env, submission, data, reportVars) {
   const systemInstruction =
     (await getSetting(env.DB, "ai_report_instruction")) ||
     "You are a security and operations risk analyst. Based on the assessment data, produce a concise JSON object with exactly these keys (escape any HTML): executive_summary (2-3 sentences), findings (HTML list of 3-5 key findings), recommendations (HTML list of 3-5 prioritized recommendations). Use plain language.";
   const prompt = `Assessment submission:\nCompany: ${reportVars.company}\nContact: ${reportVars.name} (${reportVars.email})\nRole: ${reportVars.role}\nService: ${reportVars.service}\nNotes: ${reportVars.message}\n\nRaw assessment data (JSON):\n${typeof data === "string" ? data : JSON.stringify(data)}\n\nProduce the JSON object only.`;
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+  const model = env.CLAUDE_MODEL || "claude-sonnet-4-20250514";
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${env.OPENAI_API_KEY}`,
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: env.OPENAI_MODEL || "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemInstruction },
-        { role: "user", content: prompt },
-      ],
+      model,
       max_tokens: 2000,
+      system: systemInstruction,
+      messages: [{ role: "user", content: prompt }],
     }),
   });
   if (!res.ok) return {};
   const out = await res.json();
-  const content = out.choices?.[0]?.message?.content?.trim() || "";
+  const contentBlock = out.content?.find((b) => b.type === "text");
+  const content = (contentBlock?.text || "").trim();
   try {
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
