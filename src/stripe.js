@@ -30,8 +30,10 @@ export function getServiceName(serviceType, short = false) {
 
 /**
  * Create Stripe Checkout Session. Stripe API expects application/x-www-form-urlencoded.
+ * Optional branding_settings override the account logo/name so Flare can show its brand
+ * instead of the parent Stripe account (e.g. STR).
  * @param {string} stripeSecretKey
- * @param {{ successUrl: string, cancelUrl: string, serviceType: string, currency: string, customerEmail?: string, customerName?: string, customerCompany?: string, leadId?: number, locale?: string }} opts
+ * @param {{ successUrl: string, cancelUrl: string, serviceType: string, currency: string, customerEmail?: string, customerName?: string, customerCompany?: string, leadId?: number, locale?: string, brandingDisplayName?: string, brandingLogoUrl?: string }} opts
  * @returns {Promise<{ url: string, id: string }>}
  */
 export async function createCheckoutSession(stripeSecretKey, opts) {
@@ -45,6 +47,8 @@ export async function createCheckoutSession(stripeSecretKey, opts) {
     customerCompany,
     leadId,
     locale,
+    brandingDisplayName,
+    brandingLogoUrl,
   } = opts;
   const amount = getAmountCents(serviceType, currency);
   const productName = getServiceName(serviceType);
@@ -73,6 +77,15 @@ export async function createCheckoutSession(stripeSecretKey, opts) {
   }
   if (customerEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
     body.customer_email = customerEmail;
+  }
+
+  // Override Checkout branding so Flare shows instead of parent account (e.g. STR)
+  if (brandingDisplayName && String(brandingDisplayName).trim()) {
+    body["branding_settings[display_name]"] = String(brandingDisplayName).trim().slice(0, 200);
+  }
+  if (brandingLogoUrl && /^https:\/\//.test(String(brandingLogoUrl).trim())) {
+    body["branding_settings[logo][type]"] = "url";
+    body["branding_settings[logo][url]"] = String(brandingLogoUrl).trim();
   }
 
   const formBody = new URLSearchParams(body).toString();

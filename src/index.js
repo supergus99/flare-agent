@@ -415,6 +415,8 @@ export default {
           customerName: body.customer_name?.trim() || undefined,
           customerCompany: body.customer_company?.trim() || undefined,
           locale: locale === "pt" || locale === "pt-pt" ? "pt" : undefined,
+          brandingDisplayName: env.CHECKOUT_DISPLAY_NAME?.trim() || undefined,
+          brandingLogoUrl: env.CHECKOUT_LOGO_URL?.trim() || undefined,
         });
         return json({ ok: true, url: session.url, session_id: session.id });
       } catch (e) {

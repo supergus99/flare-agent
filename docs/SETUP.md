@@ -103,6 +103,11 @@ GitHub Actions will run and deploy **flare-worker** to Cloudflare. Check the **A
    - `SUCCESS_BASE_URL` – Your Pages URL (e.g. `https://flare-agent.pages.dev`). Used so the Worker redirects to your success page after payment.
    - `WORKER_PUBLIC_URL` – Your Worker URL (e.g. `https://flare-worker.gusmao-ricardo.workers.dev`). Used as Stripe Checkout `success_url` so Stripe redirects back to the Worker, which then redirects to `SUCCESS_BASE_URL/success.html?hash=...`.
 
+3b. **Optional – Checkout branding** (if you use a Stripe sub-account and want Flare branding instead of the parent/STR logo):
+   - `CHECKOUT_DISPLAY_NAME` – Business name shown at the top of Stripe Checkout (e.g. `Flare`).
+   - `CHECKOUT_LOGO_URL` – Full HTTPS URL to your logo image (e.g. `https://getflare.net/logo.png`). Stripe recommends at least 128×128px, JPG or PNG, under 512KB.
+   - You can also set branding in the **sub-account** Dashboard: [Settings → Branding](https://dashboard.stripe.com/settings/branding).
+
 4. **Stripe webhook:** In [Stripe Dashboard → Webhooks](https://dashboard.stripe.com/webhooks), add endpoint:
    - URL: `https://flare-worker.<your-subdomain>.workers.dev/api/webhooks/stripe`
    - Events: `checkout.session.completed`, `payment_intent.succeeded`, `payment_intent.payment_failed`
