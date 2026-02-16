@@ -414,7 +414,7 @@ export default {
           customerEmail: body.customer_email?.trim() || undefined,
           customerName: body.customer_name?.trim() || undefined,
           customerCompany: body.customer_company?.trim() || undefined,
-          locale: locale === "pt" || locale === "pt-pt" ? "pt" : undefined,
+          locale: ["pt", "pt-pt", "es", "fr", "de"].includes(locale) ? (locale.startsWith("pt") ? "pt" : locale) : undefined,
           brandingDisplayName: env.CHECKOUT_DISPLAY_NAME?.trim() || undefined,
           brandingLogoUrl: env.CHECKOUT_LOGO_URL?.trim() || undefined,
         });
@@ -533,10 +533,11 @@ export default {
           payment = result?.row ?? null;
         }
         if (!payment) return json({ ok: false, error: "Payment not found" }, 404);
-        const base = (env.SUCCESS_BASE_URL || request.headers.get("Origin") || url.origin).replace(/\/$/, "");
-        const metaLocale = session.metadata?.flare_locale || "";
-        const isPt = metaLocale === "pt" || metaLocale === "pt-pt";
-        const successPath = isPt ? "pt/success.html" : "success.html";
+        let base = (env.SUCCESS_BASE_URL || request.headers.get("Origin") || url.origin).replace(/\/$/, "");
+        if (base.includes("workers.dev")) base = (env.SUCCESS_BASE_URL || "https://getflare.net").replace(/\/$/, "");
+        const metaLocale = (session.metadata?.flare_locale || "").toLowerCase();
+        const successPathByLocale = { pt: "pt/success.html", es: "es/success.html", fr: "fr/success.html", de: "de/success.html" };
+        const successPath = successPathByLocale[metaLocale] || (metaLocale.startsWith("pt") ? "pt/success.html" : "success.html");
         const redirectUrl = `${base}/${successPath}?hash=${encodeURIComponent(payment.access_hash)}`;
         return Response.redirect(redirectUrl, 302);
       } catch (e) {

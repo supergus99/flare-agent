@@ -3,19 +3,38 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Payment complete – Flare</title>
+  <title>Pagamento concluído – Flare</title>
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 36rem; margin: 2rem auto; padding: 0 1rem; }
-    h1 { color: #1a7f37; }
-    a { color: #0969da; }
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(0,0,0,0.03); }
+    .success-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; padding: 1rem; }
+    .success-modal { background: #fff; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.12); max-width: 28rem; width: 100%; padding: 2rem; text-align: center; }
+    .success-modal h1 { margin: 0 0 1rem; font-size: 1.5rem; font-weight: 700; color: #1a7f37; }
+    .success-modal p { margin: 0 0 1.5rem; color: #333; line-height: 1.5; font-size: 0.95rem; }
+    .success-modal .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; }
+    .success-modal .btn { display: inline-block; padding: 0.65rem 1.25rem; border-radius: 8px; font-size: 0.95rem; font-weight: 500; text-decoration: none; cursor: pointer; border: none; transition: background 0.15s; }
+    .success-modal .btn-close { background: #eaeaea; color: #333; }
+    .success-modal .btn-close:hover { background: #ddd; }
+    .success-modal .btn-primary { background: #0969da; color: #fff; }
+    .success-modal .btn-primary:hover { background: #0550ae; }
+    .success-modal .btn-return { background: transparent; color: #0969da; }
+    .success-modal .btn-return:hover { text-decoration: underline; }
+    #assessment-link-wrap { margin-top: 0.5rem; }
   </style>
 </head>
 <body data-doc-title="success.meta_title">
-  <h1 data-i18n="success.title">Thank you</h1>
-  <p data-i18n="success.body">Your payment is complete. We’ve received your order.</p>
-  <p><span data-i18n="success.next_step" data-i18n-html></span> <a href="/assessment.html" id="assessment-link" data-i18n="success.assessment_link">Complete your security assessment</a></p>
-  <p id="report-link-wrap" style="display: none;"><span data-i18n="success.report_ready"></span> <a id="report-link" href="" data-i18n="success.view_report">View your report</a>.</p>
-  <p><a href="/contact.html" id="contact-link" data-i18n="success.contact_link" data-i18n-href="contact">Contact form</a> · <a href="/" id="home-link" data-i18n="success.home_link" data-i18n-href="home">Home</a></p>
+  <div class="success-overlay">
+    <div class="success-modal">
+      <h1 data-i18n="success.payment_successful">Pagamento concluído</h1>
+      <p data-i18n="success.email_expectation">Em breve receberá um email com o link para o questionário. Verifique a pasta de spam se não o receber nos próximos 10 minutos.</p>
+      <div class="actions">
+        <button type="button" class="btn btn-close" data-i18n="success.btn_close" id="btn-close">Fechar</button>
+        <a href="/pt/" class="btn btn-primary" data-i18n="success.btn_return_home" id="btn-return">Voltar ao site</a>
+      </div>
+      <p id="assessment-link-wrap" style="display: none;"><a href="/pt/assessment.html" id="assessment-link" class="btn btn-return" data-i18n="success.assessment_link">Complete o seu questionário de segurança</a></p>
+      <p id="report-link-wrap" style="display: none; margin-top: 0.5rem;"><span data-i18n="success.report_ready"></span> <a id="report-link" href="" data-i18n="success.view_report">Ver o seu relatório</a></p>
+    </div>
+  </div>
   <script src="/js/i18n.js"></script>
   <script>
     (function () {
@@ -23,17 +42,29 @@
       const hash = params.get('hash');
       if (!window.FLARE_WORKER_URL && /^(www\.)?getflare\.net$/.test(window.location.hostname)) window.FLARE_WORKER_URL = 'https://flare-worker.gusmao-ricardo.workers.dev';
       const workerUrl = window.FLARE_WORKER_URL || 'https://flare-worker.gusmao-ricardo.workers.dev';
-      function path(k) { return window.FLARE_I18N ? window.FLARE_I18N.path(k) : (k === 'assessment' ? '/assessment.html' : k === 'contact' ? '/contact.html' : '/'); }
-      if (hash) {
-        const a = document.getElementById('assessment-link');
-        if (a) a.href = (path('assessment').replace(/\.html$/, '') || '/assessment') + '.html?hash=' + encodeURIComponent(hash);
-        var reportWrap = document.getElementById('report-link-wrap');
-        var reportA = document.getElementById('report-link');
-        if (reportWrap && reportA) {
-          reportA.href = workerUrl + '/report?hash=' + encodeURIComponent(hash);
-          reportWrap.style.display = 'block';
+      function path(k) { return window.FLARE_I18N ? window.FLARE_I18N.path(k) : (k === 'assessment' ? '/pt/assessment.html' : k === 'contact' ? '/pt/contact.html' : '/pt/'); }
+      function setLinks() {
+        if (hash) {
+          var a = document.getElementById('assessment-link');
+          var wrap = document.getElementById('assessment-link-wrap');
+          var base = path('assessment');
+          if (a && wrap && base && base !== '#') {
+            a.href = base + (base.indexOf('?') >= 0 ? '&' : '?') + 'hash=' + encodeURIComponent(hash);
+            wrap.style.display = 'block';
+          }
+          var reportWrap = document.getElementById('report-link-wrap');
+          var reportA = document.getElementById('report-link');
+          if (reportWrap && reportA) {
+            reportA.href = workerUrl + '/report?hash=' + encodeURIComponent(hash);
+            reportWrap.style.display = 'block';
+          }
         }
       }
+      document.getElementById('btn-close').addEventListener('click', function () { window.location.href = path('home') || '/pt/'; });
+      var returnBtn = document.getElementById('btn-return');
+      if (returnBtn) returnBtn.href = path('home') || '/pt/';
+      setLinks();
+      setTimeout(setLinks, 400);
     })();
   </script>
 </body>

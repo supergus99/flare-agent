@@ -122,6 +122,10 @@
   "success": {
     "meta_title": "Payment complete – Flare",
     "title": "Thank you",
+    "payment_successful": "Payment successful",
+    "email_expectation": "You will soon receive an email with the link to the assessment. Check your spam folder if you don't receive it within 10 minutes.",
+    "btn_close": "Close",
+    "btn_return_home": "Return to website",
     "body": "Your payment is complete. We've received your order.",
     "next_step": "**Next step:**",
     "assessment_link": "Complete your security assessment",

@@ -122,6 +122,10 @@
   "success": {
     "meta_title": "Pago completado – Flare",
     "title": "Gracias",
+    "payment_successful": "Pago realizado",
+    "email_expectation": "En breve recibirás un email con el enlace al cuestionario. Revisa la carpeta de spam si no lo recibes en los próximos 10 minutos.",
+    "btn_close": "Cerrar",
+    "btn_return_home": "Volver al sitio",
     "body": "Tu pago se ha completado. Hemos recibido tu pedido.",
     "next_step": "**Siguiente paso:**",
     "assessment_link": "Completa tu cuestionario de seguridad",
