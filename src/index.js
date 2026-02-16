@@ -612,25 +612,55 @@ export default {
         const message = (body.message ?? body.describe_concerns ?? "").trim().slice(0, 2000);
         const assessmentData = typeof body.assessment_data === "object" ? JSON.stringify(body.assessment_data) : (body.assessment_data ?? "{}");
         const submittedAt = new Date().toISOString().slice(0, 19).replace("T", " ");
+        const pid = payment?.id ?? paymentId;
 
-        await env.DB.prepare(
-          `INSERT INTO contact_submissions (name, email, company, service, payment_id, message, assessment_data, form_version, submitted_at, status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'new')`
-        )
-          .bind(name || null, email, company || null, serviceType, payment?.id ?? null, message || null, assessmentData, "2.0", submittedAt)
-          .run();
+        // One submission per payment: if this payment already has a submission, do not insert or re-trigger job
+        if (pid != null) {
+          const existing = await env.DB.prepare(
+            "SELECT id FROM contact_submissions WHERE payment_id = ? LIMIT 1"
+          )
+            .bind(pid)
+            .first();
+          if (existing) {
+            return json({
+              ok: true,
+              already_submitted: true,
+              message: "You have already submitted your assessment for this purchase. Your report is being generated or has been sent.",
+              submission_id: existing.id,
+            });
+          }
+        }
+
+        try {
+          await env.DB.prepare(
+            `INSERT INTO contact_submissions (name, email, company, service, payment_id, message, assessment_data, form_version, submitted_at, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'new')`
+          )
+            .bind(name || null, email, company || null, serviceType, pid ?? null, message || null, assessmentData, "2.0", submittedAt)
+            .run();
+        } catch (insertErr) {
+          const msg = String(insertErr?.message ?? insertErr);
+          if (pid != null && (msg.includes("UNIQUE") || msg.includes("constraint"))) {
+            return json({
+              ok: true,
+              already_submitted: true,
+              message: "You have already submitted your assessment for this purchase. Your report is being generated or has been sent.",
+            });
+          }
+          throw insertErr;
+        }
 
         const row = await env.DB.prepare("SELECT id FROM contact_submissions WHERE email = ? AND submitted_at = ? ORDER BY id DESC LIMIT 1")
           .bind(email, submittedAt)
           .first();
         const submissionId = row?.id ?? null;
 
-        if (submissionId && env.JOBS && (payment?.id ?? paymentId)) {
+        if (submissionId && env.JOBS && pid) {
           try {
             await env.JOBS.send({
               type: "generate_report",
               submission_id: submissionId,
-              payment_id: payment?.id ?? paymentId,
+              payment_id: pid,
             });
           } catch (_) {}
         }
