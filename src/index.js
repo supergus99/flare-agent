@@ -531,6 +531,11 @@ export default {
             name: sessionName || undefined,
           });
           payment = result?.row ?? null;
+          if (payment?.id && result?.isNew && env.JOBS) {
+            try {
+              await env.JOBS.send({ type: "send_welcome_email", payment_id: payment.id });
+            } catch (_) {}
+          }
         }
         if (!payment) return json({ ok: false, error: "Payment not found" }, 404);
         let base = (env.SUCCESS_BASE_URL || request.headers.get("Origin") || url.origin).replace(/\/$/, "");
@@ -1262,6 +1267,10 @@ async function handleSendWelcomeEmail(env, body) {
   if (!payment || payment.payment_status !== "completed") return;
   const to = payment.customer_email?.trim();
   if (!to) return;
+  const alreadySent = await env.DB.prepare(
+    "SELECT id FROM email_logs WHERE payment_id = ? AND email_type = 'welcome' AND status = 'sent' LIMIT 1"
+  ).bind(paymentId).first();
+  if (alreadySent) return;
   const base = env.SUCCESS_BASE_URL || env.WORKER_PUBLIC_URL || "https://flare-agent.pages.dev";
   const assessmentUrl = `${base.replace(/\/$/, "")}/assessment.html?hash=${encodeURIComponent(payment.access_hash || "")}`;
   const name = payment.customer_name || "there";
