@@ -49,7 +49,7 @@ export async function createCheckoutSession(stripeSecretKey, opts) {
   const amount = getAmountCents(serviceType, currency);
   const productName = getServiceName(serviceType);
   const body = {
-    payment_method_types: ["card"],
+    "payment_method_types[0]": "card",
     mode: "payment",
     success_url: successUrl,
     cancel_url: cancelUrl,
