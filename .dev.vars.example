@@ -9,3 +9,6 @@ STRIPE_PUBLISHABLE_KEY=pk_test_...
 # Optional: Checkout branding (when using a sub-account, so Flare shows instead of parent/STR logo)
 # CHECKOUT_DISPLAY_NAME=Flare
 # CHECKOUT_LOGO_URL=https://getflare.net/path/to/logo.png
+
+# Optional: From address for automated emails (welcome, report ready). Default in DB: Flare <noreply@getflare.net>
+# FROM_EMAIL=Flare <noreply@getflare.net>

@@ -1237,9 +1237,9 @@ async function getFromEmail(env) {
   if (env.FROM_EMAIL) return env.FROM_EMAIL;
   try {
     const row = await env.DB.prepare("SELECT setting_value FROM automation_settings WHERE setting_key = 'from_email' LIMIT 1").first();
-    return row?.setting_value || "Flare <noreply@example.com>";
+    return row?.setting_value || "Flare <noreply@getflare.net>";
   } catch (_) {
-    return "Flare <noreply@example.com>";
+    return "Flare <noreply@getflare.net>";
   }
 }
 
