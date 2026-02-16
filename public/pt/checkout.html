@@ -55,16 +55,20 @@
     .footer a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; }
     .footer a:hover { color: var(--accent); }
   </style>
+  <link rel="stylesheet" href="/css/nav-mobile.css">
 </head>
 <body data-doc-title="checkout.meta_title">
-  <nav class="nav">
+  <nav class="nav" id="nav">
     <a href="/" class="nav-logo" data-i18n-href="home"><span class="nav-logo-word">Flare</span><span class="nav-logo-dot">.</span></a>
+    <button type="button" class="nav-toggle" aria-label="Menu"><span></span><span></span><span></span></button>
+    <div class="nav-backdrop" aria-hidden="true"></div>
     <div class="nav-links">
       <a href="/" data-i18n="common.nav_home" data-i18n-href="home">Home</a>
       <a href="/contact.html" data-i18n="common.nav_contact" data-i18n-href="contact">Contact</a>
       <span class="nav-lang"><a href="/" data-i18n-href="en" aria-label="English">EN</a> <a href="/pt/" data-i18n-href="pt" aria-label="Português">PT</a> <a href="/es/" data-i18n-href="es" aria-label="Español">ES</a> <a href="/fr/" data-i18n-href="fr" aria-label="Français">FR</a> <a href="/de/" data-i18n-href="de" aria-label="Deutsch">DE</a></span>
     </div>
   </nav>
+  <script src="/js/nav-mobile.js"></script>
 
   <div class="container">
     <p class="page-label" data-i18n="checkout.page_label">Checkout</p>

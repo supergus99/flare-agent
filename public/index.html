@@ -380,10 +380,13 @@
 
     @keyframes fade-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
   </style>
+  <link rel="stylesheet" href="/css/nav-mobile.css">
 </head>
 <body data-doc-title="home.meta_title" data-doc-desc="home.meta_description">
   <nav class="nav" id="nav">
     <a href="/" class="nav-logo" data-i18n-href="home"><span class="nav-logo-word">Flare</span><span class="nav-logo-dot">.</span></a>
+    <button type="button" class="nav-toggle" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
+    <div class="nav-backdrop" aria-hidden="true"></div>
     <div class="nav-links">
       <a href="#mission" data-i18n="common.nav_mission">Mission</a>
       <a href="#offer" data-i18n="common.nav_offer">Your report</a>
@@ -394,6 +397,7 @@
       <a href="/checkout.html" class="nav-cta" data-i18n="common.nav_checkout" data-i18n-href="checkout">Get your report</a>
     </div>
   </nav>
+  <script src="/js/nav-mobile.js"></script>
 
   <header class="hero">
     <div class="flare-container" aria-hidden="true">

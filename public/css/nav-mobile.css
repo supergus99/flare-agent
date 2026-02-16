@@ -1,0 +1,78 @@
+/* Mobile nav: hamburger + slide-out menu */
+@media (max-width: 768px) {
+  .nav { padding: 0.75rem 1rem; }
+  .nav-links {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: min(100%, 280px);
+    height: 100vh;
+    background: var(--bg-elevated, #111113);
+    border-left: 1px solid var(--border, rgba(255,255,255,0.06));
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 4rem 1.25rem 1.5rem;
+    box-shadow: -8px 0 24px rgba(0,0,0,0.3);
+    transform: translateX(100%);
+    transition: transform 0.25s ease-out;
+    z-index: 99;
+    overflow-y: auto;
+  }
+  .nav.nav-open .nav-links { transform: translateX(0); }
+  .nav-links a,
+  .nav-lang {
+    display: block;
+    margin: 0;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border, rgba(255,255,255,0.06));
+    font-size: 1rem;
+  }
+  .nav-links a.nav-cta { margin-top: 0.5rem; text-align: center; border-radius: 8px; }
+  .nav-lang { border-bottom: none; }
+  .nav-lang a { display: inline-block; padding: 0.25rem 0.5rem 0.25rem 0; margin-right: 0.5rem; }
+  .nav-toggle {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 44px;
+    height: 44px;
+    padding: 10px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--text, #e4e4e7);
+    cursor: pointer;
+    z-index: 101;
+    transition: background 0.2s;
+  }
+  .nav-toggle:hover { background: var(--bg-elevated, rgba(255,255,255,0.06)); }
+  .nav-toggle span {
+    display: block;
+    height: 2px;
+    background: currentColor;
+    border-radius: 1px;
+    transition: transform 0.2s, opacity 0.2s;
+  }
+  .nav-toggle span:nth-child(1) { width: 20px; }
+  .nav-toggle span:nth-child(2) { width: 24px; margin-left: 0; }
+  .nav-toggle span:nth-child(3) { width: 16px; }
+  .nav.nav-open .nav-toggle span:nth-child(1) { transform: translateY(7px) rotate(45deg); width: 24px; }
+  .nav.nav-open .nav-toggle span:nth-child(2) { opacity: 0; }
+  .nav.nav-open .nav-toggle span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); width: 24px; }
+  .nav-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 98;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .nav.nav-open .nav-backdrop { opacity: 1; pointer-events: auto; }
+}
+@media (min-width: 769px) {
+  .nav-toggle { display: none; }
+  .nav-backdrop { display: none; }
+}
