@@ -16,8 +16,8 @@
   </div>
   <script>
 (function () {
-  if (!window.FLARE_WORKER_URL && /^(www\.)?getflare\.net$/.test(window.location.hostname)) window.FLARE_WORKER_URL = 'https://api.getflare.net';
-  var WORKER_URL = window.FLARE_WORKER_URL || 'https://flare-worker.gusmao-ricardo.workers.dev';
+if (!window.FLARE_WORKER_URL && /^(www\.)?getflare\.net$/.test(window.location.hostname)) window.FLARE_WORKER_URL = 'https://flare-worker.gusmao-ricardo.workers.dev';
+      var WORKER_URL = window.FLARE_WORKER_URL || 'https://flare-worker.gusmao-ricardo.workers.dev';
   var params = new URLSearchParams(window.location.search);
   var lang = (params.get('lang') || '').toLowerCase();
   var isPt = lang === 'pt' || lang === 'pt-pt';

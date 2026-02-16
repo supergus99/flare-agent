@@ -106,7 +106,8 @@
   <script src="/js/i18n.js"></script>
   <script>
     (function () {
-      if (!window.FLARE_WORKER_URL && /^(www\.)?getflare\.net$/.test(window.location.hostname)) window.FLARE_WORKER_URL = 'https://api.getflare.net';
+      // Use workers.dev until api.getflare.net is reachable; then set FLARE_WORKER_URL to https://api.getflare.net
+      if (!window.FLARE_WORKER_URL && /^(www\.)?getflare\.net$/.test(window.location.hostname)) window.FLARE_WORKER_URL = 'https://flare-worker.gusmao-ricardo.workers.dev';
       const WORKER_URL = window.FLARE_WORKER_URL || 'https://flare-worker.gusmao-ricardo.workers.dev';
       const form = document.getElementById('checkout-form');
       const btn = document.getElementById('btn');
@@ -131,26 +132,40 @@
           customer_company: document.getElementById('customer_company').value.trim() || undefined,
         };
 
+        var apiUrl = WORKER_URL + '/api/checkout';
         try {
-          const res = await fetch(WORKER_URL + '/api/checkout', {
+          const res = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
           });
-          const data = await res.json();
-          if (!res.ok) {
-            showMessage(data.error || 'Checkout failed', true);
+          var text = await res.text();
+          var data = null;
+          try {
+            data = text ? JSON.parse(text) : {};
+          } catch (_) {
+            showMessage(res.ok ? 'No redirect URL received' : (text || 'Checkout failed (' + res.status + ')'), true);
             btn.disabled = false;
             return;
           }
-          if (data.url) {
+          if (!res.ok) {
+            showMessage((data && data.error) || 'Checkout failed', true);
+            btn.disabled = false;
+            return;
+          }
+          if (data && data.url) {
             window.location.href = data.url;
             return;
           }
           showMessage('No redirect URL received', true);
           btn.disabled = false;
         } catch (err) {
-          showMessage(err.message || 'Network error', true);
+          var msg = err.message || 'Network error';
+          if (/failed to fetch|load failed|network error/i.test(msg)) {
+            msg = 'Cannot reach the server. Check your connection and that the API is available at ' + WORKER_URL;
+          }
+          showMessage(msg, true);
+          console.error('Checkout failed:', err.message, 'URL:', apiUrl);
           btn.disabled = false;
         }
       });

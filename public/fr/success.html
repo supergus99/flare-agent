@@ -21,7 +21,7 @@
     (function () {
       const params = new URLSearchParams(window.location.search);
       const hash = params.get('hash');
-      if (!window.FLARE_WORKER_URL && /^(www\.)?getflare\.net$/.test(window.location.hostname)) window.FLARE_WORKER_URL = 'https://api.getflare.net';
+      if (!window.FLARE_WORKER_URL && /^(www\.)?getflare\.net$/.test(window.location.hostname)) window.FLARE_WORKER_URL = 'https://flare-worker.gusmao-ricardo.workers.dev';
       const workerUrl = window.FLARE_WORKER_URL || 'https://flare-worker.gusmao-ricardo.workers.dev';
       function path(k) { return window.FLARE_I18N ? window.FLARE_I18N.path(k) : (k === 'assessment' ? '/assessment.html' : k === 'contact' ? '/contact.html' : '/'); }
       function setLinks() {
