@@ -62,13 +62,14 @@ npx wrangler d1 execute flare-db --remote --file=./migrations/012_stripe_webhook
 
 If the webhook URL or secret is wrong, Stripe never calls your Worker (or verification fails), and no welcome email is sent. The success page does not send the email.
 
-## No rows in email_logs?
+## No rows in email_logs / email not in Resend?
 
-The Worker sends the welcome email **only** when it processes **payment_intent.succeeded**. It writes to **email_logs** for that event. If you see events in **stripe_webhook_events** but no welcome in **email_logs**:
+The Worker sends the welcome email **only** when it processes **payment_intent.succeeded**. On that event it will create or update the payment from Stripe (using `receipt_email` or `metadata.customer_email` from the PaymentIntent) if the payment was missing or had no email—so the email can be sent even if **payment_intent.succeeded** arrives before **checkout.session.completed**. It writes to **email_logs** for that event. If you see events in **stripe_webhook_events** but no welcome in **email_logs** or no send in Resend:
 
 1. **Check event_type** in **stripe_webhook_events**: the welcome email runs **only for `payment_intent.succeeded`**. If you only have **checkout.session.completed**, add **payment_intent.succeeded** in [Stripe Dashboard → Webhooks](https://dashboard.stripe.com/webhooks) → your endpoint → Events to send. Keep **checkout.session.completed** so the payment row (and customer_email) exists before the email is sent.
 2. **Redeploy** the Worker so the latest code is live.
-3. Run another test payment and check **email_logs** again; you should see at least one row per payment (status **sent** or **failed** with **error_message**).
+3. If the payment had no email, the Worker fetches the PaymentIntent from Stripe and uses **receipt_email** or **metadata.customer_email**. Your Checkout already sets `payment_intent_data.metadata.customer_email` when creating the session; Stripe also sets **receipt_email** from the customer’s checkout form.
+4. Run another test payment and check **email_logs** again; you should see at least one row per payment (status **sent** or **failed** with **error_message**).
 
 ## No events in stripe_webhook_events?
 
