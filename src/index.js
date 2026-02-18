@@ -525,6 +525,21 @@ export default {
           if (!payment && intent?.id) {
             payment = await env.DB.prepare("SELECT * FROM payments WHERE transaction_id = ? LIMIT 1").bind(String(intent.id)).first();
           }
+          // If still no payment (session had no email), create from lead stored by payment_intent.succeeded
+          if (!payment && intent?.id && piIdStr && env.DB) {
+            const leadByPi = await env.DB.prepare("SELECT id, email, name, service FROM leads WHERE stripe_payment_intent_id = ? LIMIT 1").bind(piIdStr).first();
+            if (leadByPi?.email) {
+              const intentWithLead = { ...intent, metadata: { ...(intent.metadata || {}), customer_email: leadByPi.email, customer_name: leadByPi.name || "", service_type: leadByPi.service || "core" } };
+              const leadResult = await upsertPaymentFromIntent(env.DB, intentWithLead, { email: leadByPi.email, name: leadByPi.name || undefined });
+              payment = leadResult?.row ?? null;
+              if (payment?.id) {
+                try {
+                  await env.DB.prepare("UPDATE payments SET lead_id = ?, updated_at = datetime('now') WHERE id = ?").bind(leadByPi.id, payment.id).run();
+                  await env.DB.prepare("UPDATE leads SET payment_id = ?, converted_at = datetime('now'), updated_at = datetime('now') WHERE id = ?").bind(payment.id, leadByPi.id).run();
+                } catch (_) {}
+              }
+            }
+          }
           if (payment?.id && env.DB) {
             const metaLocale = (session.metadata?.flare_locale || "").toString().trim().toLowerCase() || "en";
             if (result?.isNew && payment.lead_id) {
@@ -591,6 +606,24 @@ export default {
               }
             } else if (payment?.id && !env.RESEND_API_KEY) {
               checkoutEmailError = "RESEND_API_KEY not set";
+            }
+            // Always write one welcome row per payment when we have payment.id (so you see sent/failed in email_logs)
+            if (payment?.id && env.DB) {
+              const hasLog = await env.DB.prepare("SELECT id FROM email_logs WHERE payment_id = ? AND email_type = 'welcome' LIMIT 1").bind(payment.id).first();
+              if (!hasLog) {
+                const recipient = (payment.customer_email || "").toString().trim();
+                const reason = checkoutEmailError || (recipient ? "unknown" : "no customer email (session or lead)");
+                try {
+                  await env.DB.prepare(
+                    "INSERT INTO email_logs (payment_id, email_type, recipient_email, subject, status, error_message) VALUES (?, 'welcome', ?, ?, 'failed', ?)"
+                  ).bind(payment.id, recipient || "(no email)", "Welcome (webhook)", reason).run();
+                } catch (e) {
+                  try {
+                    await env.DB.prepare("UPDATE stripe_webhook_events SET last_error = ? WHERE event_id = ?")
+                      .bind(("email_logs insert failed: " + (e && e.message || String(e))).slice(0, 500), eventId).run();
+                  } catch (_) {}
+                }
+              }
             }
             // When payment is confirmed, remove the lead so only unsuccessful (abandoned) entries remain in leads
             const leadIdToRemove = payment?.lead_id ? parseInt(payment.lead_id, 10) : null;
