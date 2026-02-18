@@ -71,14 +71,23 @@
   <script src="/js/nav-mobile.js"></script>
 
   <div class="container">
-    <p class="page-label" data-i18n="checkout.page_label">Checkout</p>
-    <h1 class="page-title" data-i18n="checkout.title">Get your report</h1>
+    <p class="page-label" data-i18n="checkout.page_label">Your basket</p>
+    <h1 class="page-title" data-i18n="checkout.title">Get your Flare Compass</h1>
     <p class="page-desc" data-i18n="checkout.desc">One report: what’s wrong, what to do first, and how to do it yourself. Plain language, no jargon. Complete payment securely with Stripe; you’ll receive a confirmation and a link to your assessment.</p>
 
-    <div class="card">
-      <p class="product-line" data-i18n="checkout.product_line" data-i18n-html><strong>Your report</strong> — What’s wrong, what to fix first, and step-by-step DIY directions. <strong>89€</strong> or <strong>$89</strong> (launch campaign — choose currency below).</p>
+    <div class="card basket-card">
+      <p class="product-line" data-i18n="checkout.product_line">Flare Compass — Your risks in order, with clear steps to fix them yourself. 89€ (launch campaign).</p>
       <form id="checkout-form">
         <input type="hidden" id="service_type" name="service_type" value="protect">
+
+        <label class="form-label" for="locale" data-i18n="checkout.language_label">Language for assessment, emails and report</label>
+        <select id="locale" name="locale" required>
+          <option value="en" data-i18n="checkout.language_en">English</option>
+          <option value="pt" data-i18n="checkout.language_pt">Português</option>
+          <option value="es" data-i18n="checkout.language_es">Español</option>
+          <option value="fr" data-i18n="checkout.language_fr">Français</option>
+          <option value="de" data-i18n="checkout.language_de">Deutsch</option>
+        </select>
 
         <label class="form-label" for="currency" data-i18n="checkout.currency_label">Currency</label>
         <select id="currency" name="currency">
@@ -130,6 +139,7 @@
 
         const payload = {
           service_type: document.getElementById('service_type').value,
+          locale: document.getElementById('locale').value,
           currency: document.getElementById('currency').value,
           customer_name: document.getElementById('customer_name').value.trim() || undefined,
           customer_email: document.getElementById('customer_email').value.trim() || undefined,

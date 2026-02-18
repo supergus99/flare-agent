@@ -406,6 +406,9 @@ export default {
         const successUrl = `${workerBase}/api/success?session_id={CHECKOUT_SESSION_ID}`;
         const cancelUrl = `${pagesBase}/checkout.html?canceled=1`;
         const locale = String(body.locale ?? "").trim().toLowerCase();
+        const flareLocale = ["en", "pt", "pt-pt", "es", "fr", "de"].includes(locale)
+          ? (locale.startsWith("pt") ? "pt" : locale === "pt-pt" ? "pt" : locale)
+          : "en";
         const session = await createCheckoutSession(stripeKey, {
           successUrl,
           cancelUrl,
@@ -414,7 +417,7 @@ export default {
           customerEmail: body.customer_email?.trim() || undefined,
           customerName: body.customer_name?.trim() || undefined,
           customerCompany: body.customer_company?.trim() || undefined,
-          locale: ["pt", "pt-pt", "es", "fr", "de"].includes(locale) ? (locale.startsWith("pt") ? "pt" : locale) : undefined,
+          locale: flareLocale,
           brandingDisplayName: env.CHECKOUT_DISPLAY_NAME?.trim() || undefined,
           brandingLogoUrl: env.CHECKOUT_LOGO_URL?.trim() || undefined,
         });
@@ -468,6 +471,7 @@ export default {
             name: sessionName || undefined,
           });
           if (result?.isNew && result.row?.id && env.DB) {
+            const metaLocale = (session.metadata?.flare_locale || "").toString().trim().toLowerCase() || "en";
             const leadId = result.row.lead_id ? parseInt(result.row.lead_id, 10) : null;
             if (leadId) {
               try {
@@ -478,6 +482,11 @@ export default {
                   .run();
               } catch (_) {}
             }
+            try {
+              await env.DB.prepare("UPDATE payments SET customer_locale = ?, updated_at = datetime('now') WHERE id = ?")
+                .bind(metaLocale.startsWith("pt") ? "pt" : metaLocale, result.row.id)
+                .run();
+            } catch (_) {}
             if (env.JOBS) {
               try {
                 await env.JOBS.send({ type: "send_welcome_email", payment_id: result.row.id });
@@ -531,10 +540,18 @@ export default {
             name: sessionName || undefined,
           });
           payment = result?.row ?? null;
-          if (payment?.id && result?.isNew && env.JOBS) {
+          if (payment?.id && result?.isNew) {
+            const metaLocale = (session.metadata?.flare_locale || "").toString().trim().toLowerCase() || "en";
             try {
-              await env.JOBS.send({ type: "send_welcome_email", payment_id: payment.id });
+              await env.DB.prepare("UPDATE payments SET customer_locale = ?, updated_at = datetime('now') WHERE id = ?")
+                .bind(metaLocale.startsWith("pt") ? "pt" : metaLocale, payment.id)
+                .run();
             } catch (_) {}
+            if (env.JOBS) {
+              try {
+                await env.JOBS.send({ type: "send_welcome_email", payment_id: payment.id });
+              } catch (_) {}
+            }
           }
         }
         if (!payment) return json({ ok: false, error: "Payment not found" }, 404);
@@ -1271,7 +1288,7 @@ async function handleSendWelcomeEmail(env, body) {
   const paymentId = body.payment_id ? parseInt(body.payment_id, 10) : 0;
   if (!paymentId || !env.RESEND_API_KEY) return;
   const payment = await env.DB.prepare(
-    "SELECT id, customer_email, customer_name, access_hash, verification_code, service_type, payment_status FROM payments WHERE id = ?"
+    "SELECT id, customer_email, customer_name, access_hash, verification_code, service_type, payment_status, customer_locale FROM payments WHERE id = ?"
   ).bind(paymentId).first();
   if (!payment || payment.payment_status !== "completed") return;
   const to = payment.customer_email?.trim();
@@ -1280,14 +1297,17 @@ async function handleSendWelcomeEmail(env, body) {
     "SELECT id FROM email_logs WHERE payment_id = ? AND email_type = 'welcome' AND status = 'sent' LIMIT 1"
   ).bind(paymentId).first();
   if (alreadySent) return;
-  const base = env.SUCCESS_BASE_URL || env.WORKER_PUBLIC_URL || "https://flare-agent.pages.dev";
-  const assessmentUrl = `${base.replace(/\/$/, "")}/assessment.html?hash=${encodeURIComponent(payment.access_hash || "")}`;
+  const base = (env.SUCCESS_BASE_URL || env.WORKER_PUBLIC_URL || "https://getflare.net").replace(/\/$/, "");
+  const rawLocale = (payment.customer_locale || "en").toString().trim().toLowerCase();
+  const locale = emailLocaleKey(rawLocale);
+  const assessmentPathByLocale = { en: "assessment.html", pt: "pt/assessment.html", es: "es/assessment.html", fr: "fr/assessment.html", de: "de/assessment.html" };
+  const assessmentPath = assessmentPathByLocale[locale] || assessmentPathByLocale.en;
+  const assessmentUrl = `${base}/${assessmentPath}?hash=${encodeURIComponent(payment.access_hash || "")}`;
   const name = payment.customer_name || "there";
   const code = payment.verification_code || "";
   const fromName = await getFromName(env);
   const fromEmail = await getFromEmail(env);
   const from = fromEmail.includes("<") ? fromEmail : `${fromName} <${fromEmail}>`;
-  const locale = "en";
   const t = I18N_EMAIL[locale] || I18N_EMAIL.en;
   const subject = t.welcome_subject;
   const codeBlock = code

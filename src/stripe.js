@@ -70,6 +70,7 @@ export async function createCheckoutSession(stripeSecretKey, opts) {
     "payment_intent_data[metadata][customer_name]": customerName || "",
     "payment_intent_data[metadata][customer_email]": customerEmail || "",
     "payment_intent_data[metadata][customer_company]": customerCompany || "",
+    "payment_intent_data[metadata][flare_locale]": locale || "",
   };
   if (leadId != null) {
     body.client_reference_id = `lead_${leadId}`;
