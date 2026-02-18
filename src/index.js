@@ -498,8 +498,8 @@ export default {
           }
           const stripeKey = env.STRIPE_SECRET_KEY;
           const intent = await retrievePaymentIntent(stripeKey, typeof paymentIntentId === "string" ? paymentIntentId : paymentIntentId.id);
-          const sessionEmail = (session?.customer_details?.email || "").trim();
-          const sessionName = (session?.customer_details?.name || "").trim();
+          const sessionEmail = (session?.customer_details?.email || session?.customer_email || "").toString().trim();
+          const sessionName = (session?.customer_details?.name || "").toString().trim();
           const result = await upsertPaymentFromIntent(env.DB, intent, {
             email: sessionEmail || undefined,
             name: sessionName || undefined,
@@ -538,9 +538,9 @@ export default {
               ).bind(payment.id).first();
               if (!welcomeSent) {
                 const pay = await env.DB.prepare("SELECT id, customer_email, payment_status FROM payments WHERE id = ?").bind(payment.id).first();
-                const recipient = (pay?.customer_email || "").trim() || sessionEmail;
+                const recipient = (pay?.customer_email ?? "").toString().trim() || (sessionEmail ?? "").toString().trim();
                 if (pay?.payment_status === "completed" && recipient) {
-                  const sendResult = await handleSendWelcomeEmail(env, { payment_id: payment.id });
+                  const sendResult = await handleSendWelcomeEmail(env, { payment_id: payment.id, recipient_email: recipient });
                   if (!sendResult.sent && sendResult.error) emailError = sendResult.error;
                 } else if (!recipient) {
                   emailError = "no customer email (Stripe session or payment)";
@@ -553,12 +553,23 @@ export default {
             }
           }
           checkoutEmailError = emailError || null;
-          if (payment?.id && checkoutEmailError && env.DB) {
-            try {
-              await env.DB.prepare(
-                "INSERT INTO email_logs (payment_id, email_type, recipient_email, subject, status, error_message) VALUES (?, 'welcome', ?, ?, 'failed', ?)"
-              ).bind(payment.id, (payment.customer_email || sessionEmail || "").trim() || "(no email)", "Welcome (webhook)", checkoutEmailError).run();
-            } catch (_) {}
+          if (payment?.id && env.DB) {
+            const hasLog = await env.DB.prepare("SELECT id FROM email_logs WHERE payment_id = ? AND email_type = 'welcome' LIMIT 1").bind(payment.id).first();
+            if (!hasLog) {
+              const reason = checkoutEmailError || "unknown (no error captured)";
+              const recipient = (payment.customer_email || sessionEmail || "").trim() || "(no email)";
+              try {
+                await env.DB.prepare(
+                  "INSERT INTO email_logs (payment_id, email_type, recipient_email, subject, status, error_message) VALUES (?, 'welcome', ?, ?, 'failed', ?)"
+                ).bind(payment.id, recipient, "Welcome (webhook)", reason).run();
+              } catch (e) {
+                try {
+                  await env.DB.prepare(
+                    "UPDATE stripe_webhook_events SET last_error = ? WHERE event_id = ?"
+                  ).bind(("email_logs insert failed: " + (e && e.message || String(e))).slice(0, 500), eventId).run();
+                } catch (_) {}
+              }
+            }
           }
         } else if (eventType === "payment_intent.payment_failed") {
           const pi = event.data?.object;
@@ -1427,7 +1438,7 @@ async function handleSendWelcomeEmail(env, body) {
     "SELECT id, customer_email, customer_name, access_hash, verification_code, service_type, payment_status, customer_locale FROM payments WHERE id = ?"
   ).bind(paymentId).first();
   if (!payment || payment.payment_status !== "completed") return { sent: false, error: !payment ? "payment not found" : "payment not completed" };
-  const to = payment.customer_email?.trim();
+  const to = (body.recipient_email || payment.customer_email || "").toString().trim();
   if (!to) return { sent: false, error: "no customer_email on payment" };
   const alreadySent = await env.DB.prepare(
     "SELECT id FROM email_logs WHERE payment_id = ? AND email_type = 'welcome' AND status = 'sent' LIMIT 1"
@@ -1456,7 +1467,9 @@ async function handleSendWelcomeEmail(env, body) {
     await env.DB.prepare(
       "INSERT INTO email_logs (payment_id, email_type, recipient_email, subject, status, sent_at, error_message) VALUES (?, 'welcome', ?, ?, ?, ?, ?)"
     ).bind(paymentId, to, subject, result.error ? "failed" : "sent", result.error ? null : now, result.error || null).run();
-  } catch (_) {}
+  } catch (e) {
+    return { sent: false, error: (result.error || "db log failed: " + (e && e.message || String(e))) };
+  }
   return result.error ? { sent: false, error: result.error } : { sent: true };
 }
 
