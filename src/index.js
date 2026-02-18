@@ -1516,19 +1516,27 @@ function emailLocaleKey(locale) {
   return "en";
 }
 
-/** Email HTML in website style (Outfit, Flare colors). locale: en | pt | es | fr | de (default en). */
-function getWelcomeEmailHtml(name, assessmentUrl, fromName, codeBlock, locale = "en") {
+/** Email HTML: black header with logo, card body. locale: en | pt | es | fr | de (default en). code optional. */
+function getWelcomeEmailHtml(name, assessmentUrl, fromName, code, locale = "en", baseUrl = "") {
   const key = emailLocaleKey(locale);
   const t = I18N_EMAIL[key] || I18N_EMAIL.en;
-  return `<!DOCTYPE html><html lang="${key}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${escapeHtml(t.welcome_title)}</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet"></head><body style="margin:0;font-family:'Outfit',system-ui,sans-serif;background:#0a0a0b;color:#e4e4e7;line-height:1.6;padding:2rem 1rem;">
-<div style="max-width:36em;margin:0 auto;">
-  <p style="margin:0 0 1rem;font-size:1.25rem;font-weight:600;background:linear-gradient(135deg,#fb923c,#22d3ee);-webkit-background-clip:text;color:transparent;">Flare.</p>
-  <p style="margin:0 0 1rem;">Hi ${escapeHtml(name)},</p>
-  <p style="margin:0 0 1rem;">${t.welcome_thanks}</p>
-  ${codeBlock || ""}
-  <p style="margin:1rem 0;"><a href="${escapeHtml(assessmentUrl)}" style="display:inline-block;padding:0.75rem 1.5rem;background:linear-gradient(135deg,#22d3ee,#06b6d4);color:#0a0a0b;text-decoration:none;font-weight:600;border-radius:10px;">${t.welcome_cta}</a></p>
-  <p style="margin:1.5rem 0 0;color:#71717a;font-size:0.9rem;">${t.welcome_expires}</p>
-  <p style="margin:2rem 0 0;color:#71717a;font-size:0.85rem;">— ${escapeHtml(fromName)}</p>
+  const logoImg = baseUrl
+    ? `<img src="${escapeHtml(baseUrl.replace(/\/$/, ""))}/flare-logo.png" alt="Flare" width="120" height="32" style="display:block;height:32px;width:auto;margin:0 auto;" />`
+    : `<span style="font-size:1.25rem;font-weight:600;color:#e4e4e7;">Flare.</span>`;
+  const codeBlock = (code && code.trim())
+    ? `<p style="margin:0 0 0.5rem;color:#71717a;font-size:0.95rem;">${t.welcome_code}</p><div style="margin:0 0 1.25rem;padding:0.85rem 1rem;background:rgba(34,211,238,0.12);color:#22d3ee;font-size:1.25rem;letter-spacing:0.2em;font-weight:600;border-radius:10px;font-family:ui-monospace,monospace;text-align:center;">${escapeHtml(String(code).trim().toUpperCase())}</div>`
+    : "";
+  return `<!DOCTYPE html><html lang="${key}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${escapeHtml(t.welcome_title)}</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet"></head><body style="margin:0;font-family:'Outfit',system-ui,sans-serif;background:#0a0a0b;color:#e4e4e7;line-height:1.6;">
+<div style="max-width:36em;margin:0 auto;padding:1.5rem 1rem;">
+  <div style="background:#000;padding:1.25rem 1.5rem;border-radius:16px 16px 0 0;text-align:center;">${logoImg}</div>
+  <div style="background:#111113;border:1px solid rgba(255,255,255,0.06);border-top:none;border-radius:0 0 16px 16px;padding:2rem 1.5rem;">
+    <p style="margin:0 0 1rem;">Hi ${escapeHtml(name)},</p>
+    <p style="margin:0 0 1rem;color:#e4e4e7;">${t.welcome_thanks}</p>
+    ${codeBlock}
+    <p style="margin:1.25rem 0;"><a href="${escapeHtml(assessmentUrl)}" style="display:inline-block;padding:0.85rem 1.75rem;background:linear-gradient(135deg,#22d3ee,#06b6d4);color:#0a0a0b;text-decoration:none;font-weight:600;border-radius:10px;">${t.welcome_cta}</a></p>
+    <p style="margin:1.25rem 0 0;color:#71717a;font-size:0.9rem;">${t.welcome_expires}</p>
+    <p style="margin:1.5rem 0 0;color:#71717a;font-size:0.85rem;">— ${escapeHtml(fromName)}</p>
+  </div>
 </div></body></html>`;
 }
 
@@ -1611,10 +1619,7 @@ async function handleSendWelcomeEmail(env, body) {
   const from = fromEmail.includes("<") ? fromEmail : `${fromName} <${fromEmail}>`;
   const t = I18N_EMAIL[locale] || I18N_EMAIL.en;
   const subject = t.welcome_subject;
-  const codeBlock = code
-    ? `<p>${t.welcome_code} <strong style="font-size:1.1em;letter-spacing:0.15em;">${escapeHtml(code)}</strong></p>`
-    : "";
-  const html = getWelcomeEmailHtml(name, assessmentUrl, fromName, codeBlock, locale);
+  const html = getWelcomeEmailHtml(name, assessmentUrl, fromName, code, locale, base);
   const result = await sendResend(env.RESEND_API_KEY, { from, to, subject, html });
   const now = new Date().toISOString().slice(0, 19).replace("T", " ");
   try {
