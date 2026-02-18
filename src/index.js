@@ -1017,12 +1017,15 @@ export default {
       if (request.method === "GET") {
         try {
           const claudeKey = await getSetting(env.DB, "claude_api_key");
+          const aiInstruction = await getSetting(env.DB, "ai_report_instruction");
           return json({
             ok: true,
             claude_api_key_set: !!(claudeKey && String(claudeKey).trim()),
+            ai_report_instruction: aiInstruction ?? "",
+            ai_report_instruction_default: getDefaultAIReportInstruction(),
           });
         } catch (e) {
-          return json({ ok: true, claude_api_key_set: false });
+          return json({ ok: true, claude_api_key_set: false, ai_report_instruction: "", ai_report_instruction_default: getDefaultAIReportInstruction() });
         }
       }
       if (request.method === "PUT" || request.method === "POST") {
@@ -1032,6 +1035,12 @@ export default {
             const val = String(body.claude_api_key ?? "").trim();
             await env.DB.prepare(
               "INSERT INTO automation_settings (setting_key, setting_value, updated_at) VALUES ('claude_api_key', ?, datetime('now')) ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = datetime('now')"
+            ).bind(val).run();
+          }
+          if (body.ai_report_instruction !== undefined) {
+            const val = String(body.ai_report_instruction ?? "");
+            await env.DB.prepare(
+              "INSERT INTO automation_settings (setting_key, setting_value, updated_at) VALUES ('ai_report_instruction', ?, datetime('now')) ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = datetime('now')"
             ).bind(val).run();
           }
           return json({ ok: true, message: "Settings saved" });
@@ -1352,7 +1361,7 @@ async function handleSendApprovedReport(env, body) {
 async function callClaudeForReport(apiKey, env, submission, data, reportVars) {
   const systemInstruction =
     (await getSetting(env.DB, "ai_report_instruction")) ||
-    "You are a security and operations risk analyst. Based on the assessment data, produce a concise JSON object with exactly these keys (escape any HTML): executive_summary (2-3 sentences), findings (HTML list of 3-5 key findings), recommendations (HTML list of 3-5 prioritized recommendations). Use plain language.";
+    getDefaultAIReportInstruction();
   const prompt = `Assessment submission:\nCompany: ${reportVars.company}\nContact: ${reportVars.name} (${reportVars.email})\nRole: ${reportVars.role}\nService: ${reportVars.service}\nNotes: ${reportVars.message}\n\nRaw assessment data (JSON):\n${typeof data === "string" ? data : JSON.stringify(data)}\n\nProduce the JSON object only.`;
   const model = env.CLAUDE_MODEL || "claude-sonnet-4-20250514";
   const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -1393,6 +1402,36 @@ async function getSetting(db, key) {
   } catch (_) {
     return null;
   }
+}
+
+/** Default system instruction for Claude when generating report content. Used when ai_report_instruction is not set in DB. */
+function getDefaultAIReportInstruction() {
+  return `You are a security advisor for micro and small businesses and solo founders. Your job is to turn their assessment answers into a short, actionable Flare Compass report.
+
+## Goal
+- Help them see their main risks in plain language and in order of priority.
+- Tell them exactly what to do next, with clear steps and links to free, reliable guides.
+- No jargon: explain like you would to a smart non-technical business owner. Avoid acronyms unless you spell them out once (e.g. "multi-factor authentication (MFA)").
+
+## Output
+Produce a JSON object with exactly these keys (you may use HTML in findings and recommendations; escape quotes inside strings):
+- executive_summary: 2–3 sentences. What is the overall picture? What should they focus on first?
+- findings: HTML list (e.g. <ul><li>...</li></ul>) of 3–5 main gaps or risks. One short sentence per finding; say why it matters to their business.
+- recommendations: HTML list of 3–5 prioritized actions. Each item must be practical and include a step-by-step link where possible. Prefer free tools and free guides only.
+
+## Rules
+- Only recommend free or low-cost options. Do not recommend paid software, audits, or consultants unless the assessment clearly states they have budget and want that. Default to free tools and free guides only.
+- Use these categories of free tools when relevant:
+  - Antivirus / endpoint: Windows Defender (built-in), built-in Mac protection, OpenEDR (free EDR).
+  - Email and accounts: Google's 2-Step Verification and account security, Microsoft account security.
+  - Websites: Cloudflare (free tier) for DNS, DDoS protection, and optional WAF.
+  - Encryption: BitLocker (Windows), FileVault (Mac), device encryption on mobile.
+  - Passwords: Bitwarden (free tier), or browser/OS built-in password managers.
+- For every recommendation, add a direct link to an official or widely trusted step-by-step guide (e.g. Google's "Turn on 2-Step Verification", Microsoft's "Turn on BitLocker", Cloudflare's "Add a site", OpenEDR documentation). Use <a href="URL">link text</a> in the HTML.
+- Order recommendations by impact and ease: do the most important, quick wins first.
+- Base everything on the assessment data provided; do not invent answers they did not give. If something is "Not sure", say so and still give a simple next step (e.g. "Check whether MFA is on: [link]").
+- Keep tone supportive and practical: "Here is what to do" not "You should have done this."
+- Write the entire JSON (executive_summary, findings, recommendations) in the same language as the assessment. If the assessment is in English, write in English; if in Portuguese, Spanish, French, or German, write in that language.`;
 }
 
 /** Escape string for use in RegExp (so {{a.contact_name}} works). */

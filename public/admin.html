@@ -161,6 +161,21 @@
           </div>
         </div>
         <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-light"><h2 class="h6 mb-0">AI report instructions</h2></div>
+          <div class="card-body">
+            <p class="text-muted small mb-2">System instruction sent to Claude when generating report content (executive summary, findings, recommendations). Plain language, no jargon, free tools only, with step-by-step links. Leave empty to use the built-in default.</p>
+            <div class="mb-2">
+              <button type="button" id="settings-ai-instruction-load-default" class="btn btn-outline-primary btn-sm">Load default instructions</button>
+              <span id="settings-ai-instruction-load-message" class="ms-2 text-muted small"></span>
+            </div>
+            <textarea id="settings-ai-report-instruction" class="form-control font-monospace" rows="22" placeholder="You are a security advisor..."></textarea>
+            <div class="mt-2">
+              <button type="button" id="settings-ai-instruction-save" class="btn btn-primary btn-sm">Save AI instructions</button>
+              <span id="settings-ai-instruction-message" class="ms-2 text-muted small"></span>
+            </div>
+          </div>
+        </div>
+        <div class="card border-0 shadow-sm mb-4">
           <div class="card-header bg-light"><h2 class="h6 mb-0">Email (Resend)</h2></div>
           <div class="card-body">
             <p class="text-muted small">Check if Resend is configured and working. Sends a test email to the address below.</p>
@@ -335,6 +350,8 @@
             const settingsData = await settingsRes.json();
             const statusEl = document.getElementById('settings-claude-status');
             if (statusEl) statusEl.textContent = settingsData.claude_api_key_set ? 'Status: Configured' : 'Status: Not set';
+            const aiEl = document.getElementById('settings-ai-report-instruction');
+            if (aiEl) aiEl.value = settingsData.ai_report_instruction ?? '';
           } catch (_) {}
           const rRes = await fetch(WORKER_URL + '/api/admin/report-template', { headers: authHeaders() });
           if (rRes.status === 401) { setToken(null); showLogin(); return; }
@@ -429,6 +446,49 @@
           }
         } catch (e) {
           msg.textContent = e.message || 'Error';
+        }
+      });
+
+      document.getElementById('settings-ai-instruction-load-default').addEventListener('click', async function () {
+        const msg = document.getElementById('settings-ai-instruction-load-message');
+        msg.textContent = 'Loading…';
+        try {
+          const res = await fetch(WORKER_URL + '/api/admin/settings', { headers: authHeaders() });
+          if (res.status === 401) { setToken(null); showLogin(); return; }
+          const data = await res.json();
+          const ta = document.getElementById('settings-ai-report-instruction');
+          if (ta && data.ai_report_instruction_default) {
+            ta.value = data.ai_report_instruction_default;
+            msg.textContent = 'Loaded.';
+          } else {
+            msg.textContent = 'No default available.';
+          }
+        } catch (e) {
+          msg.textContent = e.message || 'Error';
+        }
+      });
+
+      document.getElementById('settings-ai-instruction-save').addEventListener('click', async function () {
+        const msg = document.getElementById('settings-ai-instruction-message');
+        const ta = document.getElementById('settings-ai-report-instruction');
+        msg.textContent = 'Saving…';
+        msg.classList.remove('text-danger');
+        try {
+          const res = await fetch(WORKER_URL + '/api/admin/settings', {
+            method: 'PUT',
+            headers: authHeaders(),
+            body: JSON.stringify({ ai_report_instruction: ta ? ta.value : '' })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            msg.textContent = 'Saved.';
+          } else {
+            msg.textContent = data.error || 'Failed';
+            msg.classList.add('text-danger');
+          }
+        } catch (e) {
+          msg.textContent = e.message || 'Error';
+          msg.classList.add('text-danger');
         }
       });
 
