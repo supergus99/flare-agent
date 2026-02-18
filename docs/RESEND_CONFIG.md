@@ -38,10 +38,12 @@ Then redeploy. In Admin → Settings → Email you’ll see “Configured: m***@
 
 To override: set Worker secret **FROM_EMAIL** (e.g. `Flare <noreply@yourdomain.com>`) or set `from_email` in D1 table `automation_settings`.
 
-## 5. When the welcome email is sent
+## 5. When the welcome email is sent (no “exposed” API needed)
 
-- After Stripe **checkout.session.completed** (webhook), or when the user lands on **/api/success**.
-- If the **queue** (`flare-jobs`) is configured, the email is sent by the queue consumer; otherwise it’s sent inline. In both cases **RESEND_API_KEY** must be set.
+- **Stripe sends a webhook** to your Worker when payment completes (`checkout.session.completed`). The Worker then creates/updates the payment and **sends the welcome email in that same webhook request** (server-to-server). The customer does not need to hit any URL for the email to be sent.
+- **You must configure the webhook in Stripe:** [Stripe Dashboard → Webhooks](https://dashboard.stripe.com/webhooks) → Add endpoint → URL: **`https://<your-worker-url>/api/webhooks/stripe`** (e.g. `https://flare-worker.xxx.workers.dev/api/webhooks/stripe`). Select event **checkout.session.completed**. Copy the signing secret and set the Worker secret **STRIPE_WEBHOOK_SECRET** to that value.
+- If the webhook is not configured or the URL is wrong, Stripe never calls your Worker and the welcome email is never sent. The success page redirect is only for showing the user a “Thank you” page; it does not trigger the email.
+- If the welcome email still doesn’t arrive, check **email_logs** in D1 for that payment: `email_type = 'welcome'`, `status = 'failed'` and **error_message** (e.g. Resend “from domain not verified”).
 
 ## 6. Check logs
 

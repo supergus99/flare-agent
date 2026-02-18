@@ -153,8 +153,8 @@ async function upsertPaymentFromIntent(db, intent, overrides = {}) {
 
   if (overrides.email) customerEmail = overrides.email.trim();
   if (overrides.name) customerName = overrides.name.trim();
-  if (!customerEmail || !serviceType) return null;
-  if (!ALLOWED_SERVICES.includes(serviceType)) serviceType = "core";
+  if (!customerEmail) return null;
+  if (!serviceType || !ALLOWED_SERVICES.includes(serviceType)) serviceType = "core";
 
   const existing = await db
     .prepare("SELECT * FROM payments WHERE transaction_id = ? LIMIT 1")
@@ -494,31 +494,49 @@ export default {
             email: sessionEmail || undefined,
             name: sessionName || undefined,
           });
-          if (result?.isNew && result.row?.id && env.DB) {
+          let payment = result?.row ?? null;
+          if (!payment && intent?.id) {
+            payment = await env.DB.prepare("SELECT * FROM payments WHERE transaction_id = ? LIMIT 1").bind(String(intent.id)).first();
+          }
+          if (payment?.id && env.DB) {
             const metaLocale = (session.metadata?.flare_locale || "").toString().trim().toLowerCase() || "en";
-            const leadId = result.row.lead_id ? parseInt(result.row.lead_id, 10) : null;
-            if (leadId) {
-              try {
-                await env.DB.prepare(
-                  "UPDATE leads SET converted_at = datetime('now'), payment_id = ?, updated_at = datetime('now') WHERE id = ?"
-                )
-                  .bind(result.row.id, leadId)
-                  .run();
-              } catch (_) {}
+            if (result?.isNew) {
+              const leadId = payment.lead_id ? parseInt(payment.lead_id, 10) : null;
+              if (leadId) {
+                try {
+                  await env.DB.prepare(
+                    "UPDATE leads SET converted_at = datetime('now'), payment_id = ?, updated_at = datetime('now') WHERE id = ?"
+                  )
+                    .bind(payment.id, leadId)
+                    .run();
+                } catch (_) {}
+              }
             }
             try {
               await env.DB.prepare("UPDATE payments SET customer_locale = ?, updated_at = datetime('now') WHERE id = ?")
-                .bind(metaLocale.startsWith("pt") ? "pt" : metaLocale, result.row.id)
+                .bind(metaLocale.startsWith("pt") ? "pt" : metaLocale, payment.id)
                 .run();
+              if (sessionEmail) {
+                await env.DB.prepare("UPDATE payments SET customer_email = ?, updated_at = datetime('now') WHERE id = ? AND (customer_email IS NULL OR TRIM(customer_email) = '')")
+                  .bind(sessionEmail, payment.id).run();
+              }
+              if (sessionName) {
+                await env.DB.prepare("UPDATE payments SET customer_name = ?, updated_at = datetime('now') WHERE id = ? AND (customer_name IS NULL OR TRIM(customer_name) = '')")
+                  .bind(sessionName, payment.id).run();
+              }
             } catch (_) {}
-            if (env.JOBS) {
-              try {
-                await env.JOBS.send({ type: "send_welcome_email", payment_id: result.row.id });
-              } catch (_) {}
-            } else if (env.RESEND_API_KEY) {
-              try {
-                await handleSendWelcomeEmail(env, { payment_id: result.row.id });
-              } catch (_) {}
+            if (env.RESEND_API_KEY) {
+              const welcomeSent = await env.DB.prepare(
+                "SELECT id FROM email_logs WHERE payment_id = ? AND email_type = 'welcome' AND status = 'sent' LIMIT 1"
+              ).bind(payment.id).first();
+              if (!welcomeSent) {
+                const pay = await env.DB.prepare("SELECT id, customer_email, payment_status FROM payments WHERE id = ?").bind(payment.id).first();
+                if (pay?.payment_status === "completed" && (pay.customer_email?.trim() || sessionEmail)) {
+                  try {
+                    await handleSendWelcomeEmail(env, { payment_id: payment.id });
+                  } catch (_) {}
+                }
+              }
             }
           }
         } else if (eventType === "payment_intent.payment_failed") {
@@ -581,11 +599,21 @@ export default {
           }
         }
         if (!payment) return json({ ok: false, error: "Payment not found" }, 404);
+        // Backfill customer_email from Stripe session if missing on payment (e.g. webhook ran before session had details)
+        const sessionEmail = session.customer_details?.email?.trim();
+        if (sessionEmail && (!payment.customer_email || !payment.customer_email.trim())) {
+          try {
+            await env.DB.prepare("UPDATE payments SET customer_email = ?, updated_at = datetime('now') WHERE id = ?")
+              .bind(sessionEmail, payment.id).run();
+            payment = { ...payment, customer_email: sessionEmail };
+          } catch (_) {}
+        }
         // Always send welcome email inline when user hits success page (so it doesn't depend on queue)
         const welcomeSent = await env.DB.prepare(
           "SELECT id FROM email_logs WHERE payment_id = ? AND email_type = 'welcome' AND status = 'sent' LIMIT 1"
         ).bind(payment.id).first();
-        if (!welcomeSent && payment.customer_email?.trim() && payment.payment_status === "completed" && env.RESEND_API_KEY) {
+        const recipientEmail = (payment.customer_email || "").trim();
+        if (!welcomeSent && recipientEmail && payment.payment_status === "completed" && env.RESEND_API_KEY) {
           try {
             await handleSendWelcomeEmail(env, { payment_id: payment.id });
           } catch (_) {}
