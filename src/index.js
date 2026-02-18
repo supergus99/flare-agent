@@ -849,7 +849,7 @@ export default {
       try {
         const limit = Math.min(100, parseInt(url.searchParams.get("limit") || "50", 10));
         const rows = await env.DB.prepare(
-          "SELECT id, name, email, company, service, payment_id, submitted_at, status FROM contact_submissions ORDER BY id DESC LIMIT ?"
+          "SELECT id, name, email, company, service, payment_id, submitted_at, status FROM contact_submissions WHERE payment_id IS NOT NULL ORDER BY id DESC LIMIT ?"
         ).bind(limit).all();
         return json({ ok: true, data: rows.results });
       } catch (e) {
@@ -890,7 +890,7 @@ export default {
       if (!admin) return json({ error: "Unauthorized" }, 401);
       try {
         const [submissions, payments, reports, pending] = await Promise.all([
-          env.DB.prepare("SELECT COUNT(*) as n FROM contact_submissions").first(),
+          env.DB.prepare("SELECT COUNT(*) as n FROM contact_submissions WHERE payment_id IS NOT NULL").first(),
           env.DB.prepare("SELECT COUNT(*) as n FROM payments").first(),
           env.DB.prepare("SELECT COUNT(*) as n FROM reports").first(),
           env.DB.prepare("SELECT COUNT(*) as n FROM reports WHERE status = 'pending_review'").first(),
