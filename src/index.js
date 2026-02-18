@@ -498,6 +498,10 @@ export default {
               try {
                 await env.JOBS.send({ type: "send_welcome_email", payment_id: result.row.id });
               } catch (_) {}
+            } else if (env.RESEND_API_KEY) {
+              try {
+                await handleSendWelcomeEmail(env, { payment_id: result.row.id });
+              } catch (_) {}
             }
           }
         } else if (eventType === "payment_intent.payment_failed") {
@@ -558,10 +562,25 @@ export default {
               try {
                 await env.JOBS.send({ type: "send_welcome_email", payment_id: payment.id });
               } catch (_) {}
+            } else if (env.RESEND_API_KEY) {
+              try {
+                await handleSendWelcomeEmail(env, { payment_id: payment.id });
+              } catch (_) {}
             }
           }
         }
         if (!payment) return json({ ok: false, error: "Payment not found" }, 404);
+        // Ensure welcome email is sent (e.g. if webhook missed or queue was not configured)
+        const welcomeSent = await env.DB.prepare(
+          "SELECT id FROM email_logs WHERE payment_id = ? AND email_type = 'welcome' AND status = 'sent' LIMIT 1"
+        ).bind(payment.id).first();
+        if (!welcomeSent && payment.customer_email?.trim() && payment.payment_status === "completed" && env.RESEND_API_KEY) {
+          if (env.JOBS) {
+            try { await env.JOBS.send({ type: "send_welcome_email", payment_id: payment.id }); } catch (_) {}
+          } else {
+            try { await handleSendWelcomeEmail(env, { payment_id: payment.id }); } catch (_) {}
+          }
+        }
         let base = (env.SUCCESS_BASE_URL || request.headers.get("Origin") || url.origin).replace(/\/$/, "");
         if (base.includes("workers.dev")) base = (env.SUCCESS_BASE_URL || "https://getflare.net").replace(/\/$/, "");
         const metaLocale = (session.metadata?.flare_locale || "").toLowerCase();

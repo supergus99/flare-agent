@@ -147,7 +147,7 @@ GitHub Actions will run and deploy **flare-worker** to Cloudflare. Check the **A
    - Sign up at [resend.com](https://resend.com), create an API key.
    - Worker secret: `RESEND_API_KEY` = your Resend API key (e.g. `re_...`).
    - Optional: `FROM_EMAIL`, `FROM_NAME` or set `from_email` / `from_name` in D1 `automation_settings` (migration 002 inserts defaults).
-   - After payment (Stripe webhook), the Worker enqueues **send_welcome_email**; the queue consumer sends a welcome email with the assessment link via Resend and logs to `email_logs`.
+   - After payment (Stripe webhook or when the user lands on `/api/success`), the Worker enqueues **send_welcome_email** (or sends the welcome email directly if the queue is not configured). The email is sent via Resend and logged to `email_logs`. Ensure **RESEND_API_KEY** is set; the queue (flare-jobs) is optional—without it, the welcome email is sent inline from the webhook or success handler.
    - When you **approve** a report in Admin, the Worker enqueues **send_approved_report**; the consumer sends an email with the report view link and sets the report status to `sent`.
 
 3. **Admin auth:**
