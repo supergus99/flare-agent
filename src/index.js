@@ -1661,7 +1661,7 @@ function getDefaultReportTemplateBodyFlare() {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Security & Operations Risk Assessment Report – Flare</title>
+  <title>Flare Compass – Security Report</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1678,6 +1678,12 @@ function getDefaultReportTemplateBodyFlare() {
     .report-header { background: linear-gradient(135deg, #0e7490 0%, #0891b2 50%, #22d3ee 100%); color: #fff; padding: 28px 24px; border-radius: 14px; margin-bottom: 18px; }
     .report-header h1 { margin: 0 0 8px; font-size: 26px; font-weight: 700; }
     .report-header .subtitle { margin: 0; color: rgba(255,255,255,0.9); font-size: 14px; }
+    .report-hero { text-align: center; padding: 2.5rem 1.5rem 2rem; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
+    .report-hero .report-hero-logo { font-weight: 700; font-size: 1.5rem; letter-spacing: -0.02em; margin-bottom: 1rem; }
+    .report-hero .report-hero-logo .w { background: linear-gradient(135deg, #f59e0b, #22d3ee); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .report-hero .report-hero-logo .d { color: #22c55e; }
+    .report-hero h1 { font-size: 1.75rem; margin: 0 0 0.5rem; font-weight: 700; color: var(--text); }
+    .report-hero .report-hero-tagline { margin: 0; font-size: 1rem; color: var(--muted); line-height: 1.5; }
     h2 { font-size: 20px; margin: 0 0 12px; color: var(--text); }
     h3 { font-size: 16px; margin: 18px 0 8px; color: var(--accent); }
     p { margin: 8px 0; }
@@ -1713,15 +1719,19 @@ function getDefaultReportTemplateBodyFlare() {
 </head>
 <body>
   <div class="report">
+    <section class="report-hero">
+      <div class="report-hero-logo"><span class="w">Flare</span><span class="d">.</span></div>
+      <h1>Flare Compass</h1>
+      <p class="report-hero-tagline">Your risks in order, with clear steps to fix them yourself.</p>
+    </section>
     <header class="report-header" style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px;">
       <div>
         <h1>Security & Operations Risk Assessment Report</h1>
-        <p class="subtitle">Generated from assessment data · Flare · getflare.net</p>
+        <p class="subtitle">Prepared for {{name}} · {{company}} · {{report_date}} · Flare · getflare.net</p>
       </div>
       <button type="button" id="theme-toggle" aria-label="Toggle dark/light mode" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); color: #fff; padding: 0.4rem 0.75rem; border-radius: 8px; cursor: pointer; font-size: 0.875rem; font-family: inherit; white-space: nowrap;">Dark</button>
     </header>
     <section class="card cover-page">
-      <h1>Security & Operations Risk Assessment Report</h1>
       <p class="meta"><strong>{{company}}</strong></p>
       <p class="meta">Prepared for {{name}}, {{role}}</p>
       <p class="meta">Date generated: {{meta.report_date}}</p>
@@ -2050,7 +2060,8 @@ function getDefaultReportTemplateBodyFlare() {
 function getDefaultReportTemplateBodyFlarePT() {
   const en = getDefaultReportTemplateBodyFlare();
   return en
-    .replace(/<title>Security & Operations Risk Assessment Report – Flare<\/title>/, "<title>Relatório de Avaliação de Riscos – Flare</title>")
+    .replace(/<title>Flare Compass – Security Report<\/title>/, "<title>Flare Compass – Relatório de Segurança</title>")
+    .replace(/Your risks in order, with clear steps to fix them yourself\./, "Os seus riscos por ordem, com passos claros para os resolver você mesmo.")
     .replace(/<html lang="en">/, "<html lang=\"pt-PT\">")
     .replace(/Security & Operations Risk Assessment Report/g, "Relatório de Avaliação de Riscos de Segurança e Operações")
     .replace(/Generated from assessment data/g, "Gerado a partir do questionário")

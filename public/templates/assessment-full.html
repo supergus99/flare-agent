@@ -7,7 +7,7 @@
     <!-- Security Meta Tags (Note: X-Frame-Options, X-Content-Type-Options, X-XSS-Protection should be set via HTTP headers, not meta tags) -->
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
     
-    <title>Security Assessment – Flare</title>
+    <title>Flare Check – Flare</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -68,6 +68,12 @@
     .assessment-link-error-panel p { margin: 0.5rem 0; color: var(--text); }
     .assessment-link-error-actions { margin-top: 1rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }
     .server-error-panel .server-error-detail { margin: 0.75rem 0; padding: 1rem; background: var(--bg); color: var(--text); border-radius: 8px; font-size: 0.85rem; white-space: pre-wrap; word-break: break-all; max-height: 280px; overflow-y: auto; }
+    .assessment-hero { text-align: center; padding: 2rem 1.5rem 1.5rem; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
+    .assessment-hero .assessment-hero-logo { font-weight: 700; font-size: 1.5rem; letter-spacing: -0.02em; margin-bottom: 1rem; }
+    .assessment-hero .assessment-hero-logo .w { background: linear-gradient(135deg, var(--flare-orange), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .assessment-hero .assessment-hero-logo .d { color: var(--logo-dot); }
+    .assessment-hero h1 { font-size: 1.5rem; margin: 0 0 0.5rem; font-weight: 700; color: var(--text); }
+    .assessment-hero .assessment-hero-tagline { margin: 0; font-size: 0.95rem; color: var(--text-muted); line-height: 1.5; }
   </style>
 </head>
 <body>
@@ -92,6 +98,11 @@
     </div>
 
     <div id="assessment-form-wrap" class="assessment-container">
+        <section class="assessment-hero">
+          <div class="assessment-hero-logo"><span class="w">Flare</span><span class="d">.</span></div>
+          <h1>Flare Check</h1>
+          <p class="assessment-hero-tagline">A short set of questions about your setup. The first step to your Compass.</p>
+        </section>
         <div class="progress-bar">
             <div class="progress-steps" id="progressSteps">
                 <div class="progress-step active" data-step="1">Company</div>
