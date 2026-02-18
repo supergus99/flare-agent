@@ -378,6 +378,23 @@ export default {
             throw insertErr;
           }
         }
+        const notifyTo = await getContactNotifyEmail(env);
+        if (notifyTo && env.RESEND_API_KEY) {
+          const fromName = await getFromName(env);
+          const fromEmail = await getFromEmail(env);
+          const from = fromEmail.includes("<") ? fromEmail : `${fromName} <${fromEmail}>`;
+          const subject = "Flare – New contact form submission";
+          const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="font-family:system-ui,sans-serif;padding:1rem;max-width:32rem;">
+<p><strong>New message from the website contact form.</strong></p>
+<p><strong>From:</strong> ${escapeHtml(name || "—")}<br><strong>Email:</strong> <a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a></p>
+<p><strong>Message:</strong></p>
+<p style="white-space:pre-wrap;background:#f4f4f5;padding:0.75rem;border-radius:6px;">${escapeHtml(message || "(no message)")}</p>
+<p style="color:#71717a;font-size:0.9rem;">Reply to this email to respond directly to the sender.</p>
+</body></html>`;
+          try {
+            await sendResend(env.RESEND_API_KEY, { from, to: notifyTo, subject, html, reply_to: email });
+          } catch (_) {}
+        }
         return json({ ok: true, message: "Submission saved" });
       } catch (e) {
         return json({ ok: false, error: e.message }, 500);
@@ -907,6 +924,40 @@ export default {
       }
     }
 
+    if (url.pathname === "/api/admin/contact-notify-status" && request.method === "GET" && env.DB) {
+      const admin = await requireAdmin(request, env);
+      if (!admin) return json({ error: "Unauthorized" }, 401);
+      try {
+        const email = await getContactNotifyEmail(env);
+        if (!email) return json({ ok: true, configured: false });
+        const at = email.indexOf("@");
+        const redacted = at > 0 ? (email[0] + "***" + email.slice(at)) : "***";
+        return json({ ok: true, configured: true, email: redacted });
+      } catch (e) {
+        return json({ error: e.message }, 500);
+      }
+    }
+
+    if (url.pathname === "/api/admin/test-contact-email" && request.method === "POST" && env.DB) {
+      const admin = await requireAdmin(request, env);
+      if (!admin) return json({ error: "Unauthorized" }, 401);
+      if (!env.RESEND_API_KEY) return json({ ok: false, error: "RESEND_API_KEY is not set" }, 503);
+      const notifyTo = await getContactNotifyEmail(env);
+      if (!notifyTo) return json({ ok: false, error: "CONTACT_NOTIFY_EMAIL is not set. Add it as a Worker secret (e.g. mail@strsecure.com)." }, 503);
+      try {
+        const fromName = await getFromName(env);
+        const fromEmail = await getFromEmail(env);
+        const from = fromEmail.includes("<") ? fromEmail : `${fromName} <${fromEmail}>`;
+        const subject = "Flare – contact notifications test";
+        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="font-family:system-ui,sans-serif;padding:1rem;"><p>Contact form notifications are configured. You will receive an email here when someone submits the website Contact form.</p><p><strong>Flare</strong></p></body></html>`;
+        const result = await sendResend(env.RESEND_API_KEY, { from, to: notifyTo, subject, html });
+        if (result.error) return json({ ok: false, error: result.error }, 502);
+        return json({ ok: true, id: result.id });
+      } catch (e) {
+        return json({ ok: false, error: e.message }, 500);
+      }
+    }
+
     if (url.pathname === "/api/admin/test-email" && request.method === "POST" && env.DB) {
       const admin = await requireAdmin(request, env);
       if (!admin) return json({ error: "Unauthorized" }, 401);
@@ -1300,6 +1351,20 @@ async function getFromName(env) {
   } catch (_) {
     return "Flare";
   }
+}
+
+/** Email address to receive contact form notifications (env.CONTACT_NOTIFY_EMAIL or D1 automation_settings contact_notify_email). */
+async function getContactNotifyEmail(env) {
+  if (env.CONTACT_NOTIFY_EMAIL) {
+    const v = String(env.CONTACT_NOTIFY_EMAIL).trim();
+    if (v && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return v;
+  }
+  try {
+    const row = await env.DB.prepare("SELECT setting_value FROM automation_settings WHERE setting_key = 'contact_notify_email' LIMIT 1").first();
+    const v = row?.setting_value?.trim();
+    if (v && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return v;
+  } catch (_) {}
+  return null;
 }
 
 async function handleSendWelcomeEmail(env, body) {

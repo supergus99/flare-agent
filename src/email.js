@@ -13,6 +13,7 @@ export async function sendResend(apiKey, opts) {
     subject: opts.subject,
     html: opts.html,
   };
+  if (opts.reply_to) body.reply_to = opts.reply_to;
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {

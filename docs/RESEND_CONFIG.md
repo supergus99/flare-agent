@@ -24,6 +24,11 @@ If the key is missing, the code never calls Resend (it returns early). The Admin
 4. If you see **"Sent"** but no email arrives → check Resend dashboard (logs, domain, from address).
 5. If you see an error message (e.g. from Resend API) → fix that (e.g. verify domain, fix from address).
 
+**Contact form:** To receive each website Contact form submission at a specific address (e.g. **mail@strsecure.com**), set **CONTACT_NOTIFY_EMAIL** to that address:
+- **Production:** Cloudflare Dashboard → flare-worker → Settings → Variables and Secrets → **Encrypted** → Add `CONTACT_NOTIFY_EMAIL` = `mail@strsecure.com` (or CLI: `npx wrangler secret put CONTACT_NOTIFY_EMAIL`).
+- **Local:** In `.dev.vars` add `CONTACT_NOTIFY_EMAIL=mail@strsecure.com`.
+Then redeploy. In Admin → Settings → Email you’ll see “Configured: m***@strsecure.com” and can use **Send test to contact address** to verify. Each real submission is emailed there with Reply-To the sender. The **from** address (e.g. Flare &lt;noreply@getflare.net&gt;) must use a domain verified in Resend, or Resend may reject the send.
+
 ## 3. “From” address and domain
 
 - Default “from” is **Flare &lt;noreply@getflare.net&gt;** (from code or `automation_settings`).
@@ -33,12 +38,12 @@ If the key is missing, the code never calls Resend (it returns early). The Admin
 
 To override: set Worker secret **FROM_EMAIL** (e.g. `Flare <noreply@yourdomain.com>`) or set `from_email` in D1 table `automation_settings`.
 
-## 4. When the welcome email is sent
+## 5. When the welcome email is sent
 
 - After Stripe **checkout.session.completed** (webhook), or when the user lands on **/api/success**.
 - If the **queue** (`flare-jobs`) is configured, the email is sent by the queue consumer; otherwise it’s sent inline. In both cases **RESEND_API_KEY** must be set.
 
-## 5. Check logs
+## 6. Check logs
 
 - **Resend dashboard:** [resend.com/emails](https://resend.com/emails) – see sent/failed and error messages.
 - **App:** Table **email_logs** (e.g. via Admin or D1) – `email_type = 'welcome'`, `status = 'sent'` or `'failed'`, `error_message` if failed.

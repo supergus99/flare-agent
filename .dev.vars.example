@@ -13,5 +13,8 @@ STRIPE_PUBLISHABLE_KEY=pk_test_...
 # Resend (required for welcome + report emails). Get API key at https://resend.com
 RESEND_API_KEY=re_...
 
+# Optional: Email where contact form submissions are sent (website Contact page). If set, each submission is emailed here with reply-to the sender.
+# CONTACT_NOTIFY_EMAIL=you@yourdomain.com
+
 # Optional: From address for automated emails (welcome, report ready). Default in DB: Flare <noreply@getflare.net>
 # FROM_EMAIL=Flare <noreply@getflare.net>
