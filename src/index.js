@@ -571,6 +571,33 @@ export default {
               }
             }
           }
+        } else if (eventType === "payment_intent.succeeded") {
+          const pi = event.data?.object;
+          if (pi?.id && env.DB && env.RESEND_API_KEY) {
+            const payment = await env.DB.prepare("SELECT * FROM payments WHERE transaction_id = ? LIMIT 1").bind(String(pi.id)).first();
+            if (payment?.id) {
+              const recipient = (payment.customer_email || "").toString().trim();
+              const welcomeSent = await env.DB.prepare("SELECT id FROM email_logs WHERE payment_id = ? AND email_type = 'welcome' AND status = 'sent' LIMIT 1").bind(payment.id).first();
+              if (!welcomeSent && recipient) {
+                const sendResult = await handleSendWelcomeEmail(env, { payment_id: payment.id, recipient_email: recipient });
+                if (!sendResult.sent && sendResult.error) checkoutEmailError = sendResult.error;
+              }
+              const hasLog = await env.DB.prepare("SELECT id FROM email_logs WHERE payment_id = ? AND email_type = 'welcome' LIMIT 1").bind(payment.id).first();
+              if (!hasLog) {
+                const reason = checkoutEmailError || (recipient ? "unknown" : "no customer_email on payment");
+                try {
+                  await env.DB.prepare(
+                    "INSERT INTO email_logs (payment_id, email_type, recipient_email, subject, status, error_message) VALUES (?, 'welcome', ?, ?, 'failed', ?)"
+                  ).bind(payment.id, recipient || "(no email)", "Welcome (webhook)", reason).run();
+                } catch (e) {
+                  try {
+                    await env.DB.prepare("UPDATE stripe_webhook_events SET last_error = ? WHERE event_id = ?")
+                      .bind(("email_logs insert failed: " + (e && e.message || String(e))).slice(0, 500), eventId).run();
+                  } catch (_) {}
+                }
+              }
+            }
+          }
         } else if (eventType === "payment_intent.payment_failed") {
           const pi = event.data?.object;
           if (pi?.id && env.DB) {

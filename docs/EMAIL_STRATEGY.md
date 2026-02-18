@@ -62,6 +62,14 @@ npx wrangler d1 execute flare-db --remote --file=./migrations/012_stripe_webhook
 
 If the webhook URL or secret is wrong, Stripe never calls your Worker (or verification fails), and no welcome email is sent. The success page does not send the email.
 
+## No rows in email_logs?
+
+The Worker writes to **email_logs** when it processes **checkout.session.completed** or **payment_intent.succeeded**. If you see events in **stripe_webhook_events** but nothing in **email_logs**:
+
+1. **Check event_type** in **stripe_webhook_events**: open the row for the payment and look at **event_type**. The Worker only runs the welcome-email logic for **checkout.session.completed** and **payment_intent.succeeded**. If you only have other types (e.g. **invoice.paid**), add **checkout.session.completed** (and optionally **payment_intent.succeeded**) in [Stripe Dashboard → Webhooks](https://dashboard.stripe.com/webhooks) → your endpoint → Events to send.
+2. **Redeploy** the Worker so the latest code (including **payment_intent.succeeded** handling and the fallback insert into email_logs) is live.
+3. Run another test payment and check **email_logs** again; you should see at least one row per payment (status **sent** or **failed** with **error_message**).
+
 ## No events in stripe_webhook_events?
 
 If payments appear in Admin but **stripe_webhook_events** is empty, Stripe is **not** calling your Worker. Those payments were created when the customer hit the success page (`/api/success`); the webhook never ran, so no welcome email was sent from the webhook.
