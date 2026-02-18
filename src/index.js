@@ -469,17 +469,6 @@ export default {
         const eventId = event.id;
         const eventType = event.type;
         let checkoutEmailError = null;
-        let debugLogError = null;
-
-        if (env.DB && (eventType === "checkout.session.completed" || eventType === "payment_intent.succeeded")) {
-          try {
-            await env.DB.prepare(
-              "INSERT INTO email_logs (payment_id, email_type, recipient_email, subject, status, error_message) VALUES (NULL, 'webhook_received', ?, ?, 'failed', ?)"
-            ).bind(eventType, "Webhook " + eventType, eventId).run();
-          } catch (e) {
-            debugLogError = (e && e.message || String(e)).slice(0, 200);
-          }
-        }
 
         if (env.DB && eventId) {
           const ob = event.data?.object;
@@ -624,11 +613,10 @@ export default {
 
         if (env.DB && eventId) {
           try {
-            const lastErr = (debugLogError || checkoutEmailError || "").slice(0, 500) || null;
             await env.DB.prepare(
               "UPDATE stripe_webhook_events SET status = 'processed', processed_at = datetime('now'), last_error = ? WHERE event_id = ?"
             )
-              .bind(lastErr, eventId)
+              .bind(checkoutEmailError ? String(checkoutEmailError).slice(0, 500) : null, eventId)
               .run();
           } catch (_) {}
         }
