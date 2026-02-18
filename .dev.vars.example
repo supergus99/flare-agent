@@ -10,5 +10,8 @@ STRIPE_PUBLISHABLE_KEY=pk_test_...
 # CHECKOUT_DISPLAY_NAME=Flare
 # CHECKOUT_LOGO_URL=https://getflare.net/path/to/logo.png
 
+# Resend (required for welcome + report emails). Get API key at https://resend.com
+RESEND_API_KEY=re_...
+
 # Optional: From address for automated emails (welcome, report ready). Default in DB: Flare <noreply@getflare.net>
 # FROM_EMAIL=Flare <noreply@getflare.net>
