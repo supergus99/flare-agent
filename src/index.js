@@ -544,6 +544,8 @@ export default {
                   if (!sendResult.sent && sendResult.error) emailError = sendResult.error;
                 } else if (!recipient) {
                   emailError = "no customer email (Stripe session or payment)";
+                } else if (pay?.payment_status !== "completed") {
+                  emailError = "payment status not completed";
                 }
               }
             } else {
@@ -551,6 +553,13 @@ export default {
             }
           }
           checkoutEmailError = emailError || null;
+          if (payment?.id && checkoutEmailError && env.DB) {
+            try {
+              await env.DB.prepare(
+                "INSERT INTO email_logs (payment_id, email_type, recipient_email, subject, status, error_message) VALUES (?, 'welcome', ?, ?, 'failed', ?)"
+              ).bind(payment.id, (payment.customer_email || sessionEmail || "").trim() || "(no email)", "Welcome (webhook)", checkoutEmailError).run();
+            } catch (_) {}
+          }
         } else if (eventType === "payment_intent.payment_failed") {
           const pi = event.data?.object;
           if (pi?.id && env.DB) {
