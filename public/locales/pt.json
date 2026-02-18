@@ -114,6 +114,7 @@
     "name_label": "Nome (opcional)",
     "name_placeholder": "O seu nome",
     "email_label": "Email (opcional – o Stripe recolhe se estiver vazio)",
+    "email_label_required": "Email",
     "email_placeholder": "voce@exemplo.com",
     "company_label": "Empresa (opcional)",
     "company_placeholder": "Nome da empresa",

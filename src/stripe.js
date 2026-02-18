@@ -75,6 +75,7 @@ export async function createCheckoutSession(stripeSecretKey, opts) {
   if (leadId != null) {
     body.client_reference_id = `lead_${leadId}`;
     body["metadata[lead_id]"] = String(leadId);
+    body["payment_intent_data[metadata][lead_id]"] = String(leadId);
   }
   if (customerEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
     body.customer_email = customerEmail;

@@ -1,6 +1,6 @@
 # Resend configuration checklist
 
-**Email strategy:** The system uses **Resend only** (no other email service). The welcome email is sent **only when Stripe sends the `payment_intent.succeeded` webhook** – no other event triggers it. See **[EMAIL_STRATEGY.md](EMAIL_STRATEGY.md)** for the full flow and requirements.
+**Email strategy:** The system uses **Resend only** (no other email service). The welcome email is sent **when Stripe sends `checkout.session.completed`**. If `payment_intent.succeeded` arrives first, the Worker stores the customer email in the **leads** table; when `checkout.session.completed` runs, it fills the payment from the session or from that lead, then sends the welcome email. See **[EMAIL_STRATEGY.md](EMAIL_STRATEGY.md)** for the full flow and requirements.
 
 Use this page to verify Resend and webhook setup.
 
@@ -42,8 +42,8 @@ To override: set Worker secret **FROM_EMAIL** (e.g. `Flare <noreply@yourdomain.c
 
 ## 5. When the welcome email is sent (no “exposed” API needed)
 
-- **Stripe sends a webhook** to your Worker when the payment succeeds (`payment_intent.succeeded`). The Worker **sends the welcome email only when it receives this event** (server-to-server). The customer does not need to hit any URL for the email to be sent.
-- **You must configure the webhook in Stripe:** [Stripe Dashboard → Webhooks](https://dashboard.stripe.com/webhooks) → Add endpoint → URL: **`https://<your-worker-url>/api/webhooks/stripe`** (e.g. `https://flare-worker.xxx.workers.dev/api/webhooks/stripe`). Select event **`payment_intent.succeeded`** (and keep **`checkout.session.completed`** so the payment row is created/updated with customer email before the welcome email is sent). Copy the signing secret and set the Worker secret **STRIPE_WEBHOOK_SECRET** to that value.
+- **Stripe sends a webhook** to your Worker when checkout completes (`checkout.session.completed`). The Worker creates/updates the payment (filling email from the session or from the **leads** table when `payment_intent.succeeded` had arrived first), then **sends the welcome email** in that same request. The customer does not need to hit any URL for the email to be sent.
+- **You must configure the webhook in Stripe:** [Stripe Dashboard → Webhooks](https://dashboard.stripe.com/webhooks) → Add endpoint → URL: **`https://<your-worker-url>/api/webhooks/stripe`** (e.g. `https://flare-worker.xxx.workers.dev/api/webhooks/stripe`). Select **`checkout.session.completed`** (required for the welcome email) and **`payment_intent.succeeded`** (so the Worker can store the email in **leads** when it arrives first). Copy the signing secret and set the Worker secret **STRIPE_WEBHOOK_SECRET** to that value.
 - If the webhook is not configured or the URL is wrong, Stripe never calls your Worker and the welcome email is never sent. The success page redirect is only for showing the user a “Thank you” page; it does not trigger the email.
 - If the welcome email still doesn’t arrive, check **email_logs** in D1 for that payment: `email_type = 'welcome'`, `status = 'failed'` and **error_message** (e.g. Resend “from domain not verified”).
 

@@ -422,6 +422,11 @@ export default {
         if (!ALLOWED_SERVICES.includes(serviceType)) {
           return json({ ok: false, error: "Invalid service_type. Use core, protect, or assure." }, 400);
         }
+        const customerEmail = (body.customer_email ?? "").toString().trim();
+        if (!customerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+          return json({ ok: false, error: "Valid customer_email is required." }, 400);
+        }
+        const customerName = (body.customer_name ?? "").toString().trim() || undefined;
         const currency = (body.currency ?? "eur").toString().toLowerCase();
         const allowedCurrencies = ["eur", "usd"];
         const cur = allowedCurrencies.includes(currency) ? currency : "eur";
@@ -433,14 +438,24 @@ export default {
         const flareLocale = ["en", "pt", "pt-pt", "es", "fr", "de"].includes(locale)
           ? (locale.startsWith("pt") ? "pt" : locale === "pt-pt" ? "pt" : locale)
           : "en";
+        let leadId = null;
+        if (env.DB) {
+          try {
+            const leadResult = await env.DB.prepare(
+              "INSERT INTO leads (name, email, service) VALUES (?, ?, ?)"
+            ).bind(customerName || "Customer", customerEmail, serviceType).run();
+            leadId = leadResult.meta?.last_row_id ?? null;
+          } catch (_) {}
+        }
         const session = await createCheckoutSession(stripeKey, {
           successUrl,
           cancelUrl,
           serviceType,
           currency: cur,
-          customerEmail: body.customer_email?.trim() || undefined,
-          customerName: body.customer_name?.trim() || undefined,
+          customerEmail,
+          customerName,
           customerCompany: body.customer_company?.trim() || undefined,
+          leadId,
           locale: flareLocale,
           brandingDisplayName: env.CHECKOUT_DISPLAY_NAME?.trim() || undefined,
           brandingLogoUrl: env.CHECKOUT_LOGO_URL?.trim() || undefined,
@@ -455,7 +470,7 @@ export default {
     if (isStripeWebhook) {
       if (request.method === "GET") {
         return new Response(
-          "Stripe webhook endpoint. Stripe must POST events here (e.g. payment_intent.succeeded for welcome email). If you have payments in Admin but no rows in stripe_webhook_events, Stripe is not calling this URL – check Stripe Dashboard → Webhooks → endpoint URL.",
+          "Stripe webhook endpoint. Stripe must POST events here (checkout.session.completed triggers welcome email; payment_intent.succeeded stores email in leads when first). If you have payments in Admin but no rows in stripe_webhook_events, Stripe is not calling this URL – check Stripe Dashboard → Webhooks → endpoint URL.",
           { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } }
         );
       }
@@ -503,8 +518,9 @@ export default {
           if (!paymentIntentId || !env.STRIPE_SECRET_KEY || !env.DB) {
             return json({ received: true });
           }
+          const piIdStr = typeof paymentIntentId === "string" ? paymentIntentId : paymentIntentId.id;
           const stripeKey = env.STRIPE_SECRET_KEY;
-          const intent = await retrievePaymentIntent(stripeKey, typeof paymentIntentId === "string" ? paymentIntentId : paymentIntentId.id);
+          const intent = await retrievePaymentIntent(stripeKey, piIdStr);
           const sessionEmail = (session?.customer_details?.email || session?.customer_email || "").toString().trim();
           const sessionName = (session?.customer_details?.name || "").toString().trim();
           const result = await upsertPaymentFromIntent(env.DB, intent, {
@@ -539,33 +555,27 @@ export default {
                   .bind(sessionName, payment.id).run();
               }
             } catch (_) {}
-            // Welcome email is sent only on payment_intent.succeeded (not here).
-          }
-        } else if (eventType === "payment_intent.succeeded") {
-          const pi = event.data?.object;
-          if (pi?.id && env.DB) {
-            let payment = await env.DB.prepare("SELECT * FROM payments WHERE transaction_id = ? LIMIT 1").bind(String(pi.id)).first();
-            const recipientFromPayment = (payment?.customer_email || "").toString().trim();
-            // If payment missing or has no email, create/backfill from Stripe (payment_intent.succeeded can arrive before checkout.session.completed)
-            if ((!payment || !recipientFromPayment) && env.STRIPE_SECRET_KEY) {
-              let intent = pi;
-              try {
-                intent = await retrievePaymentIntent(env.STRIPE_SECRET_KEY, pi.id);
-              } catch (_) {}
-              const emailFromIntent = (intent?.metadata?.customer_email || intent?.receipt_email || "").toString().trim();
-              if (emailFromIntent) {
-                if (!payment) {
-                  const result = await upsertPaymentFromIntent(env.DB, intent, { email: emailFromIntent, name: (intent?.metadata?.customer_name || "").toString().trim() || undefined });
-                  payment = result?.row ?? null;
-                } else {
-                  await env.DB.prepare("UPDATE payments SET customer_email = ?, updated_at = datetime('now') WHERE id = ? AND (customer_email IS NULL OR TRIM(customer_email) = '')")
-                    .bind(emailFromIntent, payment.id).run();
-                  payment = await env.DB.prepare("SELECT * FROM payments WHERE id = ?").bind(payment.id).first();
-                }
+            // If payment still has no email, fill from lead stored by payment_intent.succeeded (which can arrive before this event)
+            let paymentAfterLead = await env.DB.prepare("SELECT * FROM payments WHERE id = ?").bind(payment.id).first();
+            const hasEmail = (paymentAfterLead?.customer_email || "").toString().trim();
+            if (!hasEmail && piIdStr) {
+              const leadByPi = await env.DB.prepare("SELECT id, email, name FROM leads WHERE stripe_payment_intent_id = ? LIMIT 1").bind(piIdStr).first();
+              if (leadByPi?.email) {
+                try {
+                  await env.DB.prepare("UPDATE payments SET customer_email = ?, customer_name = COALESCE(NULLIF(TRIM(customer_name), ''), ?), lead_id = ?, updated_at = datetime('now') WHERE id = ?")
+                    .bind(leadByPi.email, leadByPi.name || null, leadByPi.id, payment.id)
+                    .run();
+                  await env.DB.prepare("UPDATE leads SET payment_id = ?, converted_at = datetime('now'), updated_at = datetime('now') WHERE id = ?")
+                    .bind(payment.id, leadByPi.id)
+                    .run();
+                  paymentAfterLead = await env.DB.prepare("SELECT * FROM payments WHERE id = ?").bind(payment.id).first();
+                } catch (_) {}
               }
             }
-            const recipient = (payment?.customer_email || "").toString().trim();
+            payment = paymentAfterLead || payment;
+            // Send welcome email from checkout.session.completed (payment has email from session or from leads)
             if (payment?.id && env.RESEND_API_KEY) {
+              const recipient = (payment.customer_email || "").toString().trim();
               const welcomeSent = await env.DB.prepare("SELECT id FROM email_logs WHERE payment_id = ? AND email_type = 'welcome' AND status = 'sent' LIMIT 1").bind(payment.id).first();
               if (!welcomeSent && recipient) {
                 const sendResult = await handleSendWelcomeEmail(env, { payment_id: payment.id, recipient_email: recipient });
@@ -573,7 +583,7 @@ export default {
               }
               const hasLog = await env.DB.prepare("SELECT id FROM email_logs WHERE payment_id = ? AND email_type = 'welcome' LIMIT 1").bind(payment.id).first();
               if (!hasLog) {
-                const reason = checkoutEmailError || (recipient ? "unknown" : "no customer_email on payment (Stripe intent has no receipt_email/metadata.customer_email)");
+                const reason = checkoutEmailError || (recipient ? "unknown" : "no customer email (session or lead)");
                 try {
                   await env.DB.prepare(
                     "INSERT INTO email_logs (payment_id, email_type, recipient_email, subject, status, error_message) VALUES (?, 'welcome', ?, ?, 'failed', ?)"
@@ -587,6 +597,45 @@ export default {
               }
             } else if (payment?.id && !env.RESEND_API_KEY) {
               checkoutEmailError = "RESEND_API_KEY not set";
+            }
+            // When payment is confirmed, remove the lead so only unsuccessful (abandoned) entries remain in leads
+            const leadIdToRemove = payment?.lead_id ? parseInt(payment.lead_id, 10) : null;
+            if (leadIdToRemove && env.DB) {
+              try {
+                await env.DB.prepare("UPDATE payments SET lead_id = NULL WHERE id = ?").bind(payment.id).run();
+                await env.DB.prepare("DELETE FROM leads WHERE id = ?").bind(leadIdToRemove).run();
+              } catch (_) {}
+            }
+          }
+        } else if (eventType === "payment_intent.succeeded") {
+          // Store email in leads when payment_intent.succeeded arrives first; checkout.session.completed will fill payment and send the welcome email.
+          const pi = event.data?.object;
+          if (pi?.id && env.DB) {
+            let intent = pi;
+            if (env.STRIPE_SECRET_KEY) {
+              try {
+                intent = await retrievePaymentIntent(env.STRIPE_SECRET_KEY, pi.id);
+              } catch (_) {}
+            }
+            const email = (intent?.metadata?.customer_email || intent?.receipt_email || "").toString().trim();
+            if (email) {
+              const name = (intent?.metadata?.customer_name || "").toString().trim() || "Customer";
+              let service = (intent?.metadata?.service_type || "").toString().trim();
+              if (!service || !ALLOWED_SERVICES.includes(service)) service = "core";
+              const piId = String(pi.id);
+              try {
+                const existing = await env.DB.prepare("SELECT id FROM leads WHERE stripe_payment_intent_id = ? LIMIT 1").bind(piId).first();
+                if (existing) {
+                  await env.DB.prepare("UPDATE leads SET email = ?, name = ?, service = ?, updated_at = datetime('now') WHERE id = ?")
+                    .bind(email, name, service, existing.id).run();
+                } else {
+                  await env.DB.prepare(
+                    "INSERT INTO leads (name, email, service, stripe_payment_intent_id) VALUES (?, ?, ?, ?)"
+                  ).bind(name, email, service, piId).run();
+                }
+              } catch (e) {
+                checkoutEmailError = "leads insert/update failed: " + (e?.message || String(e));
+              }
             }
           }
         } else if (eventType === "payment_intent.payment_failed") {
