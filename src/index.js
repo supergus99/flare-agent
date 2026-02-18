@@ -470,6 +470,14 @@ export default {
         const eventType = event.type;
         let checkoutEmailError = null;
 
+        if (env.DB && (eventType === "checkout.session.completed" || eventType === "payment_intent.succeeded")) {
+          try {
+            await env.DB.prepare(
+              "INSERT INTO email_logs (payment_id, email_type, recipient_email, subject, status, error_message) VALUES (NULL, 'webhook_received', ?, ?, 'failed', ?)"
+            ).bind(eventType, "Stripe " + eventType, eventId).run();
+          } catch (_) {}
+        }
+
         if (env.DB && eventId) {
           const ob = event.data?.object;
           const paymentIntentId = ob?.payment_intent ?? (eventType === "payment_intent.succeeded" || eventType === "payment_intent.payment_failed" ? ob?.id : null);
