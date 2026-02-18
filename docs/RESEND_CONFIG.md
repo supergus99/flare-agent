@@ -1,6 +1,8 @@
 # Resend configuration checklist
 
-Use this to verify why welcome emails might not be sent or not appear in Resend.
+**Email strategy:** The system uses **Resend only** (no other email service). The welcome email is sent **only when Stripe calls your webhook** (`checkout.session.completed`). See **[EMAIL_STRATEGY.md](EMAIL_STRATEGY.md)** for the full flow and requirements.
+
+Use this page to verify Resend and webhook setup.
 
 ## 1. API key available to the Worker
 

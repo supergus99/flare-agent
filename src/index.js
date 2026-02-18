@@ -460,6 +460,7 @@ export default {
         const event = await verifyWebhook(rawBody, sigHeader, webhookSecret);
         const eventId = event.id;
         const eventType = event.type;
+        let checkoutEmailError = null;
 
         if (env.DB && eventId) {
           const ob = event.data?.object;
@@ -481,6 +482,7 @@ export default {
         }
 
         if (eventType === "checkout.session.completed") {
+          let emailError = null;
           const session = event.data?.object;
           const paymentIntentId = session?.payment_intent;
           if (!paymentIntentId || !env.STRIPE_SECRET_KEY || !env.DB) {
@@ -488,8 +490,8 @@ export default {
           }
           const stripeKey = env.STRIPE_SECRET_KEY;
           const intent = await retrievePaymentIntent(stripeKey, typeof paymentIntentId === "string" ? paymentIntentId : paymentIntentId.id);
-          const sessionEmail = session?.customer_details?.email?.trim();
-          const sessionName = session?.customer_details?.name?.trim();
+          const sessionEmail = (session?.customer_details?.email || "").trim();
+          const sessionName = (session?.customer_details?.name || "").trim();
           const result = await upsertPaymentFromIntent(env.DB, intent, {
             email: sessionEmail || undefined,
             name: sessionName || undefined,
@@ -500,17 +502,14 @@ export default {
           }
           if (payment?.id && env.DB) {
             const metaLocale = (session.metadata?.flare_locale || "").toString().trim().toLowerCase() || "en";
-            if (result?.isNew) {
-              const leadId = payment.lead_id ? parseInt(payment.lead_id, 10) : null;
-              if (leadId) {
-                try {
-                  await env.DB.prepare(
-                    "UPDATE leads SET converted_at = datetime('now'), payment_id = ?, updated_at = datetime('now') WHERE id = ?"
-                  )
-                    .bind(payment.id, leadId)
-                    .run();
-                } catch (_) {}
-              }
+            if (result?.isNew && payment.lead_id) {
+              try {
+                await env.DB.prepare(
+                  "UPDATE leads SET converted_at = datetime('now'), payment_id = ?, updated_at = datetime('now') WHERE id = ?"
+                )
+                  .bind(payment.id, parseInt(payment.lead_id, 10))
+                  .run();
+              } catch (_) {}
             }
             try {
               await env.DB.prepare("UPDATE payments SET customer_locale = ?, updated_at = datetime('now') WHERE id = ?")
@@ -531,14 +530,19 @@ export default {
               ).bind(payment.id).first();
               if (!welcomeSent) {
                 const pay = await env.DB.prepare("SELECT id, customer_email, payment_status FROM payments WHERE id = ?").bind(payment.id).first();
-                if (pay?.payment_status === "completed" && (pay.customer_email?.trim() || sessionEmail)) {
-                  try {
-                    await handleSendWelcomeEmail(env, { payment_id: payment.id });
-                  } catch (_) {}
+                const recipient = (pay?.customer_email || "").trim() || sessionEmail;
+                if (pay?.payment_status === "completed" && recipient) {
+                  const sendResult = await handleSendWelcomeEmail(env, { payment_id: payment.id });
+                  if (!sendResult.sent && sendResult.error) emailError = sendResult.error;
+                } else if (!recipient) {
+                  emailError = "no customer email (Stripe session or payment)";
                 }
               }
+            } else {
+              emailError = "RESEND_API_KEY not set";
             }
           }
+          checkoutEmailError = emailError || null;
         } else if (eventType === "payment_intent.payment_failed") {
           const pi = event.data?.object;
           if (pi?.id && env.DB) {
@@ -555,9 +559,9 @@ export default {
         if (env.DB && eventId) {
           try {
             await env.DB.prepare(
-              "UPDATE stripe_webhook_events SET status = 'processed', processed_at = datetime('now'), last_error = NULL WHERE event_id = ?"
+              "UPDATE stripe_webhook_events SET status = 'processed', processed_at = datetime('now'), last_error = ? WHERE event_id = ?"
             )
-              .bind(eventId)
+              .bind(checkoutEmailError ? String(checkoutEmailError).slice(0, 500) : null, eventId)
               .run();
           } catch (_) {}
         }
@@ -1395,19 +1399,23 @@ async function getContactNotifyEmail(env) {
   return null;
 }
 
+/**
+ * Send welcome email (assessment link + code) via Resend. Used only from Stripe webhook.
+ * @returns {{ sent: boolean, error?: string }}
+ */
 async function handleSendWelcomeEmail(env, body) {
   const paymentId = body.payment_id ? parseInt(body.payment_id, 10) : 0;
-  if (!paymentId || !env.RESEND_API_KEY) return;
+  if (!paymentId || !env.RESEND_API_KEY) return { sent: false, error: !env.RESEND_API_KEY ? "RESEND_API_KEY not set" : "no payment_id" };
   const payment = await env.DB.prepare(
     "SELECT id, customer_email, customer_name, access_hash, verification_code, service_type, payment_status, customer_locale FROM payments WHERE id = ?"
   ).bind(paymentId).first();
-  if (!payment || payment.payment_status !== "completed") return;
+  if (!payment || payment.payment_status !== "completed") return { sent: false, error: !payment ? "payment not found" : "payment not completed" };
   const to = payment.customer_email?.trim();
-  if (!to) return;
+  if (!to) return { sent: false, error: "no customer_email on payment" };
   const alreadySent = await env.DB.prepare(
     "SELECT id FROM email_logs WHERE payment_id = ? AND email_type = 'welcome' AND status = 'sent' LIMIT 1"
   ).bind(paymentId).first();
-  if (alreadySent) return;
+  if (alreadySent) return { sent: true };
   const base = (env.SUCCESS_BASE_URL || env.WORKER_PUBLIC_URL || "https://getflare.net").replace(/\/$/, "");
   const rawLocale = (payment.customer_locale || "en").toString().trim().toLowerCase();
   const locale = emailLocaleKey(rawLocale);
@@ -1432,6 +1440,7 @@ async function handleSendWelcomeEmail(env, body) {
       "INSERT INTO email_logs (payment_id, email_type, recipient_email, subject, status, sent_at, error_message) VALUES (?, 'welcome', ?, ?, ?, ?, ?)"
     ).bind(paymentId, to, subject, result.error ? "failed" : "sent", result.error ? null : now, result.error || null).run();
   } catch (_) {}
+  return result.error ? { sent: false, error: result.error } : { sent: true };
 }
 
 async function handleSendApprovedReport(env, body) {
