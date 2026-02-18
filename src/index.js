@@ -388,6 +388,13 @@ export default {
       return json({ ok: false, error: "POST only" }, 405);
     }
 
+    // ---------- Version (public, for admin footer) ----------
+    if (url.pathname === "/api/version" && request.method === "GET") {
+      const lastUpdated = (env.LAST_UPDATED || env.BUILD_DATE || "").toString().trim();
+      const git = (env.GIT_VERSION || env.GIT_SHA || "").toString().trim();
+      return json({ ok: true, lastUpdated, git });
+    }
+
     // ---------- Phase 1: Stripe checkout ----------
     if (url.pathname === "/api/checkout" && request.method === "POST") {
       const stripeKey = env.STRIPE_SECRET_KEY;

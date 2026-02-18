@@ -27,3 +27,9 @@ binding = "JOBS"
 queue = "flare-jobs"
 max_batch_size = 1
 max_batch_timeout = 30
+
+# Optional: set at deploy time for admin version block (GET /api/version)
+# e.g. in CI: GIT_VERSION=$(git rev-parse --short HEAD) and LAST_UPDATED with build date
+# [vars]
+# GIT_VERSION = "abc1234"
+# LAST_UPDATED = "14 Feb 2025, 15:30"
