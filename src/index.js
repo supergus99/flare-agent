@@ -507,6 +507,15 @@ export default {
         // email_logs is only for actual email attempts (welcome, etc.); webhook receipt is in stripe_webhook_events
 
         if (eventType === "checkout.session.completed") {
+          // Claim this event so Stripe retries don't run the send path again (only one request wins)
+          if (env.DB && eventId) {
+            const claimResult = await env.DB.prepare(
+              "UPDATE stripe_webhook_events SET status = 'processing' WHERE event_id = ? AND status = 'received'"
+            ).bind(eventId).run();
+            if (claimResult.meta?.changes === 0) {
+              return json({ received: true, idempotent: true });
+            }
+          }
           let payment = null;
           let session = null;
           let piIdStr = null;
@@ -573,6 +582,8 @@ export default {
                 await env.DB.prepare("UPDATE payments SET customer_locale = ?, updated_at = datetime('now') WHERE id = ?")
                   .bind(metaLocale.startsWith("pt") ? "pt" : metaLocale, payment.id)
                   .run();
+              } catch (_) {}
+              try {
                 if (sessionEmail) {
                   await env.DB.prepare("UPDATE payments SET customer_email = ?, updated_at = datetime('now') WHERE id = ? AND (customer_email IS NULL OR TRIM(customer_email) = '')")
                     .bind(sessionEmail, payment.id).run();
@@ -1578,7 +1589,7 @@ async function handleSendWelcomeEmail(env, body) {
     const paymentId = body.payment_id ? parseInt(body.payment_id, 10) : 0;
     if (!paymentId || !env.RESEND_API_KEY) return { sent: false, error: !env.RESEND_API_KEY ? "RESEND_API_KEY not set" : "no payment_id" };
   const payment = await env.DB.prepare(
-    "SELECT id, customer_email, customer_name, access_hash, verification_code, service_type, payment_status, customer_locale FROM payments WHERE id = ?"
+    "SELECT id, customer_email, customer_name, access_hash, verification_code, service_type, payment_status FROM payments WHERE id = ?"
   ).bind(paymentId).first();
   if (!payment || payment.payment_status !== "completed") return { sent: false, error: !payment ? "payment not found" : "payment not completed" };
   const to = (body.recipient_email || payment.customer_email || "").toString().trim();
@@ -1588,7 +1599,7 @@ async function handleSendWelcomeEmail(env, body) {
   ).bind(paymentId).first();
   if (alreadySent) return { sent: true };
   const base = (env.SUCCESS_BASE_URL || env.WORKER_PUBLIC_URL || "https://getflare.net").replace(/\/$/, "");
-  const rawLocale = (payment.customer_locale || "en").toString().trim().toLowerCase();
+  const rawLocale = (payment.customer_locale != null ? String(payment.customer_locale) : "en").trim().toLowerCase();
   const locale = emailLocaleKey(rawLocale);
   const assessmentPathByLocale = { en: "assessment.html", pt: "pt/assessment.html", es: "es/assessment.html", fr: "fr/assessment.html", de: "de/assessment.html" };
   const assessmentPath = assessmentPathByLocale[locale] || assessmentPathByLocale.en;
