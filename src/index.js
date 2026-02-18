@@ -504,13 +504,7 @@ export default {
           }
         }
 
-        if (env.DB && (eventType === "checkout.session.completed" || eventType === "payment_intent.succeeded")) {
-          try {
-            await env.DB.prepare(
-              "INSERT INTO email_logs (payment_id, email_type, recipient_email, subject, status, error_message) VALUES (NULL, 'webhook_received', ?, ?, 'failed', ?)"
-            ).bind(eventType, "Stripe " + eventType, eventId).run();
-          } catch (_) {}
-        }
+        // email_logs is only for actual email attempts (welcome, etc.); webhook receipt is in stripe_webhook_events
 
         if (eventType === "checkout.session.completed") {
           const session = event.data?.object;

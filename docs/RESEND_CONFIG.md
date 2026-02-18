@@ -52,11 +52,11 @@ To override: set Worker secret **FROM_EMAIL** (e.g. `Flare <noreply@yourdomain.c
 - **Resend dashboard:** [resend.com/emails](https://resend.com/emails) – see sent/failed and error messages.
 - **App:** Table **email_logs** (e.g. via Admin or D1) – `email_type = 'welcome'`, `status = 'sent'` or `'failed'`, `error_message` if failed.
 
-If there is no row in **email_logs** for that payment, the send path was never run (e.g. key missing or payment/email checks not met). If there is a row with `status = 'failed'`, use **error_message** and Resend logs to fix the cause.
+You should see **at most one** row per payment in **email_logs** (`email_type = 'welcome'`). If there is no row for that payment, the send path was never run (e.g. key missing or payment/email checks not met). If there is a row with `status = 'failed'`, **error_message** contains the reason from Resend (e.g. domain not verified, invalid API key)—use it and Resend logs to fix the cause.
 
 ## D1 shows activity but no email in Resend
 
-If you see **webhook_received** rows in **email_logs** (or events in **stripe_webhook_events**) but the welcome email does **not** appear in the Resend dashboard:
+**email_logs** only contains actual email attempts (one **welcome** row per payment, if the send path ran). Webhook receipt is logged in **stripe_webhook_events**, not in email_logs. If you see events in **stripe_webhook_events** but the welcome email does **not** appear in the Resend dashboard:
 
 1. **Find the payment** for your test (e.g. latest row in **payments** or match by **transaction_id** / **checkout_session_id** from **stripe_webhook_events**).
 2. **In email_logs**, look for a row with that **payment_id** and **email_type = 'welcome'**.

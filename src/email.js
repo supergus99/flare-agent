@@ -23,6 +23,9 @@ export async function sendResend(apiKey, opts) {
     body: JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) return { error: data.message || data.error || `Resend ${res.status}` };
+  if (!res.ok) {
+    const msg = data.message || data.error || (Array.isArray(data.errors) && data.errors[0]?.message) || (typeof data.msg === "string" && data.msg) || `Resend ${res.status}`;
+    return { error: typeof msg === "string" ? msg : `Resend ${res.status}` };
+  }
   return { id: data.id };
 }
