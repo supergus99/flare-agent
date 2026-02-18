@@ -508,18 +508,23 @@ export default {
 
         if (eventType === "checkout.session.completed") {
           let payment = null;
+          let session = null;
+          let piIdStr = null;
+          let sessionEmail = "";
+          let sessionName = "";
+          let result = null;
           try {
-            const session = event.data?.object;
+            session = event.data?.object;
             const paymentIntentId = session?.payment_intent;
             if (!paymentIntentId || !env.STRIPE_SECRET_KEY || !env.DB) {
               return json({ received: true });
             }
-            const piIdStr = typeof paymentIntentId === "string" ? paymentIntentId : paymentIntentId.id;
+            piIdStr = typeof paymentIntentId === "string" ? paymentIntentId : paymentIntentId.id;
             const stripeKey = env.STRIPE_SECRET_KEY;
             const intent = await retrievePaymentIntent(stripeKey, piIdStr);
-            const sessionEmail = (session?.customer_details?.email || session?.customer_email || "").toString().trim();
-            const sessionName = (session?.customer_details?.name || "").toString().trim();
-            const result = await upsertPaymentFromIntent(env.DB, intent, {
+            sessionEmail = (session?.customer_details?.email || session?.customer_email || "").toString().trim();
+            sessionName = (session?.customer_details?.name || "").toString().trim();
+            result = await upsertPaymentFromIntent(env.DB, intent, {
               email: sessionEmail || undefined,
               name: sessionName || undefined,
             });
@@ -554,7 +559,7 @@ export default {
           }
           if (payment?.id && env.DB) {
             try {
-              const metaLocale = (session.metadata?.flare_locale || "").toString().trim().toLowerCase() || "en";
+              const metaLocale = (session?.metadata?.flare_locale || "").toString().trim().toLowerCase() || "en";
               if (result?.isNew && payment.lead_id) {
                 try {
                   await env.DB.prepare(
