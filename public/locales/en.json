@@ -110,6 +110,7 @@
     "title": "Get your Flare Compass",
     "desc": "Your Flare Compass: your risks in order, with clear steps to fix them yourself. Plain language, no jargon. Complete payment securely with Stripe; you'll receive a confirmation and a link to the Flare Check.",
     "product_line": "Flare Compass — Your risks in order, with clear steps to fix them yourself. 89€ (launch campaign).",
+    "language_context": "Your Flare Check, confirmation emails, and your Flare Compass report will be in this language.",
     "language_label": "Language for assessment, emails and report",
     "language_en": "English",
     "language_pt": "Português",

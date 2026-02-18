@@ -79,7 +79,9 @@
       <p class="product-line" data-i18n="checkout.product_line">Flare Compass — Your risks in order, with clear steps to fix them yourself. 89€ (launch campaign).</p>
       <form id="checkout-form">
         <input type="hidden" id="service_type" name="service_type" value="protect">
+        <input type="hidden" id="currency" name="currency" value="eur">
 
+        <p class="text-muted small mb-2" data-i18n="checkout.language_context">Your Flare Check, confirmation emails, and your Flare Compass report will be in this language.</p>
         <label class="form-label" for="locale" data-i18n="checkout.language_label">Language for assessment, emails and report</label>
         <select id="locale" name="locale" required>
           <option value="en" data-i18n="checkout.language_en">English</option>
@@ -88,21 +90,6 @@
           <option value="fr" data-i18n="checkout.language_fr">Français</option>
           <option value="de" data-i18n="checkout.language_de">Deutsch</option>
         </select>
-
-        <label class="form-label" for="currency" data-i18n="checkout.currency_label">Currency</label>
-        <select id="currency" name="currency">
-          <option value="eur">EUR</option>
-          <option value="usd">USD</option>
-        </select>
-
-        <label class="form-label" for="customer_name" data-i18n="checkout.name_label">Name (optional)</label>
-        <input type="text" id="customer_name" name="customer_name" data-i18n-placeholder="checkout.name_placeholder" placeholder="Your name">
-
-        <label class="form-label" for="customer_email" data-i18n="checkout.email_label">Email (optional – Stripe will collect if empty)</label>
-        <input type="email" id="customer_email" name="customer_email" data-i18n-placeholder="checkout.email_placeholder" placeholder="you@example.com">
-
-        <label class="form-label" for="customer_company" data-i18n="checkout.company_label">Company (optional)</label>
-        <input type="text" id="customer_company" name="customer_company" data-i18n-placeholder="checkout.company_placeholder" placeholder="Company name">
 
         <button type="submit" id="btn" class="btn btn-primary" data-i18n="checkout.btn">Continue to payment</button>
       </form>
@@ -141,9 +128,6 @@
           service_type: document.getElementById('service_type').value,
           locale: document.getElementById('locale').value,
           currency: document.getElementById('currency').value,
-          customer_name: document.getElementById('customer_name').value.trim() || undefined,
-          customer_email: document.getElementById('customer_email').value.trim() || undefined,
-          customer_company: document.getElementById('customer_company').value.trim() || undefined,
         };
 
         var apiUrl = WORKER_URL + '/api/checkout';
