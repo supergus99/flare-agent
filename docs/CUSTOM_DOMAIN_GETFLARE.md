@@ -25,7 +25,9 @@ Steps to serve Flare from **getflare.net** (and **www.getflare.net**) with the A
 
 1. **Workers & Pages** → **flare-worker** → **Triggers** → **Custom Domains** → **Add**.
 2. Enter **api.getflare.net** (or a subdomain you prefer). Cloudflare will add the DNS record (CNAME) for that hostname to your zone.
-2. Save. Once SSL is active, the Worker will respond at `https://api.getflare.net`.
+3. Save. Once SSL is active, the Worker will respond at `https://api.getflare.net`.
+
+**If `https://api.getflare.net/api/webhooks/stripe` (or any path) returns “Not found”:** The domain is not attached to this Worker. In **Workers & Pages** → **flare-worker** → **Triggers** → **Custom Domains**, confirm **api.getflare.net** is listed. If it’s missing, add it as above. Until then, use the Worker’s **workers.dev** URL (e.g. `https://flare-worker.<subdomain>.workers.dev`) for Stripe webhooks and any API calls.
 
 ---
 
@@ -48,9 +50,11 @@ Redeploy the Worker after changing secrets (e.g. push to `main` or run `npx wran
 ## 5. Stripe webhook
 
 1. In [Stripe Dashboard → Webhooks](https://dashboard.stripe.com/webhooks), edit your existing webhook (or add one).
-2. Set the endpoint URL to: **`https://api.getflare.net/api/webhooks/stripe`**.
-3. Keep the same events (e.g. `checkout.session.completed`, `payment_intent.succeeded`, `payment_intent.payment_failed`).
+2. Set the endpoint URL to: **`https://api.getflare.net/api/webhooks/stripe`** (or use the workers.dev URL below if the custom domain returns 404).
+3. Keep the same events (e.g. `checkout.session.completed`).
 4. If you created a new endpoint, copy the **Signing secret** and set the Worker secret **STRIPE_WEBHOOK_SECRET** to that value.
+
+**If `https://api.getflare.net/api/webhooks/stripe` returns 404:** The domain is not reaching the Worker. Either add **api.getflare.net** as a Custom Domain for **flare-worker** (Workers & Pages → flare-worker → Triggers → Custom Domains → Add), or use the Worker’s **workers.dev** URL for the webhook instead: **`https://flare-worker.<your-subdomain>.workers.dev/api/webhooks/stripe`**. You can find the exact URL in Workers & Pages → flare-worker (it’s shown on the overview). The webhook will work the same; only the hostname differs.
 
 ---
 

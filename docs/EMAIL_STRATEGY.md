@@ -20,6 +20,37 @@
    - If the send failed, stores the reason in `stripe_webhook_events.last_error` for that event.
 4. Worker responds `200` to Stripe. The customer is redirected to the success page separately; that page does **not** trigger the email.
 
+## How to find the Stripe webhook URL
+
+The URL Stripe must call is: **your Worker’s base URL** + **`/api/webhooks/stripe`** (no trailing slash).
+
+**Option A – Cloudflare Dashboard**
+
+1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com) → **Workers & Pages**.
+2. Click your Worker (**flare-worker**).
+3. In the right-hand panel you’ll see the Worker URL, e.g. `https://flare-worker.&lt;your-subdomain&gt;.workers.dev`.
+4. Your webhook URL is that + `/api/webhooks/stripe`, e.g.  
+   `https://flare-worker.gusmao-ricardo.workers.dev/api/webhooks/stripe`
+
+**Option B – You set WORKER_PUBLIC_URL**
+
+If you configured the secret **WORKER_PUBLIC_URL** (e.g. `https://api.getflare.net`), use that exact value + `/api/webhooks/stripe`:  
+`https://api.getflare.net/api/webhooks/stripe`
+
+**Check it**
+
+Open the URL in a browser (GET). You should see a short text message. That’s the URL to paste into Stripe Dashboard → Webhooks → Endpoint URL.
+
+## D1 table required
+
+The webhook handler expects a **stripe_webhook_events** table in D1 (for idempotency and storing `last_error` when the welcome email fails). If your database doesn’t have it, run:
+
+```bash
+npx wrangler d1 execute flare-db --remote --file=./migrations/012_stripe_webhook_events.sql
+```
+
+(Use `--local` instead of `--remote` for local D1.)
+
 ## What you must configure
 
 | Requirement | Where |
@@ -30,6 +61,12 @@
 | **“From” address** | Resend requires the “from” domain to be verified. Set `FROM_EMAIL` (e.g. `Flare <noreply@yourdomain.com>`) or use the default and verify that domain in Resend. |
 
 If the webhook URL or secret is wrong, Stripe never calls your Worker (or verification fails), and no welcome email is sent. The success page does not send the email.
+
+## No events in stripe_webhook_events?
+
+If payments appear in Admin but **stripe_webhook_events** is empty, Stripe is **not** calling your Worker. Those payments were created when the customer hit the success page (`/api/success`); the webhook never ran, so no welcome email was sent from the webhook.
+
+**Fix:** In [Stripe Dashboard → Webhooks](https://dashboard.stripe.com/webhooks): add (or edit) an endpoint whose **URL** is exactly your Worker URL, e.g. `https://flare-worker.<your-subdomain>.workers.dev/api/webhooks/stripe`. Enable the event **checkout.session.completed**. Copy the **Signing secret** and set the Worker secret **STRIPE_WEBHOOK_SECRET** to that value. Open the URL in a browser (GET) to confirm it is reachable; Stripe will POST to the same URL when events occur.
 
 ## Checking failures
 

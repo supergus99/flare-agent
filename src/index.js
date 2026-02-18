@@ -451,7 +451,15 @@ export default {
       }
     }
 
-    if (url.pathname === "/api/webhooks/stripe" && request.method === "POST") {
+    const isStripeWebhook = url.pathname === "/api/webhooks/stripe" || url.pathname === "/api/webhooks/stripe/";
+    if (isStripeWebhook) {
+      if (request.method === "GET") {
+        return new Response(
+          "Stripe webhook endpoint. Stripe must POST events here (e.g. checkout.session.completed). If you have payments in Admin but no rows in stripe_webhook_events, Stripe is not calling this URL – check Stripe Dashboard → Webhooks → endpoint URL.",
+          { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } }
+        );
+      }
+      if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
       const webhookSecret = env.STRIPE_WEBHOOK_SECRET;
       if (!webhookSecret) return new Response("Webhook secret not set", { status: 500 });
       const rawBody = await request.text();
