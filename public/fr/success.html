@@ -4,67 +4,39 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Paiement effectué – Flare</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    :root { --bg: #0a0a0b; --bg-elevated: #111113; --text: #e4e4e7; --text-muted: #71717a; --accent: #22d3ee; --success: #34d399; --success-soft: rgba(52, 211, 153, 0.15); --border: rgba(255,255,255,0.06); }
     * { box-sizing: border-box; }
-    body { font-family: system-ui, sans-serif; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(0,0,0,0.03); }
-    .success-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; padding: 1rem; }
-    .success-modal { background: #fff; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.12); max-width: 28rem; width: 100%; padding: 2rem; text-align: center; }
-    .success-modal h1 { margin: 0 0 1rem; font-size: 1.5rem; font-weight: 700; color: #1a7f37; }
-    .success-modal p { margin: 0 0 1.5rem; color: #333; line-height: 1.5; font-size: 0.95rem; }
-    .success-modal .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; }
-    .success-modal .btn { display: inline-block; padding: 0.65rem 1.25rem; border-radius: 8px; font-size: 0.95rem; font-weight: 500; text-decoration: none; cursor: pointer; border: none; transition: background 0.15s; }
-    .success-modal .btn-close { background: #eaeaea; color: #333; }
-    .success-modal .btn-close:hover { background: #ddd; }
-    .success-modal .btn-primary { background: #0969da; color: #fff; }
-    .success-modal .btn-primary:hover { background: #0550ae; }
-    .success-modal .btn-return { background: transparent; color: #0969da; }
-    .success-modal .btn-return:hover { text-decoration: underline; }
-    #assessment-link-wrap { margin-top: 0.5rem; }
+    body { margin: 0; font-family: 'Outfit', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+    .success-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; padding: 1rem; }
+    .success-modal { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 24px 48px rgba(0,0,0,0.4); max-width: 28rem; width: 100%; padding: 2.5rem; text-align: center; }
+    .success-modal .icon { width: 3rem; height: 3rem; margin: 0 auto 1.25rem; border-radius: 50%; background: var(--success-soft); color: var(--success); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+    .success-modal h1 { margin: 0 0 1rem; font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; color: var(--text); }
+    .success-modal p { margin: 0 0 1.75rem; color: var(--text-muted); line-height: 1.6; font-size: 0.95rem; }
+    .success-modal .actions { display: flex; justify-content: center; }
+    .success-modal .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.85rem 1.75rem; font-family: inherit; font-size: 0.95rem; font-weight: 600; border-radius: 10px; cursor: pointer; border: none; transition: transform .2s; background: linear-gradient(135deg, var(--accent), #06b6d4); color: var(--bg); box-shadow: 0 4px 24px rgba(34, 211, 238, 0.35); }
+    .success-modal .btn:hover { transform: translateY(-2px); }
   </style>
 </head>
 <body data-doc-title="success.meta_title">
   <div class="success-overlay">
     <div class="success-modal">
+      <div class="icon" aria-hidden="true">✓</div>
       <h1 data-i18n="success.payment_successful">Paiement réussi</h1>
       <p data-i18n="success.email_expectation">Vous recevrez bientôt un email avec le lien vers le questionnaire. Vérifiez les spams si vous ne le recevez pas sous 10 minutes.</p>
       <div class="actions">
-        <button type="button" class="btn btn-close" data-i18n="success.btn_close" id="btn-close">Fermer</button>
-        <a href="/fr/" class="btn btn-primary" data-i18n="success.btn_return_home" id="btn-return">Retour au site</a>
+        <button type="button" class="btn" data-i18n="success.btn_close" id="btn-close">Fermer</button>
       </div>
-      <p id="assessment-link-wrap" style="display: none;"><a href="/fr/assessment.html" id="assessment-link" class="btn btn-return" data-i18n="success.assessment_link">Complétez votre questionnaire de sécurité</a></p>
-      <p id="report-link-wrap" style="display: none; margin-top: 0.5rem;"><span data-i18n="success.report_ready"></span> <a id="report-link" href="" data-i18n="success.view_report">Voir votre rapport</a></p>
     </div>
   </div>
   <script src="/js/i18n.js"></script>
   <script>
     (function () {
-      const params = new URLSearchParams(window.location.search);
-      const hash = params.get('hash');
-      if (!window.FLARE_WORKER_URL && /^(www\.)?getflare\.net$/.test(window.location.hostname)) window.FLARE_WORKER_URL = 'https://flare-worker.gusmao-ricardo.workers.dev';
-      const workerUrl = window.FLARE_WORKER_URL || 'https://flare-worker.gusmao-ricardo.workers.dev';
-      function path(k) { return window.FLARE_I18N ? window.FLARE_I18N.path(k) : (k === 'assessment' ? '/fr/assessment.html' : k === 'contact' ? '/fr/contact.html' : '/fr/'); }
-      function setLinks() {
-        if (hash) {
-          var a = document.getElementById('assessment-link');
-          var wrap = document.getElementById('assessment-link-wrap');
-          var base = path('assessment');
-          if (a && wrap && base && base !== '#') {
-            a.href = base + (base.indexOf('?') >= 0 ? '&' : '?') + 'hash=' + encodeURIComponent(hash);
-            wrap.style.display = 'block';
-          }
-          var reportWrap = document.getElementById('report-link-wrap');
-          var reportA = document.getElementById('report-link');
-          if (reportWrap && reportA) {
-            reportA.href = workerUrl + '/report?hash=' + encodeURIComponent(hash);
-            reportWrap.style.display = 'block';
-          }
-        }
-      }
+      function path(k) { return window.FLARE_I18N ? window.FLARE_I18N.path(k) : '/fr/'; }
       document.getElementById('btn-close').addEventListener('click', function () { window.location.href = path('home') || '/fr/'; });
-      var returnBtn = document.getElementById('btn-return');
-      if (returnBtn) returnBtn.href = path('home') || '/fr/';
-      setLinks();
-      setTimeout(setLinks, 400);
     })();
   </script>
 </body>
