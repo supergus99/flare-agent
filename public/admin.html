@@ -117,6 +117,7 @@
         <li class="nav-item"><button type="button" class="nav-link" data-tab="payments">Payments</button></li>
         <li class="nav-item"><button type="button" class="nav-link" data-tab="reports">Reports</button></li>
         <li class="nav-item"><button type="button" class="nav-link" data-tab="templates">Templates</button></li>
+        <li class="nav-item"><button type="button" class="nav-link" data-tab="settings">Settings</button></li>
       </ul>
 
       <div id="tab-submissions" class="tab-content">
@@ -150,6 +151,40 @@
         </div>
       </div>
       <div id="tab-templates" class="tab-content d-none">
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-light"><h2 class="h6 mb-0">Report HTML template</h2></div>
+          <div class="card-body">
+            <p class="text-muted small">Full HTML for the generated report. Placeholders include <code>{{name}}</code> <code>{{company}}</code> <code>{{a.mfa_email}}</code> <code>{{meta.confidence_level}}</code> and many more. Leave empty to use the built-in Flare template.</p>
+            <div class="mb-2">
+              <button type="button" id="tpl-report-load-default" class="btn btn-outline-primary btn-sm">Load default report template</button>
+              <span id="tpl-report-load-message" class="ms-2 text-muted small"></span>
+            </div>
+            <textarea id="tpl-report-body" class="form-control font-monospace" rows="18" placeholder="<!DOCTYPE html>..."></textarea>
+            <div class="mt-2">
+              <button type="button" id="tpl-report-preview" class="btn btn-outline-secondary">Preview</button>
+              <button type="button" id="tpl-report-save" class="btn btn-primary">Save report template</button>
+              <span id="tpl-report-message" class="ms-2 text-muted small"></span>
+            </div>
+          </div>
+        </div>
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-light"><h2 class="h6 mb-0">Assessment HTML template</h2></div>
+          <div class="card-body">
+            <p class="text-muted small">Full HTML of the assessment page. When set, the public assessment page will load this instead of the default form. Use <strong>Load full template</strong> to load the 10-section Flare assessment, then edit and save. Preview opens the template in a new tab.</p>
+            <div class="mb-2">
+              <button type="button" id="tpl-assessment-load-full" class="btn btn-outline-primary btn-sm">Load full assessment template</button>
+              <span id="tpl-assessment-load-message" class="ms-2 text-muted small"></span>
+            </div>
+            <textarea id="tpl-assessment-body" class="form-control font-monospace" rows="18" placeholder="<!DOCTYPE html>..."></textarea>
+            <div class="mt-2">
+              <button type="button" id="tpl-assessment-preview" class="btn btn-outline-secondary">Preview</button>
+              <button type="button" id="tpl-assessment-save" class="btn btn-primary">Save assessment template</button>
+              <span id="tpl-assessment-message" class="ms-2 text-muted small"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="tab-settings" class="tab-content d-none">
         <div class="card border-0 shadow-sm mb-4">
           <div class="card-header bg-light"><h2 class="h6 mb-0">Claude API key</h2></div>
           <div class="card-body">
@@ -186,38 +221,6 @@
               <input type="email" id="test-email-to" class="form-control form-control-sm" placeholder="your@email.com" style="max-width:240px;">
               <button type="button" id="test-email-btn" class="btn btn-outline-primary btn-sm">Send test email</button>
               <span id="test-email-message" class="text-muted small"></span>
-            </div>
-          </div>
-        </div>
-        <div class="card border-0 shadow-sm mb-4">
-          <div class="card-header bg-light"><h2 class="h6 mb-0">Report HTML template</h2></div>
-          <div class="card-body">
-            <p class="text-muted small">Full HTML for the generated report. Placeholders include <code>{{name}}</code> <code>{{company}}</code> <code>{{a.mfa_email}}</code> <code>{{meta.confidence_level}}</code> and many more. Leave empty to use the built-in Flare template.</p>
-            <div class="mb-2">
-              <button type="button" id="tpl-report-load-default" class="btn btn-outline-primary btn-sm">Load default report template</button>
-              <span id="tpl-report-load-message" class="ms-2 text-muted small"></span>
-            </div>
-            <textarea id="tpl-report-body" class="form-control font-monospace" rows="18" placeholder="<!DOCTYPE html>..."></textarea>
-            <div class="mt-2">
-              <button type="button" id="tpl-report-preview" class="btn btn-outline-secondary">Preview</button>
-              <button type="button" id="tpl-report-save" class="btn btn-primary">Save report template</button>
-              <span id="tpl-report-message" class="ms-2 text-muted small"></span>
-            </div>
-          </div>
-        </div>
-        <div class="card border-0 shadow-sm">
-          <div class="card-header bg-light"><h2 class="h6 mb-0">Assessment HTML template</h2></div>
-          <div class="card-body">
-            <p class="text-muted small">Full HTML of the assessment page. When set, the public assessment page will load this instead of the default form. Use <strong>Load full template</strong> to load the 10-section Flare assessment, then edit and save. Preview opens the template in a new tab.</p>
-            <div class="mb-2">
-              <button type="button" id="tpl-assessment-load-full" class="btn btn-outline-primary btn-sm">Load full assessment template</button>
-              <span id="tpl-assessment-load-message" class="ms-2 text-muted small"></span>
-            </div>
-            <textarea id="tpl-assessment-body" class="form-control font-monospace" rows="18" placeholder="<!DOCTYPE html>..."></textarea>
-            <div class="mt-2">
-              <button type="button" id="tpl-assessment-preview" class="btn btn-outline-secondary">Preview</button>
-              <button type="button" id="tpl-assessment-save" class="btn btn-primary">Save assessment template</button>
-              <span id="tpl-assessment-message" class="ms-2 text-muted small"></span>
             </div>
           </div>
         </div>
@@ -347,15 +350,6 @@
             });
           });
         } else if (tab === 'templates') {
-          const settingsRes = await fetch(WORKER_URL + '/api/admin/settings', { headers: authHeaders() });
-          if (settingsRes.status === 401) { setToken(null); showLogin(); return; }
-          try {
-            const settingsData = await settingsRes.json();
-            const statusEl = document.getElementById('settings-claude-status');
-            if (statusEl) statusEl.textContent = settingsData.claude_api_key_set ? 'Status: Configured' : 'Status: Not set';
-            const aiEl = document.getElementById('settings-ai-report-instruction');
-            if (aiEl) aiEl.value = settingsData.ai_report_instruction ?? '';
-          } catch (_) {}
           const rRes = await fetch(WORKER_URL + '/api/admin/report-template', { headers: authHeaders() });
           if (rRes.status === 401) { setToken(null); showLogin(); return; }
           const rData = await rRes.json();
@@ -367,6 +361,16 @@
           const aData = await aRes.json();
           const assessmentBody = (aData.body != null && aData.body !== '') ? aData.body : (aData.defaultBody || '');
           document.getElementById('tpl-assessment-body').value = assessmentBody;
+        } else if (tab === 'settings') {
+          const settingsRes = await fetch(WORKER_URL + '/api/admin/settings', { headers: authHeaders() });
+          if (settingsRes.status === 401) { setToken(null); showLogin(); return; }
+          try {
+            const settingsData = await settingsRes.json();
+            const statusEl = document.getElementById('settings-claude-status');
+            if (statusEl) statusEl.textContent = settingsData.claude_api_key_set ? 'Status: Configured' : 'Status: Not set';
+            const aiEl = document.getElementById('settings-ai-report-instruction');
+            if (aiEl) aiEl.value = settingsData.ai_report_instruction ?? '';
+          } catch (_) {}
         }
       }
 
