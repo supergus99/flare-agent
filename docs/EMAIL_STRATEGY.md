@@ -3,22 +3,22 @@
 ## Principle
 
 - **Single provider:** The system uses **Resend** only. There is no other email service or paid SMTP. All transactional emails (welcome after payment, contact form notifications, report ready, admin test) go through the Resend API.
-- **Welcome email is triggered only by the Stripe webhook.** When Stripe sends `checkout.session.completed` to your Worker, the Worker creates/updates the payment and sends the welcome email in the same request. The customer does not need to open any link; the success page is only for showing “Thank you”.
+- **Welcome email is triggered only by `payment_intent.succeeded`.** When Stripe sends **`payment_intent.succeeded`** to your Worker, the Worker sends the welcome email in that request. No other webhook event (e.g. `checkout.session.completed`) sends the email. The customer does not need to open any link; the success page is only for showing “Thank you”.
 - **Admin “Send test email”** uses the same Resend API key. If that works, the webhook uses the same key and the same “from” address.
 
 ## Flow (welcome email)
 
 1. Customer completes payment on Stripe Checkout.
-2. Stripe sends a **webhook** `POST` to your Worker:  
+2. Stripe may send **`checkout.session.completed`** first: the Worker creates/updates the payment in D1 and backfills `customer_email` from the session (so the payment is ready when **`payment_intent.succeeded`** runs).
+3. Stripe sends **`payment_intent.succeeded`** to your Worker:  
    `https://<your-worker-url>/api/webhooks/stripe`  
-   with event type `checkout.session.completed`.
-3. Worker receives the event, verifies the signature with `STRIPE_WEBHOOK_SECRET`, then:
-   - Creates or updates the payment in D1 (using session + PaymentIntent).
-   - Ensures the payment has `customer_email` (from Stripe session).
-   - Sends the welcome email via **Resend** (same API as the admin test).
+   **Only this event triggers the welcome email.**
+4. Worker receives `payment_intent.succeeded`, verifies the signature with `STRIPE_WEBHOOK_SECRET`, then:
+   - Looks up the payment in D1 by `transaction_id` (PaymentIntent id).
+   - If the payment has `customer_email` and status completed, sends the welcome email via **Resend** (same API as the admin test).
    - Records the outcome in `email_logs` (status `sent` or `failed`, and `error_message` if failed).
    - If the send failed, stores the reason in `stripe_webhook_events.last_error` for that event.
-4. Worker responds `200` to Stripe. The customer is redirected to the success page separately; that page does **not** trigger the email.
+5. Worker responds `200` to Stripe. The customer is redirected to the success page separately; that page does **not** trigger the email.
 
 ## How to find the Stripe webhook URL
 
@@ -56,7 +56,7 @@ npx wrangler d1 execute flare-db --remote --file=./migrations/012_stripe_webhook
 | Requirement | Where |
 |------------|--------|
 | **Resend API key** | Worker secret `RESEND_API_KEY`. Same key used by Admin test and by the webhook. |
-| **Stripe webhook** | [Stripe Dashboard → Webhooks](https://dashboard.stripe.com/webhooks): add endpoint URL `https://<worker-host>/api/webhooks/stripe`, event **checkout.session.completed**. Copy the signing secret. |
+| **Stripe webhook** | [Stripe Dashboard → Webhooks](https://dashboard.stripe.com/webhooks): add endpoint URL `https://<worker-host>/api/webhooks/stripe`. Enable **`payment_intent.succeeded`** (required for welcome email) and **`checkout.session.completed`** (so the payment row is created/updated with customer email). Copy the signing secret. |
 | **Stripe webhook secret** | Worker secret `STRIPE_WEBHOOK_SECRET` = the signing secret from the webhook endpoint. |
 | **“From” address** | Resend requires the “from” domain to be verified. Set `FROM_EMAIL` (e.g. `Flare <noreply@yourdomain.com>`) or use the default and verify that domain in Resend. |
 
@@ -64,17 +64,17 @@ If the webhook URL or secret is wrong, Stripe never calls your Worker (or verifi
 
 ## No rows in email_logs?
 
-The Worker writes to **email_logs** when it processes **checkout.session.completed** or **payment_intent.succeeded**. If you see events in **stripe_webhook_events** but nothing in **email_logs**:
+The Worker sends the welcome email **only** when it processes **payment_intent.succeeded**. It writes to **email_logs** for that event. If you see events in **stripe_webhook_events** but no welcome in **email_logs**:
 
-1. **Check event_type** in **stripe_webhook_events**: open the row for the payment and look at **event_type**. The Worker only runs the welcome-email logic for **checkout.session.completed** and **payment_intent.succeeded**. If you only have other types (e.g. **invoice.paid**), add **checkout.session.completed** (and optionally **payment_intent.succeeded**) in [Stripe Dashboard → Webhooks](https://dashboard.stripe.com/webhooks) → your endpoint → Events to send.
-2. **Redeploy** the Worker so the latest code (including **payment_intent.succeeded** handling and the fallback insert into email_logs) is live.
+1. **Check event_type** in **stripe_webhook_events**: the welcome email runs **only for `payment_intent.succeeded`**. If you only have **checkout.session.completed**, add **payment_intent.succeeded** in [Stripe Dashboard → Webhooks](https://dashboard.stripe.com/webhooks) → your endpoint → Events to send. Keep **checkout.session.completed** so the payment row (and customer_email) exists before the email is sent.
+2. **Redeploy** the Worker so the latest code is live.
 3. Run another test payment and check **email_logs** again; you should see at least one row per payment (status **sent** or **failed** with **error_message**).
 
 ## No events in stripe_webhook_events?
 
 If payments appear in Admin but **stripe_webhook_events** is empty, Stripe is **not** calling your Worker. Those payments were created when the customer hit the success page (`/api/success`); the webhook never ran, so no welcome email was sent from the webhook.
 
-**Fix:** In [Stripe Dashboard → Webhooks](https://dashboard.stripe.com/webhooks): add (or edit) an endpoint whose **URL** is exactly your Worker URL, e.g. `https://flare-worker.<your-subdomain>.workers.dev/api/webhooks/stripe`. Enable the event **checkout.session.completed**. Copy the **Signing secret** and set the Worker secret **STRIPE_WEBHOOK_SECRET** to that value. Open the URL in a browser (GET) to confirm it is reachable; Stripe will POST to the same URL when events occur.
+**Fix:** In [Stripe Dashboard → Webhooks](https://dashboard.stripe.com/webhooks): add (or edit) an endpoint whose **URL** is exactly your Worker URL, e.g. `https://flare-worker.<your-subdomain>.workers.dev/api/webhooks/stripe`. Enable **`payment_intent.succeeded`** (required for the welcome email) and **`checkout.session.completed`** (so the payment is created with customer email). Copy the **Signing secret** and set the Worker secret **STRIPE_WEBHOOK_SECRET** to that value. Open the URL in a browser (GET) to confirm it is reachable; Stripe will POST to the same URL when events occur.
 
 ## Checking failures
 
@@ -85,5 +85,5 @@ If payments appear in Admin but **stripe_webhook_events** is empty, Stripe is **
 ## Summary
 
 - **Email = Resend only.**  
-- **Welcome email = sent only from the Stripe webhook.**  
+- **Welcome email = sent only when Stripe sends `payment_intent.succeeded`.**  
 - **Reliability = correct webhook URL + `STRIPE_WEBHOOK_SECRET` + `RESEND_API_KEY` + verified “from” domain.**

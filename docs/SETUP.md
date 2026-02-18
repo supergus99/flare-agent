@@ -147,7 +147,7 @@ GitHub Actions will run and deploy **flare-worker** to Cloudflare. Check the **A
    - Sign up at [resend.com](https://resend.com), create an API key.
    - Worker secret: `RESEND_API_KEY` = your Resend API key (e.g. `re_...`).
    - Optional: `FROM_EMAIL`, `FROM_NAME` or set `from_email` / `from_name` in D1 `automation_settings` (migration 002 inserts defaults).
-   - After payment, **Stripe calls your webhook** (`checkout.session.completed`). The Worker then sends the welcome email in that webhook request (no queue required). Ensure **RESEND_API_KEY** is set and the **Stripe webhook** is configured to point to your Worker URL (see RESEND_CONFIG.md). The email is logged to `email_logs`.
+   - After payment, **Stripe calls your webhook** with **`payment_intent.succeeded`**. The Worker sends the welcome email only when it receives this event (no queue required). Ensure **RESEND_API_KEY** is set and the **Stripe webhook** is configured with **`payment_intent.succeeded`** (and **`checkout.session.completed`** so the payment row has customer email). See RESEND_CONFIG.md. The email is logged to `email_logs`.
    - When you **approve** a report in Admin, the Worker enqueues **send_approved_report**; the consumer sends an email with the report view link and sets the report status to `sent`.
 
 3. **Admin auth:**

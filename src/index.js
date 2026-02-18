@@ -455,7 +455,7 @@ export default {
     if (isStripeWebhook) {
       if (request.method === "GET") {
         return new Response(
-          "Stripe webhook endpoint. Stripe must POST events here (e.g. checkout.session.completed). If you have payments in Admin but no rows in stripe_webhook_events, Stripe is not calling this URL – check Stripe Dashboard → Webhooks → endpoint URL.",
+          "Stripe webhook endpoint. Stripe must POST events here (e.g. payment_intent.succeeded for welcome email). If you have payments in Admin but no rows in stripe_webhook_events, Stripe is not calling this URL – check Stripe Dashboard → Webhooks → endpoint URL.",
           { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } }
         );
       }
@@ -469,14 +469,6 @@ export default {
         const eventId = event.id;
         const eventType = event.type;
         let checkoutEmailError = null;
-
-        if (env.DB && (eventType === "checkout.session.completed" || eventType === "payment_intent.succeeded")) {
-          try {
-            await env.DB.prepare(
-              "INSERT INTO email_logs (payment_id, email_type, recipient_email, subject, status, error_message) VALUES (NULL, 'webhook_received', ?, ?, 'failed', ?)"
-            ).bind(eventType, "Stripe " + eventType, eventId).run();
-          } catch (_) {}
-        }
 
         if (env.DB && eventId) {
           const ob = event.data?.object;
@@ -497,8 +489,15 @@ export default {
           }
         }
 
+        if (env.DB && (eventType === "checkout.session.completed" || eventType === "payment_intent.succeeded")) {
+          try {
+            await env.DB.prepare(
+              "INSERT INTO email_logs (payment_id, email_type, recipient_email, subject, status, error_message) VALUES (NULL, 'webhook_received', ?, ?, 'failed', ?)"
+            ).bind(eventType, "Stripe " + eventType, eventId).run();
+          } catch (_) {}
+        }
+
         if (eventType === "checkout.session.completed") {
-          let emailError = null;
           const session = event.data?.object;
           const paymentIntentId = session?.payment_intent;
           if (!paymentIntentId || !env.STRIPE_SECRET_KEY || !env.DB) {
@@ -540,44 +539,7 @@ export default {
                   .bind(sessionName, payment.id).run();
               }
             } catch (_) {}
-            if (env.RESEND_API_KEY) {
-              const welcomeSent = await env.DB.prepare(
-                "SELECT id FROM email_logs WHERE payment_id = ? AND email_type = 'welcome' AND status = 'sent' LIMIT 1"
-              ).bind(payment.id).first();
-              if (!welcomeSent) {
-                const pay = await env.DB.prepare("SELECT id, customer_email, payment_status FROM payments WHERE id = ?").bind(payment.id).first();
-                const recipient = (pay?.customer_email ?? "").toString().trim() || (sessionEmail ?? "").toString().trim();
-                if (pay?.payment_status === "completed" && recipient) {
-                  const sendResult = await handleSendWelcomeEmail(env, { payment_id: payment.id, recipient_email: recipient });
-                  if (!sendResult.sent && sendResult.error) emailError = sendResult.error;
-                } else if (!recipient) {
-                  emailError = "no customer email (Stripe session or payment)";
-                } else if (pay?.payment_status !== "completed") {
-                  emailError = "payment status not completed";
-                }
-              }
-            } else {
-              emailError = "RESEND_API_KEY not set";
-            }
-          }
-          checkoutEmailError = emailError || null;
-          if (payment?.id && env.DB) {
-            const hasLog = await env.DB.prepare("SELECT id FROM email_logs WHERE payment_id = ? AND email_type = 'welcome' LIMIT 1").bind(payment.id).first();
-            if (!hasLog) {
-              const reason = checkoutEmailError || "unknown (no error captured)";
-              const recipient = (payment.customer_email || sessionEmail || "").trim() || "(no email)";
-              try {
-                await env.DB.prepare(
-                  "INSERT INTO email_logs (payment_id, email_type, recipient_email, subject, status, error_message) VALUES (?, 'welcome', ?, ?, 'failed', ?)"
-                ).bind(payment.id, recipient, "Welcome (webhook)", reason).run();
-              } catch (e) {
-                try {
-                  await env.DB.prepare(
-                    "UPDATE stripe_webhook_events SET last_error = ? WHERE event_id = ?"
-                  ).bind(("email_logs insert failed: " + (e && e.message || String(e))).slice(0, 500), eventId).run();
-                } catch (_) {}
-              }
-            }
+            // Welcome email is sent only on payment_intent.succeeded (not here).
           }
         } else if (eventType === "payment_intent.succeeded") {
           const pi = event.data?.object;
