@@ -28,6 +28,7 @@ const I18N_EMAIL = {
     report_ready_body: "Your security assessment report is ready.",
     report_ready_cta: "View report",
     report_ready_expires: "This link will expire in 30 days.",
+    report_ready_code: "Your security code to open the report:",
   },
   pt: {
     welcome_subject: "Bem-vindo – complete o seu questionário de segurança",
@@ -41,6 +42,7 @@ const I18N_EMAIL = {
     report_ready_body: "O seu relatório de avaliação de segurança está pronto.",
     report_ready_cta: "Ver relatório",
     report_ready_expires: "Este link expira em 30 dias.",
+    report_ready_code: "O seu código de segurança para abrir o relatório:",
   },
   es: {
     welcome_subject: "Bienvenido – complete su cuestionario de seguridad",
@@ -54,6 +56,7 @@ const I18N_EMAIL = {
     report_ready_body: "Su informe de evaluación de seguridad está listo.",
     report_ready_cta: "Ver informe",
     report_ready_expires: "Este enlace caducará en 30 días.",
+    report_ready_code: "Su código de seguridad para abrir el informe:",
   },
   fr: {
     welcome_subject: "Bienvenue – complétez votre questionnaire de sécurité",
@@ -67,6 +70,7 @@ const I18N_EMAIL = {
     report_ready_body: "Votre rapport d'évaluation de sécurité est prêt.",
     report_ready_cta: "Voir le rapport",
     report_ready_expires: "Ce lien expirera dans 30 jours.",
+    report_ready_code: "Votre code de sécurité pour ouvrir le rapport :",
   },
   de: {
     welcome_subject: "Willkommen – füllen Sie Ihren Sicherheitsfragebogen aus",
@@ -80,6 +84,7 @@ const I18N_EMAIL = {
     report_ready_body: "Ihr Bericht zur Sicherheitsbewertung ist fertig.",
     report_ready_cta: "Bericht ansehen",
     report_ready_expires: "Dieser Link läuft in 30 Tagen ab.",
+    report_ready_code: "Ihr Sicherheitscode zum Öffnen des Berichts:",
   },
 };
 
@@ -971,10 +976,11 @@ export default {
     // ---------- Phase 2: Report view by hash ----------
     if (url.pathname === "/report" && request.method === "GET" && env.DB) {
       const hash = url.searchParams.get("hash") ?? url.searchParams.get("h") ?? "";
+      const codeParam = (url.searchParams.get("code") ?? url.searchParams.get("c") ?? "").trim().toUpperCase();
       if (!hash) return json({ error: "hash required" }, 400);
       try {
         let report = await env.DB.prepare(
-          "SELECT id, payment_id, view_hash, view_expires_at, status FROM reports WHERE view_hash = ? LIMIT 1"
+          "SELECT id, payment_id, view_hash, view_code, view_expires_at, status FROM reports WHERE view_hash = ? LIMIT 1"
         ).bind(hash).first();
         if (!report) {
           const payment = await env.DB.prepare(
@@ -982,7 +988,7 @@ export default {
           ).bind(hash).first();
           if (payment) {
             report = await env.DB.prepare(
-              "SELECT id, payment_id, view_hash, view_expires_at, status FROM reports WHERE payment_id = ? ORDER BY id DESC LIMIT 1"
+              "SELECT id, payment_id, view_hash, view_code, view_expires_at, status FROM reports WHERE payment_id = ? ORDER BY id DESC LIMIT 1"
             ).bind(payment.id).first();
           }
         }
@@ -991,6 +997,11 @@ export default {
             "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Report not found</title></head><body><h1>Report not found</h1><p>The link may be invalid or expired.</p></body></html>",
             { status: 404, headers: { "Content-Type": "text/html; charset=utf-8" } }
           );
+        }
+        const viewCode = report.view_code != null ? String(report.view_code).trim().toUpperCase() : null;
+        if (viewCode && codeParam !== viewCode) {
+          const gateHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Enter security code</title><style>body{font-family:system-ui,sans-serif;background:#0a0a0b;color:#e4e4e7;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem;} .card{background:#111113;border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:2rem;max-width:28rem;width:100%;} h1{font-size:1.25rem;margin:0 0 1rem;} input{padding:0.65rem;font-size:1rem;width:100%;box-sizing:border-box;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:#0a0a0b;color:#e4e4e7;letter-spacing:0.2em;} button{margin-top:1rem;padding:0.75rem 1.5rem;background:linear-gradient(135deg,#22d3ee,#06b6d4);color:#0a0a0b;border:none;border-radius:10px;font-weight:600;cursor:pointer;width:100%;} .error{color:#f87171;font-size:0.9rem;margin-top:0.5rem;}</style></head><body><div class="card"><h1>Enter your security code</h1><p style="color:#71717a;margin:0 0 1rem;">Use the code from your report email to open this report.</p><form method="get" action="/report"><input type="hidden" name="hash" value="${escapeHtml(hash)}"><input type="text" name="code" placeholder="Code" maxlength="10" autocomplete="one-time-code" required style="text-transform:uppercase;"></form></div></body></html>`;
+          return new Response(gateHtml, { headers: { "Content-Type": "text/html; charset=utf-8" } });
         }
         const viewExpires = report.view_expires_at;
         if (viewExpires && viewExpires < new Date().toISOString().slice(0, 19)) {
@@ -1449,10 +1460,11 @@ async function handleGenerateReport(env, body) {
 
   if (!report) {
     const viewHash = randomHex(32);
+    const viewCode = verificationCode();
     const viewExpires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
     await env.DB.prepare(
-      "INSERT INTO reports (payment_id, submission_id, report_type, status, view_hash, view_expires_at) VALUES (?, ?, 'initial', 'pending_review', ?, ?)"
-    ).bind(paymentId, submissionId, viewHash, viewExpires).run();
+      "INSERT INTO reports (payment_id, submission_id, report_type, status, view_hash, view_code, view_expires_at) VALUES (?, ?, 'initial', 'pending_review', ?, ?, ?)"
+    ).bind(paymentId, submissionId, viewHash, viewCode, viewExpires).run();
     report = await env.DB.prepare(
       "SELECT id FROM reports WHERE payment_id = ? AND submission_id = ? LIMIT 1"
     ).bind(paymentId, submissionId).first();
@@ -1528,8 +1540,8 @@ function getWelcomeEmailHtml(name, assessmentUrl, fromName, code, locale = "en",
     : "";
   return `<!DOCTYPE html><html lang="${key}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${escapeHtml(t.welcome_title)}</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet"></head><body style="margin:0;font-family:'Outfit',system-ui,sans-serif;background:#0a0a0b;color:#e4e4e7;line-height:1.6;">
 <div style="max-width:36em;margin:0 auto;padding:1.5rem 1rem;">
-  <div style="background:#000;padding:1.25rem 1.5rem;border-radius:16px 16px 0 0;text-align:center;">${logoImg}</div>
-  <div style="background:#111113;border:1px solid rgba(255,255,255,0.06);border-top:none;border-radius:0 0 16px 16px;padding:2rem 1.5rem;">
+  <div style="padding:0 0 1.25rem;text-align:center;">${logoImg}</div>
+  <div style="background:#111113;border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:2rem 1.5rem;">
     <p style="margin:0 0 1rem;">Hi ${escapeHtml(name)},</p>
     <p style="margin:0 0 1rem;color:#e4e4e7;">${t.welcome_thanks}</p>
     ${codeBlock}
@@ -1540,14 +1552,18 @@ function getWelcomeEmailHtml(name, assessmentUrl, fromName, code, locale = "en",
 </div></body></html>`;
 }
 
-function getReportReadyEmailHtml(name, reportUrl, fromName, locale = "en") {
+function getReportReadyEmailHtml(name, reportUrl, fromName, locale = "en", reportCode = "") {
   const key = emailLocaleKey(locale);
   const t = I18N_EMAIL[key] || I18N_EMAIL.en;
+  const codeBlock = (reportCode && reportCode.trim())
+    ? `<p style="margin:0 0 0.5rem;color:#71717a;font-size:0.95rem;">${t.report_ready_code || "Your security code to open the report:"}</p><div style="margin:0 0 1.25rem;padding:0.85rem 1rem;background:rgba(34,211,238,0.12);color:#22d3ee;font-size:1.25rem;letter-spacing:0.2em;font-weight:600;border-radius:10px;font-family:ui-monospace,monospace;text-align:center;">${escapeHtml(String(reportCode).trim().toUpperCase())}</div>`
+    : "";
   return `<!DOCTYPE html><html lang="${key}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${escapeHtml(t.report_ready_title)}</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet"></head><body style="margin:0;font-family:'Outfit',system-ui,sans-serif;background:#0a0a0b;color:#e4e4e7;line-height:1.6;padding:2rem 1rem;">
 <div style="max-width:36em;margin:0 auto;">
   <p style="margin:0 0 1rem;font-size:1.25rem;font-weight:600;background:linear-gradient(135deg,#fb923c,#22d3ee);-webkit-background-clip:text;color:transparent;">Flare.</p>
   <p style="margin:0 0 1rem;">Hi ${escapeHtml(name)},</p>
   <p style="margin:0 0 1rem;">${t.report_ready_body}</p>
+  ${codeBlock}
   <p style="margin:1rem 0;"><a href="${escapeHtml(reportUrl)}" style="display:inline-block;padding:0.75rem 1.5rem;background:linear-gradient(135deg,#22d3ee,#06b6d4);color:#0a0a0b;text-decoration:none;font-weight:600;border-radius:10px;">${t.report_ready_cta}</a></p>
   <p style="margin:1.5rem 0 0;color:#71717a;font-size:0.9rem;">${t.report_ready_expires}</p>
   <p style="margin:2rem 0 0;color:#71717a;font-size:0.85rem;">— ${escapeHtml(fromName)}</p>
@@ -1639,7 +1655,7 @@ async function handleSendApprovedReport(env, body) {
   const reportId = body.report_id ? parseInt(body.report_id, 10) : 0;
   if (!reportId || !env.RESEND_API_KEY) return;
   const report = await env.DB.prepare(
-    "SELECT r.id, r.payment_id, r.submission_id, r.view_hash, r.status FROM reports r WHERE r.id = ?"
+    "SELECT r.id, r.payment_id, r.submission_id, r.view_hash, r.view_code, r.status FROM reports r WHERE r.id = ?"
   ).bind(reportId).first();
   if (!report || !report.view_hash) return;
   let to = null;
@@ -1671,13 +1687,16 @@ async function handleSendApprovedReport(env, body) {
     } catch (_) {}
   }
   const workerBase = (env.WORKER_PUBLIC_URL || "https://flare-worker.gusmao-ricardo.workers.dev").replace(/\/$/, "");
-  const reportUrl = `${workerBase}/report?hash=${encodeURIComponent(report.view_hash)}`;
+  const viewCode = report.view_code != null ? String(report.view_code).trim() : "";
+  const reportUrl = viewCode
+    ? `${workerBase}/report?hash=${encodeURIComponent(report.view_hash)}&code=${encodeURIComponent(viewCode)}`
+    : `${workerBase}/report?hash=${encodeURIComponent(report.view_hash)}`;
   const fromName = await getFromName(env);
   const fromEmail = await getFromEmail(env);
   const from = fromEmail.includes("<") ? fromEmail : `${fromName} <${fromEmail}>`;
   const reportT = I18N_EMAIL[reportLocale] || I18N_EMAIL.en;
   const subject = reportT.report_ready_subject;
-  const html = getReportReadyEmailHtml(name, reportUrl, fromName, reportLocale);
+  const html = getReportReadyEmailHtml(name, reportUrl, fromName, reportLocale, viewCode);
   const result = await sendResend(env.RESEND_API_KEY, { from, to, subject, html });
   const now = new Date().toISOString().slice(0, 19).replace("T", " ");
   try {
@@ -2085,7 +2104,7 @@ function getDefaultReportTemplateBodyFlare() {
     .section-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
     a { color: var(--accent); }
     @media (max-width: 720px) { .meta-grid, .grid-2, .kv { grid-template-columns: 1fr; } }
-    @media print { body { background: #fff; color: #111; } .card, .report-header { box-shadow: none; } .pill { print-color-adjust: exact; } }
+    @media print { body { background: #fff; color: #111; } .card, .report-header { box-shadow: none; } .pill { print-color-adjust: exact; } #theme-toggle, #print-pdf-btn { display: none !important; } }
   </style>
 </head>
 <body>
@@ -2100,7 +2119,8 @@ function getDefaultReportTemplateBodyFlare() {
         <h1>Security & Operations Risk Assessment Report</h1>
         <p class="subtitle">Prepared for {{name}} · {{company}} · {{report_date}} · Flare · getflare.net</p>
       </div>
-      <button type="button" id="theme-toggle" aria-label="Toggle dark/light mode" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); color: #fff; padding: 0.4rem 0.75rem; border-radius: 8px; cursor: pointer; font-size: 0.875rem; font-family: inherit; white-space: nowrap;">Dark</button>
+      <button type="button" id="theme-toggle" aria-label="Switch to light mode" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); color: #fff; padding: 0.4rem 0.75rem; border-radius: 8px; cursor: pointer; font-size: 0.875rem; font-family: inherit; white-space: nowrap;">Light</button>
+      <button type="button" id="print-pdf-btn" aria-label="Print or save as PDF" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); color: #fff; padding: 0.4rem 0.75rem; border-radius: 8px; cursor: pointer; font-size: 0.875rem; font-family: inherit; white-space: nowrap;">Print / Save as PDF</button>
     </header>
     <section class="card cover-page">
       <p class="meta"><strong>{{company}}</strong></p>
@@ -2412,7 +2432,7 @@ function getDefaultReportTemplateBodyFlare() {
   (function() {
     var toggle = document.getElementById('theme-toggle');
     if (toggle) {
-      function updateLabel() { toggle.textContent = (document.documentElement.getAttribute('data-theme') === 'light') ? 'Light' : 'Dark'; }
+      function updateLabel() { toggle.textContent = (document.documentElement.getAttribute('data-theme') === 'light') ? 'Dark' : 'Light'; }
       updateLabel();
       toggle.addEventListener('click', function() {
         var next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
@@ -2421,6 +2441,8 @@ function getDefaultReportTemplateBodyFlare() {
         updateLabel();
       });
     }
+    var printBtn = document.getElementById('print-pdf-btn');
+    if (printBtn) printBtn.addEventListener('click', function() { window.print(); });
   })();
   </script>
 </body>
@@ -2453,8 +2475,8 @@ function getDefaultReportTemplateBodyFlarePT() {
     .replace(/>Tooling &amp; Integration Recommendations<\/h2>/, ">Recomendações de ferramentas e integração</h2>")
     .replace(/>Assumptions, Constraints, and Data Quality<\/h2>/, ">Premissas, restrições e qualidade dos dados</h2>")
     .replace(/>Appendix: Raw Assessment Responses<\/h2>/, ">Anexo: Respostas do questionário</h2>")
-    .replace(/>Dark<\/button>/, ">Escuro</button>")
-    .replace(/\? 'Light' : 'Dark'/, "? 'Claro' : 'Escuro'");
+    .replace(/>Light<\/button>\s*<button type="button" id="print-pdf-btn"/, ">Claro</button>\n      <button type=\"button\" id=\"print-pdf-btn\"")
+    .replace(/\? 'Dark' : 'Light'/, "? 'Escuro' : 'Claro'");
 }
 
 function buildStubReportHtml(submission, data) {

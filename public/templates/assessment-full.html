@@ -80,7 +80,7 @@
     <!-- Navigation -->
     <nav style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
       <a href="index.html" style="font-weight: 700; font-size: 1.25rem; letter-spacing: -0.02em; text-decoration: none; display: inline-flex; align-items: baseline;"><span style="background: linear-gradient(135deg, var(--flare-orange), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Flare</span><span style="color: var(--logo-dot);">.</span></a>
-      <button type="button" id="theme-toggle" aria-label="Toggle light/dark" style="background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text); padding: 0.4rem 0.75rem; border-radius: 8px; cursor: pointer; font-size: 0.875rem; font-family: inherit;">Dark</button>
+      <button type="button" id="theme-toggle" aria-label="Switch theme" style="background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text); padding: 0.4rem 0.75rem; border-radius: 8px; cursor: pointer; font-size: 0.875rem; font-family: inherit;">Light</button>
     </nav>
     <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('flare_theme') || 'dark');</script>
     <style>[data-theme="light"] { --bg: #f4f4f5; --bg-elevated: #ffffff; --text: #18181b; --text-muted: #71717a; --border: rgba(0,0,0,0.08); }</style>
@@ -1429,7 +1429,7 @@
   var codeError = document.getElementById('assessment-code-error');
   var themeToggle = document.getElementById('theme-toggle');
   if (themeToggle) {
-    function updateThemeLabel() { themeToggle.textContent = (document.documentElement.getAttribute('data-theme') === 'light') ? 'Light' : 'Dark'; }
+    function updateThemeLabel() { themeToggle.textContent = (document.documentElement.getAttribute('data-theme') === 'light') ? 'Dark' : 'Light'; }
     updateThemeLabel();
     themeToggle.addEventListener('click', function() {
       var next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
