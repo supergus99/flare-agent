@@ -14,6 +14,11 @@ const CORS = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
+/** Injected into saved assessment template when it has Fill button but no fillFormWithTestData. Uses external script to avoid blockers (ERR_BLOCKED_BY_CLIENT) that block inline script. */
+function getAssessmentFillTestDataScript() {
+  return '<script src="/js/fill-test-data.js"><\/script>';
+}
+
 /** Email copy for welcome and report-ready emails. Locales: en, pt (Portugal), es (Spain), fr, de (Germany). */
 const I18N_EMAIL = {
   en: {
@@ -1100,9 +1105,31 @@ export default {
         } catch (_) {
           row = await env.DB.prepare("SELECT form_config FROM assessment_template WHERE id = 1 LIMIT 1").first();
         }
-        const body = row?.body ?? null;
+        let body = row?.body ?? null;
         if (body != null && String(body).trim() !== "") {
-          return json({ ok: true, html: body });
+          body = String(body);
+          if (body.includes("assessment-comprehensive") || body.includes("Script not loaded")) {
+            body = body.replace(
+              "Script not loaded. Open DevTools (F12) > Network, check if assessment-comprehensive.js loads. Try hard refresh (Ctrl+Shift+R).",
+              "Please refresh the page (Ctrl+Shift+R or Cmd+Shift+R) and try again."
+            );
+          }
+          const hasFillButton = body.includes("fillTestDataBtn") || body.includes("Fill with test data");
+          if (hasFillButton && !body.includes("fillFormWithTestData")) {
+            const script = getAssessmentFillTestDataScript();
+            if (/<\/body\s*>/i.test(body)) {
+              body = body.replace(/<\/body\s*>/i, script + "\n</body>");
+            } else if (/<\/html\s*>/i.test(body)) {
+              body = body.replace(/<\/html\s*>/i, script + "\n</html>");
+            } else {
+              body = body + script;
+            }
+          }
+          return json(
+            { ok: true, html: body },
+            200,
+            { "Cache-Control": "no-store, no-cache, must-revalidate" }
+          );
         }
         const formConfig = row?.form_config ? JSON.parse(row.form_config) : getDefaultAssessmentConfig();
         return json({ ok: true, data: formConfig });

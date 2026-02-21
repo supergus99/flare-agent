@@ -118,6 +118,16 @@ If the assessment page asks for a **security code**, use the **6-character code*
 
 ---
 
+## “Fill with test data” and saved templates
+
+The assessment form can be served from the **static file** `templates/assessment-full.html` or from a **custom template saved in Admin** (Admin → Templates → Assessment HTML). The “Fill with test data” logic lives in **`/js/fill-test-data.js`** (same-origin script), so it is less likely to be blocked by ad/privacy extensions than inline script. If you see “Please refresh the page…” when clicking the button:
+
+- **Worker:** When serving a saved template, the Worker injects `<script src="/js/fill-test-data.js"></script>` before `</body>` if the template has the Fill button but not the fill script. Redeploy the Worker after changes.
+- **Static site:** Ensure `public/js/fill-test-data.js` is deployed with your frontend so `/js/fill-test-data.js` is served from the same origin as the assessment page.
+- **Blockers:** If the console shows `Failed to load resource: net::ERR_BLOCKED_BY_CLIENT`, a browser extension (ad blocker, privacy tool) is blocking a request. Try in a private/incognito window with extensions disabled, or whitelist your site. The fill script is first-party (`/js/fill-test-data.js`); often the blocked resource is a third-party (e.g. Turnstile). After fixing, hard refresh (Ctrl+Shift+R / Cmd+Shift+R).
+
+---
+
 ## Enabling captcha for production
 
 During testing, the assessment form does **not** load Cloudflare Turnstile (no captcha), so you can use “Fill with test data” and submit without blockers. For production security:
