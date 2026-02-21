@@ -1689,12 +1689,31 @@ async function handleGenerateReport(env, body) {
     const lang = (reportVars.language || "").toString().toLowerCase();
     const isPt = lang === "pt" || lang === "pt-pt";
     const defaultBody = isPt ? getDefaultReportTemplateBodyFlarePT() : getDefaultReportTemplateBody();
-    const templateBody = templateRow?.body ? templateRow.body : defaultBody;
+    let templateBody = templateRow?.body ? templateRow.body : defaultBody;
+    if (!templateBody.includes("{{mcp_domain_risk}}")) {
+      const mcpSection = getMcpSectionFragment();
+      const matchSection3 = templateBody.match(/(\s*)(<section[^>]*>\s*<h2[^>]*>3\)[^<]*)/i);
+      if (matchSection3) {
+        templateBody = templateBody.replace(matchSection3[0], mcpSection + "\n    " + matchSection3[0].trimStart());
+      } else {
+        templateBody = templateBody.replace(/(\s*<\/div>\s*<script>)/, mcpSection + "\n    $1");
+      }
+    }
     htmlContent = applyReportTemplate(templateBody, reportVars);
   } catch (_) {
     const lang = (reportVars.language || "").toString().toLowerCase();
     const isPt = lang === "pt" || lang === "pt-pt";
-    htmlContent = applyReportTemplate(isPt ? getDefaultReportTemplateBodyFlarePT() : getDefaultReportTemplateBody(), reportVars);
+    let templateBody = isPt ? getDefaultReportTemplateBodyFlarePT() : getDefaultReportTemplateBody();
+    if (!templateBody.includes("{{mcp_domain_risk}}")) {
+      const mcpSection = getMcpSectionFragment();
+      const matchSection3 = templateBody.match(/(\s*)(<section[^>]*>\s*<h2[^>]*>3\)[^<]*)/i);
+      if (matchSection3) {
+        templateBody = templateBody.replace(matchSection3[0], mcpSection + "\n    " + matchSection3[0].trimStart());
+      } else {
+        templateBody = templateBody.replace(/(\s*<\/div>\s*<script>)/, mcpSection + "\n    $1");
+      }
+    }
+    htmlContent = applyReportTemplate(templateBody, reportVars);
   }
 
   const r2Key = `reports/${report.id}/v${nextVersion}.html`;
@@ -1966,18 +1985,18 @@ async function getSetting(db, key) {
 
 /** Default system instruction for Claude when generating report content. Used when ai_report_instruction is not set in DB. */
 function getDefaultAIReportInstruction() {
-  return `You are a security advisor for micro and small businesses and solo founders. Your job is to turn their assessment answers into a short, actionable Flare Compass report.
+  return `You are a security advisor for micro and small businesses and solo founders. Your job is to turn their assessment answers into a short, clear, actionable Flare Compass report. The reader is not technical: use simple words and short sentences. No jargon.
 
 ## Goal
-- Help them see their main risks in plain language and in order of priority.
-- Tell them exactly what to do next, with clear steps and links to free, reliable guides.
-- No jargon: explain like you would to a smart non-technical business owner. Avoid acronyms unless you spell them out once (e.g. "multi-factor authentication (MFA)").
+- One clear message: what is the main risk, and what to do first.
+- Plain language only. Explain like you would to a smart friend who runs a small business and has no IT team. Use short sentences. Avoid acronyms unless you spell them out once (e.g. "multi-factor authentication (MFA)").
+- Be brief. Every sentence should earn its place. Do not repeat the same idea in different words.
 
 ## Output
 Produce a JSON object with exactly these keys (you may use HTML in findings and recommendations; escape quotes inside strings):
-- executive_summary: 2–3 sentences. What is the overall picture? What should they focus on first?
-- findings: HTML list (e.g. <ul><li>...</li></ul>) of 3–5 main gaps or risks. One short sentence per finding; say why it matters to their business.
-- recommendations: HTML list of 3–5 prioritized actions. Each item must be practical and include a step-by-step link where possible. Prefer free tools and free guides only.
+- executive_summary: 2–3 short sentences. Overall picture and the one thing to focus on first. No filler.
+- findings: HTML list (e.g. <ul><li>...</li></ul>) of 3–5 main gaps or risks. One short sentence per finding; why it matters to their business in simple terms.
+- recommendations: HTML list of 3–5 prioritized actions. Each item: one line of what to do + a link to a free step-by-step guide. Prefer free tools and free guides only.
 
 ## Rules
 - Only recommend free or low-cost options. Do not recommend paid software, audits, or consultants unless the assessment clearly states they have budget and want that. Default to free tools and free guides only.
@@ -1991,7 +2010,8 @@ Produce a JSON object with exactly these keys (you may use HTML in findings and 
 - Order recommendations by impact and ease: do the most important, quick wins first.
 - Base everything on the assessment data provided; do not invent answers they did not give. If something is "Not sure", say so and still give a simple next step (e.g. "Check whether MFA is on: [link]").
 - Keep tone supportive and practical: "Here is what to do" not "You should have done this."
-- When **MCP risk enrichment** is provided (domain risk, vulnerability summary, industry context, financial exposure, control gaps), weave it into the executive summary and findings: reference specific domain or email security issues, relevant CVEs if mentioned, industry risk level, and financial exposure so the report reads as one coherent narrative. Do not repeat the raw MCP block verbatim; use it to prioritise and add context.
+- Keep every section short. One sentence per idea. No filler or repetition.
+- When **MCP risk enrichment** is provided (domain risk, vulnerability summary, industry context, financial exposure, control gaps), weave it into the executive summary and findings in simple language: e.g. "Your website has X" or "We found known issues (CVEs) that could be fixed by updating Y." Do not repeat the raw MCP block; use it to prioritise and add context. If MCP mentions CVEs or technical terms, explain in one short plain-language sentence.
 - Write the entire JSON (executive_summary, findings, recommendations) in the same language as the assessment. If the assessment is in English, write in English; if in Portuguese, Spanish, French, or German, write in that language.`;
 }
 
@@ -2027,6 +2047,100 @@ function countNotSure(data, keys) {
     if (/not\s*sure/i.test(s)) n += 1;
   }
   return n;
+}
+
+/** Map numeric score 0–5 to risk label for pill styling. */
+function scoreToLabel(n) {
+  if (n == null || n === "" || n === "—") return "—";
+  const num = typeof n === "number" ? n : parseInt(String(n), 10);
+  if (Number.isNaN(num)) return "—";
+  if (num <= 1) return "Critical";
+  if (num <= 2) return "High";
+  if (num <= 3) return "Moderate";
+  return "Low";
+}
+
+function scoreAccounts(data) {
+  const d = data || {};
+  let s = 0;
+  if (/^yes$/i.test(String(d.mfa_email || "").trim())) s += 2;
+  const mfaTools = String(d.mfa_other_tools || "").trim().toLowerCase();
+  if (mfaTools === "yes" || mfaTools === "yes (all)") s += 1;
+  if (/^never$/i.test(String(d.share_passwords || "").trim())) s += 1;
+  if (/^yes$/i.test(String(d.password_manager || "").trim()) || /yes\s*\(all\)/i.test(String(d.password_manager || ""))) s += 1;
+  if (/only people who need/i.test(String(d.admin_access || ""))) s += 0.5;
+  return Math.min(5, Math.round(s));
+}
+
+function scoreDevices(data) {
+  const d = data || {};
+  let s = 0;
+  if (/always|automatic/i.test(String(d.updates_handled || ""))) s += 2;
+  else if (/sometimes/i.test(String(d.updates_handled || ""))) s += 1;
+  const enc = String(d.devices_encrypted || "").trim().toLowerCase();
+  if (enc === "all" || enc === "yes") s += 2;
+  else if (enc === "some") s += 1;
+  if (/^yes$/i.test(String(d.device_inventory || "").trim())) s += 1;
+  return Math.min(5, Math.round(s));
+}
+
+function scoreData(data) {
+  const d = data || {};
+  let s = 0;
+  if (/cloud|yes|we rely/i.test(String(d.backup_method || ""))) s += 1;
+  if (/^yes$/i.test(String(d.backup_tested || "").trim())) s += 2;
+  if (/yes/i.test(String(d.delete_data || ""))) s += 0.5;
+  if (/^yes$/i.test(String(d.limit_sensitive_access || "").trim())) s += 1;
+  return Math.min(5, Math.round(s));
+}
+
+function scoreAlerts(data) {
+  const d = data || {};
+  let s = 0;
+  const alerts = String(d.security_alerts || "").trim();
+  if (alerts && alerts !== "—" && !/^none$/i.test(alerts)) s += 1;
+  if (d.who_receives_alerts && String(d.who_receives_alerts).trim() !== "" && String(d.who_receives_alerts).trim() !== "—") s += 2;
+  if (/written|yes/i.test(String(d.hack_checklist || ""))) s += 1;
+  if (d.first_call && String(d.first_call).trim() !== "" && String(d.first_call).trim() !== "—") s += 0.5;
+  return Math.min(5, Math.round(s));
+}
+
+function scorePayments(data) {
+  const d = data || {};
+  if (/^no$/i.test(String(d.accept_payments || "").trim())) return null;
+  let s = 0;
+  if (/yes|enabled/i.test(String(d.fraud_protection || ""))) s += 2;
+  if (/^no$/i.test(String(d.payment_scam_attempt || "").trim())) s += 1;
+  return Math.min(5, Math.round(s));
+}
+
+function scoreLegal(data) {
+  const d = data || {};
+  let s = 0;
+  if (/sometimes|yes|before/i.test(String(d.vendor_security_check || ""))) s += 1;
+  if (/yes|sometimes/i.test(String(d.dpa_with_vendors || ""))) s += 0.5;
+  if (/annual|quarterly|yes/i.test(String(d.security_checkup || ""))) s += 1;
+  return Math.min(5, Math.round(s));
+}
+
+function preventionReadiness(data) {
+  const acc = scoreAccounts(data);
+  const dev = scoreDevices(data);
+  const avg = (acc + dev) / 2;
+  if (avg <= 1) return "Critical";
+  if (avg <= 2) return "High";
+  if (avg <= 3) return "Moderate";
+  return "Low";
+}
+
+function recoveryReadiness(data) {
+  const dataScore = scoreData(data);
+  const alertScore = scoreAlerts(data);
+  const avg = (dataScore + alertScore) / 2;
+  if (avg <= 1) return "Critical";
+  if (avg <= 2) return "High";
+  if (avg <= 3) return "Moderate";
+  return "Low";
 }
 
 function buildReportVars(submission, data) {
@@ -2247,8 +2361,41 @@ function buildReportVars(submission, data) {
     "a.payments_applicable": paymentsApplicable ? "Yes" : "No",
     "a.byod_applicable": byodApplicable ? "Yes" : "No",
     "a.had_incidents": hadIncidents ? "Yes" : "No",
+    prevention_readiness: preventionReadiness(d),
+    recovery_readiness: recoveryReadiness(d),
+    score_accounts: String(scoreAccounts(d)),
+    score_accounts_label: scoreToLabel(scoreAccounts(d)),
+    score_devices: String(scoreDevices(d)),
+    score_devices_label: scoreToLabel(scoreDevices(d)),
+    score_data: String(scoreData(d)),
+    score_data_label: scoreToLabel(scoreData(d)),
+    score_alerts: String(scoreAlerts(d)),
+    score_alerts_label: scoreToLabel(scoreAlerts(d)),
+    score_payments: paymentsApplicable ? String(scorePayments(d) ?? "—") : "—",
+    score_payments_label: paymentsApplicable ? scoreToLabel(scorePayments(d)) : "—",
+    score_legal: String(scoreLegal(d)),
+    score_legal_label: scoreToLabel(scoreLegal(d)),
   };
   return vars;
+}
+
+/** MCP section HTML fragment (section 2.5). Injected into custom templates that lack MCP placeholders. */
+function getMcpSectionFragment() {
+  return `<section class="card">
+      <h2>2.5) Website &amp; technical risk (from Flare check)</h2>
+      <p class="muted">When we have your website or domain, we show: domain security, known vulnerabilities (CVEs), industry context, and estimated financial exposure.</p>
+      <div class="meta-grid">
+        <div class="kv"><label>Domain / risk</label><div>{{mcp_domain_risk}}</div></div>
+        <div class="kv"><label>Overall risk</label><div>{{mcp_overall_risk}}</div></div>
+        <div class="kv"><label>Primary drivers</label><div>{{mcp_primary_drivers}}</div></div>
+        <div class="kv"><label>Industry context</label><div>{{mcp_industry_context}}</div></div>
+        <div class="kv"><label>Financial exposure</label><div>{{mcp_financial_exposure}}</div></div>
+      </div>
+      <h3>Vulnerability summary</h3>
+      <p>{{mcp_vuln_summary}}</p>
+      <h3>Control gaps</h3>
+      <p>{{mcp_control_gaps}}</p>
+    </section>`;
 }
 
 /** Full report template (STR structure) with Flare styling. Placeholders: {{name}}, {{company}}, {{email}}, {{role}}, {{service}}, {{message}}, {{report_date}}, {{website_url}}, {{units_range}}, {{countries}}, {{language}} */
@@ -2357,45 +2504,19 @@ function getDefaultReportTemplateBodyFlare() {
       <p class="muted" style="margin-top:10px;">Website details shown only when public website = Yes. Primary region: {{primary_region}}. Language: {{language}}.</p>
     </section>
     <section class="card">
-      <h2>2) Executive Summary (Decision-Ready)</h2>
-      <h3>2.1 Overall posture</h3>
-      <p class="muted">Two dimensions: Prevention Readiness (accounts, devices, website hardening) and Recovery Readiness (backups, restore test, incident checklist).</p>
+      <h2>2) Executive summary</h2>
+      <p class="muted">How ready you are to prevent issues (accounts, devices) and to recover if something goes wrong (backups, who gets alerts).</p>
       <div class="grid-2">
-        <div class="kpi"><div>Prevention Readiness</div><div><span class="pill">[Low / Moderate / High / Critical]</span></div></div>
-        <div class="kpi"><div>Recovery Readiness</div><div><span class="pill">[Low / Moderate / High / Critical]</span></div></div>
+        <div class="kpi"><div>Prevention</div><div><span class="pill {{prevention_readiness}}">{{prevention_readiness}}</span></div></div>
+        <div class="kpi"><div>Recovery</div><div><span class="pill {{recovery_readiness}}">{{recovery_readiness}}</span></div></div>
       </div>
-      <p><strong>Overall rating:</strong> [Short explanation based on {{mfa_email}}, {{backup_status}}, {{alert_owner}}, {{update_cadence}}].</p>
-      <p><strong>Top 3 business risks (plain language):</strong> e.g. email takeover, ransomware downtime, invoice fraud — derived from {{top_concerns_list}} and control gaps.</p>
-      <h3>2.2 Top 5 findings (with impact)</h3>
-      <p class="muted">For each: What&apos;s happening · Why it matters · Evidence (QIDs) · Fix priority (Now / Next / Later).</p>
-      <ul>
-        <li><strong>1.</strong> [Finding] — Impact: [business]. Evidence: [QIDs]. Priority: Now/Next/Later.</li>
-        <li><strong>2.</strong> [Finding] — Impact: [business]. Evidence: [QIDs]. Priority: Now/Next/Later.</li>
-        <li><strong>3–5.</strong> [From {{mfa_email}}, {{shared_passwords}}, {{backup_tested}}, {{alert_owner}}, {{update_cadence}}, {{fraud_protection_list}}].</li>
-      </ul>
-      <h3>2.3 7-Day Quick Wins</h3>
-      <ul>
-        <li>Turn on MFA for email</li>
-        <li>Assign alert owner ({{alert_owner}})</li>
-        <li>Run 1 restore test (current: {{backup_tested}})</li>
-        <li>Enable auto-updates where possible (current: {{update_cadence}})</li>
-        <li>Stop password sharing; introduce password manager (current sharing: {{shared_passwords}})</li>
-      </ul>
-      <h3>2.4 30/60/90-day priorities</h3>
-      <p class="muted">Timeline from assessment: {{timeline}}. Budget: {{budget_range}}. Owner role, effort (S/M/L), cost (Free/Low/Med), disruption (Low/Med).</p>
-      <ul>
-        <li><strong>Week 1–2:</strong> MFA everywhere; assign alert owner; enable alerts.</li>
-        <li><strong>Week 3–4:</strong> Password manager; backup + 1 restore test.</li>
-        <li><strong>Month 2:</strong> Offboarding checklist; reduce admin accounts; device encryption + updates.</li>
-        <li><strong>Month 3:</strong> Tool/account list; vendor check before purchase; security checkup.</li>
-      </ul>
       {{ai_executive_summary}}
       <div class="ai-findings">{{ai_findings}}</div>
       <div class="ai-recommendations">{{ai_recommendations}}</div>
     </section>
     <section class="card">
-      <h2>2.5) MCP Risk Enrichment</h2>
-      <p class="muted">Domain, vulnerability, industry and financial context (from MCP pipeline).</p>
+      <h2>2.5) Website &amp; technical risk</h2>
+      <p class="muted">When we checked your website or domain: security flags, known vulnerabilities (CVEs), industry context, and estimated financial exposure.</p>
       <div class="meta-grid">
         <div class="kv"><label>Domain / risk</label><div>{{mcp_domain_risk}}</div></div>
         <div class="kv"><label>Overall risk</label><div>{{mcp_overall_risk}}</div></div>
@@ -2522,14 +2643,14 @@ function getDefaultReportTemplateBodyFlare() {
       <h2>5) Scoring &amp; Method (Transparent)</h2>
       <h3>5.1 How scoring works</h3>
       <p>Scale 0–5: 0=Not implemented, 1=Ad-hoc, 2=Basic, 3=Defined, 4=Managed, 5=Optimized. Areas weighted more: email MFA, backups + restore test, automatic updates, alert ownership.</p>
-      <h3>5.2 Domain scores (aligned to assessment)</h3>
+      <h3>5.2 Domain scores (0 = weak, 5 = strong)</h3>
       <div class="grid-2">
-        <div class="kpi"><div>Accounts &amp; Access (Section 3)</div><div><span class="pill">[x/5]</span></div></div>
-        <div class="kpi"><div>Devices &amp; Updates (Section 6 + 3.9, 4.7)</div><div><span class="pill">[x/5]</span></div></div>
-        <div class="kpi"><div>Data &amp; Privacy Basics (Section 4)</div><div><span class="pill">[x/5]</span></div></div>
-        <div class="kpi"><div>Alerts &amp; Incident Readiness (Section 7)</div><div><span class="pill">[x/5]</span></div></div>
-        <div class="kpi"><div>Payments &amp; Fraud (Section 5, conditional)</div><div><span class="pill">[x/5]</span></div></div>
-        <div class="kpi"><div>Legal / Vendors / Training (Section 8)</div><div><span class="pill">[x/5]</span></div></div>
+        <div class="kpi"><div>Accounts &amp; access</div><div><span class="pill {{score_accounts_label}}">{{score_accounts}}/5</span></div></div>
+        <div class="kpi"><div>Devices &amp; updates</div><div><span class="pill {{score_devices_label}}">{{score_devices}}/5</span></div></div>
+        <div class="kpi"><div>Data &amp; backups</div><div><span class="pill {{score_data_label}}">{{score_data}}/5</span></div></div>
+        <div class="kpi"><div>Alerts &amp; incident readiness</div><div><span class="pill {{score_alerts_label}}">{{score_alerts}}/5</span></div></div>
+        <div class="kpi"><div>Payments &amp; fraud</div><div><span class="pill {{score_payments_label}}">{{score_payments}}/5</span></div></div>
+        <div class="kpi"><div>Legal / vendors / training</div><div><span class="pill {{score_legal_label}}">{{score_legal}}/5</span></div></div>
       </div>
       <h3>5.3 Confidence score</h3>
       <p>Based on &quot;Not sure&quot; count ({{meta.not_sure_count}}), unanswered optional fields, and skipped vs N/A. This report: <strong>{{meta.confidence_level}}</strong>.</p>
