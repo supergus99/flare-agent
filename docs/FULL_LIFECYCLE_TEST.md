@@ -120,11 +120,12 @@ If the assessment page asks for a **security code**, use the **6-character code*
 
 ## “Fill with test data” and saved templates
 
-The assessment form can be served from the **static file** `templates/assessment-full.html` or from a **custom template saved in Admin** (Admin → Templates → Assessment HTML). The “Fill with test data” logic lives in **`/js/fill-test-data.js`** (same-origin script), so it is less likely to be blocked by ad/privacy extensions than inline script. If you see “Please refresh the page…” when clicking the button:
+The assessment form can be served from the **static file** `templates/assessment-full.html` or from a **custom template saved in Admin** (Admin → Templates → Assessment HTML). The “Fill with test data” logic is **inlined** so it works without any extra request:
 
-- **Worker:** When serving a saved template, the Worker injects `<script src="/js/fill-test-data.js"></script>` before `</body>` if the template has the Fill button but not the fill script. Redeploy the Worker after changes.
-- **Static site:** Ensure `public/js/fill-test-data.js` is deployed with your frontend so `/js/fill-test-data.js` is served from the same origin as the assessment page.
-- **Blockers:** If the console shows `Failed to load resource: net::ERR_BLOCKED_BY_CLIENT`, a browser extension (ad blocker, privacy tool) is blocking a request. Try in a private/incognito window with extensions disabled, or whitelist your site. The fill script is first-party (`/js/fill-test-data.js`); often the blocked resource is a third-party (e.g. Turnstile). After fixing, hard refresh (Ctrl+Shift+R / Cmd+Shift+R).
+- **Worker:** When serving a saved template, the Worker injects the full fill script (inline) before `</body>` if the template has the Fill button but not the fill script. No dependency on `/js/fill-test-data.js`. Redeploy the Worker after changes.
+- **Static file:** `public/templates/assessment-full.html` includes the same fill script inline, so the fallback (when the API is not used) also works.
+
+If you still see “Please refresh the page…”, do a hard refresh (Ctrl+Shift+R / Cmd+Shift+R) and ensure the Worker is redeployed. The file `public/js/fill-test-data.js` exists for reference only and is not required for the button to work.
 
 ---
 
