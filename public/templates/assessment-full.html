@@ -126,7 +126,7 @@
                 <div class="progress-step" data-step="10">Consent</div>
             </div>
             <div class="mt-2 text-end">
-                <button type="button" class="btn btn-outline-secondary btn-sm" id="fillTestDataBtn" title="Fill all fields with test data for full-cycle testing">Fill with test data (testing)</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="fillTestDataBtn" title="Fill all fields with test data for full-cycle testing" onclick="if(window.fillFormWithTestData){window.fillFormWithTestData();}else{alert('Please refresh the page (Ctrl+Shift+R or Cmd+Shift+R) and try again.');}return false;">Fill with test data (testing)</button>
             </div>
         </div>
 
@@ -1714,20 +1714,20 @@
     });
   }
   updateProgress();
-  if (window.FLARE_TURNSTILE_SITE_KEY) {
-    var tc = document.getElementById('turnstile-container');
-    if (tc) {
-      var s = document.createElement('script');
-      s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
-      s.async = true;
-      s.onload = function() {
-        var d = document.createElement('div');
-        d.className = 'cf-turnstile';
-        d.setAttribute('data-sitekey', window.FLARE_TURNSTILE_SITE_KEY);
-        tc.appendChild(d);
-      };
-      document.body.appendChild(s);
-    }
+  var captchaEnabled = window.FLARE_CAPTCHA_ENABLED && window.FLARE_TURNSTILE_SITE_KEY;
+  var tc = document.getElementById('turnstile-container');
+  if (tc && !captchaEnabled) tc.style.display = 'none';
+  if (captchaEnabled && tc) {
+    var s = document.createElement('script');
+    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+    s.async = true;
+    s.onload = function() {
+      var d = document.createElement('div');
+      d.className = 'cf-turnstile';
+      d.setAttribute('data-sitekey', window.FLARE_TURNSTILE_SITE_KEY);
+      tc.appendChild(d);
+    };
+    document.body.appendChild(s);
   }
 })();
 </script>

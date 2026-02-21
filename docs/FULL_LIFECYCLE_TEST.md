@@ -118,6 +118,21 @@ If the assessment page asks for a **security code**, use the **6-character code*
 
 ---
 
+## Enabling captcha for production
+
+During testing, the assessment form does **not** load Cloudflare Turnstile (no captcha), so you can use “Fill with test data” and submit without blockers. For production security:
+
+1. **Worker:** Set the secret `TURNSTILE_SECRET_KEY` (from Cloudflare Turnstile dashboard).
+2. **Assessment page:** Before the assessment template runs, set:
+   - `window.FLARE_CAPTCHA_ENABLED = true`
+   - `window.FLARE_TURNSTILE_SITE_KEY = 'your-site-key'`
+   (e.g. in a script tag or in the HTML that loads the assessment, or inject via your deployment.)
+3. The Turnstile widget will then load on the form and the Worker will verify the token when both the secret and a token are present.
+
+Leave `FLARE_CAPTCHA_ENABLED` unset (or false) and do not set `TURNSTILE_SECRET_KEY` until you are ready to require captcha.
+
+---
+
 ## Optional: test without paying (dev only)
 
 If you need to test **assessment → report** without going through Stripe:
