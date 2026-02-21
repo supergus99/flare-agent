@@ -1279,19 +1279,19 @@ export default {
         if (!version?.html_path || !env.REPORTS) {
           return new Response(
             "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Report not ready</title></head><body><h1>Report not ready</h1><p>No generated report file yet. Try again in a few minutes.</p></body></html>",
-            { status: 404, headers: { "Content-Type": "text/html; charset=utf-8" } }
+            { status: 404, headers: { "Content-Type": "text/html; charset=utf-8", ...CORS } }
           );
         }
         const obj = await env.REPORTS.get(version.html_path);
         if (!obj) {
           return new Response(
             "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Report error</title></head><body><h1>Report unavailable</h1><p>The report file could not be loaded.</p></body></html>",
-            { status: 500, headers: { "Content-Type": "text/html; charset=utf-8" } }
+            { status: 500, headers: { "Content-Type": "text/html; charset=utf-8", ...CORS } }
           );
         }
         const html = await obj.text();
         return new Response(html, {
-          headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "private, max-age=300" },
+          headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "private, max-age=300", ...CORS },
         });
       } catch (e) {
         return json({ error: e.message }, 500);
