@@ -1,0 +1,45 @@
+# MCP Enrichment Service – Cloudflare Worker
+# Deploy: npx wrangler deploy (from mcp_service/)
+name = "mcp-service"
+main = "workers/main.js"
+compatibility_date = "2024-01-01"
+
+# KV – store only submission_id + report metadata (pdf_url, report_text, generated_at). MCP JSON never stored.
+[[kv_namespaces]]
+binding = "REPORT_META"
+id = "bc173948aa9849db9a664a8bf6506e79"
+
+# Create via: npx wrangler kv namespace create REPORT_META
+
+# R2 – PDF/HTML report storage
+[[r2_buckets]]
+binding = "REPORTS"
+bucket_name = "mcp-reports"
+
+# Create bucket "mcp-reports" in Dashboard (Workers & Pages > R2) first.
+
+# Queues – async PDF generation and email delivery
+[[queues.producers]]
+queue = "mcp-jobs"
+binding = "JOBS"
+
+[[queues.consumers]]
+queue = "mcp-jobs"
+max_batch_size = 1
+max_batch_timeout = 30
+
+# Create queue "mcp-jobs" in Dashboard (Workers & Pages > Queues) first.
+
+# Optional: NVD cache KV (vulnerability feed)
+[[kv_namespaces]]
+binding = "NVD_CACHE"
+id = "3699a6d6e514413da446adce26c804af"
+
+# [vars] – non-secret config
+# [vars]
+# PDF_SERVICE_URL = "https://your-pages-function.example.com/pdf"
+
+# Secrets (set via wrangler secret put):
+# RESEND_API_KEY – email (Resend)
+# OPENAI_API_KEY or ANTHROPIC_API_KEY – optional AI enrichment
+# PDF_SERVICE_URL – optional; if not set, HTML is stored and URL returned

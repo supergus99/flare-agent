@@ -28,8 +28,11 @@ queue = "flare-jobs"
 max_batch_size = 1
 max_batch_timeout = 30
 
+# MCP enrichment: when set, assessment submissions trigger MCP (domain scan, NVD, report → email)
+[vars]
+MCP_SERVICE_URL = "https://mcp-service.gusmao-ricardo.workers.dev"
+
 # Optional: set at deploy time for admin version block (GET /api/version)
 # e.g. in CI: GIT_VERSION=$(git rev-parse --short HEAD) and LAST_UPDATED with build date
-# [vars]
 # GIT_VERSION = "abc1234"
 # LAST_UPDATED = "14 Feb 2025, 15:30"

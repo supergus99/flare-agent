@@ -1,0 +1,6 @@
+# Copy to .dev.vars and fill. Do not commit .dev.vars.
+# RESEND_API_KEY=re_xxxxxxxxxxxx
+# OPENAI_API_KEY=sk-...          # optional, for AI enrichment
+# ANTHROPIC_API_KEY=sk-ant-...   # optional
+# FROM_EMAIL=Flare <noreply@getflare.net>
+# PDF_SERVICE_URL=https://...    # optional; POST HTML, get PDF

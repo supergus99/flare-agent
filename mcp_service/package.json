@@ -1,0 +1,13 @@
+{
+  "name": "mcp-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MCP Enrichment MVP – domain/SSL/email checks, NVD CVE, industry stats, financial model, report template → PDF → email",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.65.0"
+  }
+}

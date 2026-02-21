@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Risk Report – {{domain}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg: #0a0a0b; --bg-card: #111113; --text: #e4e4e7; --muted: #71717a; --accent: #22d3ee; --border: rgba(255,255,255,0.06); --pill-low: #10b981; --pill-mod: #f59e0b; --pill-high: #f97316; --pill-crit: #ef4444; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: 'Outfit', system-ui, sans-serif; line-height: 1.55; }
+    .report { max-width: 960px; margin: 32px auto 64px; padding: 0 16px; }
+    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    .report-header { background: linear-gradient(135deg, #0e7490 0%, #0891b2 50%, #22d3ee 100%); color: #fff; padding: 28px 24px; border-radius: 14px; margin-bottom: 18px; }
+    .report-header h1 { margin: 0 0 8px; font-size: 26px; font-weight: 700; }
+    .report-header .subtitle { margin: 0; color: rgba(255,255,255,0.9); font-size: 14px; }
+    h2 { font-size: 20px; margin: 0 0 12px; color: var(--text); }
+    h3 { font-size: 16px; margin: 18px 0 8px; color: var(--accent); }
+    p { margin: 8px 0; }
+    ul { margin: 8px 0 8px 20px; }
+    .pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; color: #fff; background: var(--muted); }
+    .pill.low { background: var(--pill-low); }
+    .pill.moderate { background: var(--pill-mod); }
+    .pill.high { background: var(--pill-high); }
+    .pill.critical { background: var(--pill-crit); }
+    .kv { display: grid; grid-template-columns: 160px 1fr; gap: 12px; margin: 8px 0; }
+    .kv label { color: var(--muted); font-weight: 600; font-size: 0.9rem; }
+    .muted { color: var(--muted); }
+    @media print { body { background: #fff; color: #111; } .card, .report-header { box-shadow: none; } .pill { print-color-adjust: exact; } }
+  </style>
+</head>
+<body>
+  <div class="report">
+    <header class="report-header">
+      <h1>Risk Report for {{domain}}</h1>
+      <p class="subtitle">Submission ID: {{submission_id}} · {{generated_at}} · Flare MCP</p>
+    </header>
+
+    <section class="card">
+      <h2>Executive Summary</h2>
+      <p><strong>Overall Risk Score:</strong> {{overall_risk_score}} ({{risk_level}})</p>
+      <p><strong>Primary Risk Drivers:</strong> {{primary_risk_drivers}}</p>
+    </section>
+
+    <section class="card">
+      <h2>Domain Security</h2>
+      <p><strong>SSL:</strong> {{ssl_status}}, expires in {{ssl_expires}} days</p>
+      <p><strong>SPF:</strong> {{spf_status}} · <strong>DMARC:</strong> {{dmarc_status}} · <strong>DKIM:</strong> {{dkim_status}}</p>
+      <p><strong>Risk Flags:</strong> {{risk_flags}}</p>
+    </section>
+
+    <section class="card">
+      <h2>Vulnerability Context</h2>
+      <p class="muted">Relevant CVEs (CVSS ≥7, last 90 days) and exploitation status.</p>
+      {{vulnerability_summary}}
+    </section>
+
+    <section class="card">
+      <h2>Industry Context</h2>
+      <p><strong>Industry:</strong> {{industry}}</p>
+      <p><strong>Incident rate:</strong> {{incident_rate}} · <strong>Avg breach cost:</strong> {{avg_breach_cost}}</p>
+      <p><strong>Phishing rate:</strong> {{phishing_rate}} · <strong>Ransomware rate:</strong> {{ransomware_rate}}</p>
+      <p><strong>Industry risk level:</strong> {{industry_risk_level}}</p>
+    </section>
+
+    <section class="card">
+      <h2>Financial Estimate</h2>
+      <p><strong>Annualized risk exposure:</strong> {{annualized_risk_exposure}}</p>
+      <p><strong>Estimated downtime cost:</strong> {{estimated_downtime_cost}}</p>
+      <p><strong>Breach impact range:</strong> {{breach_impact_low}} – {{breach_impact_high}}</p>
+    </section>
+
+    <section class="card">
+      <h2>Control Gaps</h2>
+      {{control_gap_summary}}
+    </section>
+
+    <section class="card">
+      <p class="muted">This report was generated from MCP enrichment (domain scan, NVD, industry stats, financial model). MCP JSON is not stored.</p>
+    </section>
+  </div>
+</body>
+</html>

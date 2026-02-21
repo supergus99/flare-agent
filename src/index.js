@@ -282,6 +282,95 @@ async function verifyTurnstile(secret, token, request) {
 }
 
 /**
+ * Build MCP enrichment payload from Flare submission + assessment data.
+ * Returns null if domain cannot be derived (MCP requires domain).
+ * @param {string} submissionId
+ * @param {string} userEmail
+ * @param {string} assessmentDataJson
+ * @returns {object | null} Payload for POST /enrich-assessment or null
+ */
+function buildMCPPayload(submissionId, userEmail, assessmentDataJson) {
+  let d = {};
+  try {
+    d = typeof assessmentDataJson === "string" ? JSON.parse(assessmentDataJson || "{}") : assessmentDataJson || {};
+  } catch (_) {}
+  const websiteUrl = (d.website_url || d.website || "").trim();
+  let domain = "";
+  if (websiteUrl) {
+    try {
+      const u = new URL(websiteUrl.startsWith("http") ? websiteUrl : "https://" + websiteUrl);
+      domain = u.hostname.replace(/^www\./, "") || "";
+    } catch (_) {}
+  }
+  if (!domain && userEmail && userEmail.includes("@")) {
+    domain = userEmail.split("@")[1]?.trim() || "";
+  }
+  if (!domain) return null;
+
+  const str = (v) => (v != null && String(v).trim() !== "" ? String(v).trim() : "");
+  const peopleRaw = str(d.number_of_people);
+  let employeeCount = 10;
+  if (peopleRaw) {
+    const match = peopleRaw.match(/^(\d+)$/);
+    if (match) employeeCount = parseInt(match[1], 10) || 10;
+    else if (peopleRaw === "2-5") employeeCount = 3;
+    else if (peopleRaw === "6-10") employeeCount = 8;
+    else if (peopleRaw === "11-20") employeeCount = 15;
+    else if (peopleRaw === "21-50") employeeCount = 35;
+    else if (peopleRaw === "51-100") employeeCount = 75;
+    else if (peopleRaw === "100+") employeeCount = 100;
+  }
+  const platform = str(d.website_platform).toLowerCase();
+  const usesWordpress = platform === "wordpress";
+  const emailProvider = str(d.email_provider).toLowerCase();
+  const usesM365 = /microsoft|365|m365|outlook|office\s*365/i.test(emailProvider);
+  const mfaVal = str(d.mfa_email).toLowerCase();
+  const backupVal = str(d.backup_method).toLowerCase();
+  const endpointVal = str(d.computer_protection).toLowerCase();
+  const controls = {
+    mfa: /yes|enabled|true|on/i.test(mfaVal) && !/no|not|none|don't/i.test(mfaVal),
+    backup: backupVal !== "" && backupVal !== "—" && !/no|none|don't/i.test(backupVal),
+    endpoint_protection: endpointVal !== "" && endpointVal !== "—" && !/no|none|don't/i.test(endpointVal),
+  };
+  return {
+    submission_id: String(submissionId),
+    domain,
+    industry: str(d.industry) || "Other",
+    employee_count: employeeCount,
+    revenue_range: str(d.budget_range) || "",
+    uses_wordpress: usesWordpress,
+    uses_m365: usesM365,
+    controls,
+    user_email: userEmail,
+  };
+}
+
+/**
+ * Trigger MCP enrichment service. Fire-and-forget; logs errors.
+ * @param {object} payload - From buildMCPPayload
+ * @param {string} mcpServiceUrl - e.g. https://mcp-service.xxx.workers.dev
+ * @returns {Promise<boolean>}
+ */
+async function triggerMCP(payload, mcpServiceUrl) {
+  if (!mcpServiceUrl || !payload?.submission_id || !payload?.domain || !payload?.user_email) return false;
+  try {
+    const res = await fetch(`${mcpServiceUrl.replace(/\/$/, "")}/enrich-assessment`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      console.error("MCP request failed", res.status, await res.text());
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("Error calling MCP", err);
+    return false;
+  }
+}
+
+/**
  * Flare – Worker entrypoint (fetch + queue consumer)
  */
 export default {
@@ -938,6 +1027,15 @@ export default {
               payment_id: pid,
             });
           } catch (_) {}
+        }
+
+        // Trigger MCP enrichment (domain scan, NVD, industry, report → email). Fire-and-forget.
+        const mcpUrl = env.MCP_SERVICE_URL || "";
+        if (submissionId && mcpUrl) {
+          const mcpPayload = buildMCPPayload(submissionId, email, assessmentData);
+          if (mcpPayload && ctx.waitUntil) {
+            ctx.waitUntil(triggerMCP(mcpPayload, mcpUrl));
+          }
         }
 
         return json({
