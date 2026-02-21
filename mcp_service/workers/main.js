@@ -1,6 +1,7 @@
 /**
  * MCP Enrichment Service – Worker entrypoint.
  * POST /enrich-assessment → enqueue job → return "submission received, report generating".
+ * POST /enrich-assessment/sync → run pipeline, return MCP JSON only (for Flare report merge).
  * Queue consumer → orchestrator → PDF/store → email → KV metadata only (no MCP JSON stored).
  */
 
@@ -12,7 +13,9 @@ import { sendReportEmail } from './email_sender.js';
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    if (request.method !== 'POST' || url.pathname !== '/enrich-assessment') {
+    const isSync = url.pathname === '/enrich-assessment/sync';
+
+    if (request.method !== 'POST' || (url.pathname !== '/enrich-assessment' && !isSync)) {
       return new Response(JSON.stringify({ error: 'Not found' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' },
@@ -35,6 +38,22 @@ export default {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
+    }
+
+    if (isSync) {
+      try {
+        const { mcp } = await runOrchestrator(env, parsed.payload, { runAiEnrichment: false });
+        return new Response(JSON.stringify({ mcp }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      } catch (err) {
+        console.error('MCP sync failed', err);
+        return new Response(
+          JSON.stringify({ error: 'Enrichment failed', message: String(err?.message || err) }),
+          { status: 500, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     if (!env.JOBS) {

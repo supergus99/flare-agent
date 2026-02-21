@@ -371,6 +371,52 @@ async function triggerMCP(payload, mcpServiceUrl) {
 }
 
 /**
+ * Fetch MCP enrichment JSON (sync endpoint) for merging into Flare report.
+ * Returns object with mcp_* keys for template, or null on failure (caller should use fallbacks).
+ * @param {object} payload - From buildMCPPayload
+ * @param {string} mcpServiceUrl
+ * @returns {Promise<Record<string, string>|null>}
+ */
+async function fetchMCPEnrichmentForReport(payload, mcpServiceUrl) {
+  if (!mcpServiceUrl || !payload?.submission_id || !payload?.domain || !payload?.user_email) return null;
+  try {
+    const res = await fetch(`${mcpServiceUrl.replace(/\/$/, "")}/enrich-assessment/sync`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => null);
+    const mcp = data?.mcp;
+    if (!mcp) return null;
+    const di = mcp.domain_intelligence || {};
+    const vc = mcp.vulnerability_context || {};
+    const ic = mcp.industry_context || {};
+    const fe = mcp.financial_estimate || {};
+    const cg = mcp.control_gap_analysis || {};
+    const summary = mcp.summary || {};
+    const vulnItems = Array.isArray(vc.items) ? vc.items : [];
+    const vulnSummary = vulnItems.length
+      ? vulnItems.slice(0, 10).map((v) => `${v.cve_id || "CVE"} (${v.cvss_score || "?"}): ${(v.summary || "").slice(0, 80)}…`).join("; ")
+      : "No high-severity CVEs in scope.";
+    const gaps = Array.isArray(cg.gaps) ? cg.gaps : [];
+    const controlGaps = gaps.length ? gaps.map((g) => (g.description || g.code || "").trim()).filter(Boolean).join("; ") : "None identified.";
+    return {
+      mcp_domain_risk: (di.risk_flags && di.risk_flags.length) ? `${di.risk_flags.length} flag(s): ${di.risk_flags.map((f) => f.code).join(", ")}` : (di.ssl?.valid ? "SSL OK" : "—"),
+      mcp_vuln_summary: vulnSummary,
+      mcp_industry_context: ic.industry_risk_level || ic.industry || "—",
+      mcp_financial_exposure: fe.annualized_risk_exposure != null ? String(fe.annualized_risk_exposure) : (fe.estimated_breach_impact_range ? `${fe.estimated_breach_impact_range.low}–${fe.estimated_breach_impact_range.high}` : "—"),
+      mcp_control_gaps: controlGaps,
+      mcp_overall_risk: summary.risk_level || summary.overall_risk_score != null ? String(summary.overall_risk_score) : "—",
+      mcp_primary_drivers: summary.primary_risk_drivers || "—",
+    };
+  } catch (err) {
+    console.error("MCP sync for report failed", err);
+    return null;
+  }
+}
+
+/**
  * Flare – Worker entrypoint (fetch + queue consumer)
  */
 export default {
@@ -1029,14 +1075,8 @@ export default {
           } catch (_) {}
         }
 
-        // Trigger MCP enrichment (domain scan, NVD, industry, report → email). Fire-and-forget.
-        const mcpUrl = env.MCP_SERVICE_URL || "";
-        if (submissionId && mcpUrl) {
-          const mcpPayload = buildMCPPayload(submissionId, email, assessmentData);
-          if (mcpPayload && ctx.waitUntil) {
-            ctx.waitUntil(triggerMCP(mcpPayload, mcpUrl));
-          }
-        }
+        // MCP is now merged into the Flare report in handleGenerateReport (sync call).
+        // No standalone MCP email on submit.
 
         return json({
           ok: true,
@@ -1584,6 +1624,24 @@ async function handleGenerateReport(env, body) {
 
   const data = typeof submission.assessment_data === "string" ? JSON.parse(submission.assessment_data || "{}") : (submission.assessment_data || {});
   const reportVars = buildReportVars(submission, data);
+
+  const mcpServiceUrl = env.MCP_SERVICE_URL || "";
+  const mcpPayload = buildMCPPayload(submission.id, submission.email, submission.assessment_data);
+  if (mcpServiceUrl && mcpPayload) {
+    try {
+      const mcpVars = await fetchMCPEnrichmentForReport(mcpPayload, mcpServiceUrl);
+      if (mcpVars) Object.assign(reportVars, mcpVars);
+    } catch (_) {}
+  }
+  if (!reportVars.mcp_domain_risk) reportVars.mcp_domain_risk = "—";
+  if (!reportVars.mcp_vuln_summary) reportVars.mcp_vuln_summary = "Enrichment unavailable.";
+  if (!reportVars.mcp_industry_context) reportVars.mcp_industry_context = "—";
+  if (!reportVars.mcp_financial_exposure) reportVars.mcp_financial_exposure = "—";
+  if (!reportVars.mcp_control_gaps) reportVars.mcp_control_gaps = "—";
+  if (!reportVars.mcp_overall_risk) reportVars.mcp_overall_risk = "—";
+  if (!reportVars.mcp_primary_drivers) reportVars.mcp_primary_drivers = "—";
+  if (!reportVars.pdf_download_link) reportVars.pdf_download_link = "";
+
   const claudeApiKey = (await getSetting(env.DB, "claude_api_key")) || env.CLAUDE_API_KEY || env.ANTHROPIC_API_KEY || "";
   if (claudeApiKey) {
     try {
@@ -2280,6 +2338,21 @@ function getDefaultReportTemplateBodyFlare() {
       {{ai_executive_summary}}
       <div class="ai-findings">{{ai_findings}}</div>
       <div class="ai-recommendations">{{ai_recommendations}}</div>
+    </section>
+    <section class="card">
+      <h2>2.5) MCP Risk Enrichment</h2>
+      <p class="muted">Domain, vulnerability, industry and financial context (from MCP pipeline).</p>
+      <div class="meta-grid">
+        <div class="kv"><label>Domain / risk</label><div>{{mcp_domain_risk}}</div></div>
+        <div class="kv"><label>Overall risk</label><div>{{mcp_overall_risk}}</div></div>
+        <div class="kv"><label>Primary drivers</label><div>{{mcp_primary_drivers}}</div></div>
+        <div class="kv"><label>Industry context</label><div>{{mcp_industry_context}}</div></div>
+        <div class="kv"><label>Financial exposure</label><div>{{mcp_financial_exposure}}</div></div>
+      </div>
+      <h3>Vulnerability summary</h3>
+      <p>{{mcp_vuln_summary}}</p>
+      <h3>Control gaps</h3>
+      <p>{{mcp_control_gaps}}</p>
     </section>
     <section class="card">
       <h2>3) One-Page Security Snapshot (Shareable Internally)</h2>

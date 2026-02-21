@@ -1,13 +1,21 @@
 #!/usr/bin/env node
 /**
- * Smoke tests for the Flare Worker.
- * Run with: BASE_URL=http://localhost:8787 node scripts/smoke.js
- * Start the worker first: npx wrangler dev
- * Or test production: BASE_URL=https://flare-worker.xxx.workers.dev node scripts/smoke.js
+ * Smoke tests for the Flare Worker and (optionally) MCP service.
+ *
+ * Flare only:
+ *   BASE_URL=http://localhost:8787 node scripts/smoke.js
+ *   BASE_URL=https://flare-worker.xxx.workers.dev node scripts/smoke.js
+ *
+ * Flare + MCP (flow + integration):
+ *   BASE_URL=https://flare-worker.xxx.workers.dev MCP_BASE_URL=https://mcp-service.xxx.workers.dev node scripts/smoke.js
+ *
+ * Start worker first for local: npx wrangler dev
  */
 
 const BASE = process.env.BASE_URL || "http://localhost:8787";
 const base = BASE.replace(/\/$/, "");
+const MCP_BASE = process.env.MCP_BASE_URL || "";
+const mcpBase = MCP_BASE.replace(/\/$/, "");
 
 const tests = [];
 function test(name, fn) {
@@ -168,10 +176,104 @@ test("GET /nonexistent returns 404", async () => {
   return "ok";
 });
 
+// ---- MCP service (only when MCP_BASE_URL is set) ----
+test("MCP POST /enrich-assessment returns 202 and submission_id", async () => {
+  if (!mcpBase) return "skip (set MCP_BASE_URL to run)";
+  const payload = {
+    submission_id: `smoke-${Date.now()}`,
+    domain: "example.com",
+    industry: "Legal",
+    employee_count: 10,
+    revenue_range: "",
+    uses_wordpress: false,
+    uses_m365: true,
+    controls: { mfa: true, backup: true, endpoint_protection: false },
+    user_email: "smoke-test@example.com",
+  };
+  const { status, body } = await fetchOk(`${mcpBase}/enrich-assessment`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = parseJson(body);
+  if (status !== 202) throw new Error(`Expected 202, got ${status}`);
+  if (!data?.message && !data?.submission_id) throw new Error("Expected message and submission_id in body");
+  return "ok";
+});
+
+test("MCP POST /enrich-assessment with invalid body returns 400", async () => {
+  if (!mcpBase) return "skip (set MCP_BASE_URL to run)";
+  const { status, body } = await fetchOk(`${mcpBase}/enrich-assessment`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ domain: "example.com" }), // missing submission_id, user_email
+  });
+  const data = parseJson(body);
+  if (status !== 400) throw new Error(`Expected 400, got ${status}`);
+  if (!data?.error) throw new Error("Expected error in body");
+  return "ok";
+});
+
+test("MCP POST /enrich-assessment/sync returns 200 with mcp object", async () => {
+  if (!mcpBase) return "skip (set MCP_BASE_URL to run)";
+  const payload = {
+    submission_id: `smoke-sync-${Date.now()}`,
+    domain: "example.com",
+    industry: "Legal",
+    employee_count: 10,
+    revenue_range: "",
+    uses_wordpress: false,
+    uses_m365: true,
+    controls: { mfa: true, backup: true, endpoint_protection: false },
+    user_email: "smoke@example.com",
+  };
+  const { status, body } = await fetchOk(`${mcpBase}/enrich-assessment/sync`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = parseJson(body);
+  if (status !== 200) throw new Error(`Expected 200, got ${status}. Body: ${body}`);
+  if (!data?.mcp) throw new Error("Expected mcp object in body");
+  if (!data.mcp.domain_intelligence && !data.mcp.industry_context) throw new Error("Expected mcp to have domain_intelligence or industry_context");
+  return "ok";
+});
+
+test("Flare POST /api/assessments with domain triggers flow (MCP async)", async () => {
+  if (!mcpBase) return "skip (set MCP_BASE_URL to run)";
+  const email = `smoke-${Date.now()}@example.com`;
+  const assessmentPayload = {
+    contact_name: "Smoke Test",
+    email,
+    company_name: "Smoke Co",
+    assessment_data: {
+      website_url: "https://example.com",
+      industry: "Legal",
+      number_of_people: "2-5",
+      budget_range: "",
+      website_platform: "WordPress",
+      email_provider: "Microsoft 365",
+      mfa_email: "Yes",
+      backup_method: "Cloud backup",
+      computer_protection: "Built-in / antivirus",
+    },
+  };
+  const { status, body } = await fetchOk(`${base}/api/assessments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(assessmentPayload),
+  });
+  const data = parseJson(body);
+  if (status !== 200) throw new Error(`Expected 200, got ${status}. Body: ${body}`);
+  if (!data?.ok && !data?.submission_id) throw new Error("Expected ok and submission_id when saved");
+  return "ok";
+});
+
 // ---- Run ----
 async function run() {
   console.log("Flare smoke tests");
   console.log("BASE_URL:", base);
+  if (mcpBase) console.log("MCP_BASE_URL:", mcpBase, "(MCP + integration tests enabled)");
   console.log("");
 
   // Quick connectivity check

@@ -1,17 +1,17 @@
 # MCP integration with main Flare app
 
-When the main Flare Worker has **MCP_SERVICE_URL** set, each **assessment submission** (POST /api/assessments) that is saved to D1 also triggers the MCP enrichment pipeline.
+MCP enrichment is **merged into the single Flare report**. When **MCP_SERVICE_URL** is set, the Flare report generation (queue consumer) calls the MCP **sync** endpoint, gets domain/vuln/industry/financial/control-gap data, and merges it into the Flare HTML template. There is no separate MCP email; the customer receives one report (after admin approval) that includes an "MCP Risk Enrichment" section.
 
-## Flow
+## Flow (merged report)
 
 1. User submits the assessment form (main Flare app).
-2. Flare Worker saves the submission to D1 and enqueues the existing **generate_report** job (Flare report).
-3. If **MCP_SERVICE_URL** is set, the Worker builds an MCP payload from the submission and assessment data and calls **POST {MCP_SERVICE_URL}/enrich-assessment** (fire-and-forget via `ctx.waitUntil`).
-4. MCP service runs: domain scan → NVD → industry context → financial model → template fill → store report in R2 → send report email via Resend → store metadata in KV. MCP JSON is not persisted.
+2. Flare Worker saves the submission to D1 and enqueues **generate_report** (Flare report).
+3. Queue consumer runs **handleGenerateReport**: loads submission and assessment data, builds report vars, then **calls MCP sync** (`POST {MCP_SERVICE_URL}/enrich-assessment/sync`) with the same payload shape. MCP runs the pipeline (domain scan, NVD, industry, financial, control gaps) and returns **MCP JSON only** (no email, no R2/KV write).
+4. Flare merges MCP data into template vars (`mcp_domain_risk`, `mcp_vuln_summary`, `mcp_industry_context`, `mcp_financial_exposure`, `mcp_control_gaps`, etc.) and renders the **single** Flare HTML report (including section "2.5) MCP Risk Enrichment").
+5. Report is stored in Flare R2; status remains **pending_review**.
+6. Admin approves → **send_approved_report** → customer receives one email with the link to the (enriched) Flare report.
 
-So after a submission, the user can receive:
-- The **Flare report** (from the existing queue job, when approved/sent).
-- The **MCP report** email (from the MCP service, sent automatically when the pipeline finishes).
+If the MCP sync call fails, the report is still generated with fallback text ("—" or "Enrichment unavailable") for the MCP section.
 
 ## Configuration
 
@@ -45,6 +45,13 @@ If **domain** cannot be derived (no website URL and no @ in email), the main app
 2. Submit an assessment that includes at least a **website URL** or an email with a domain (e.g. user@company.com).
 3. Check the inbox for the MCP report email (from Resend, subject includes the domain).
 4. In MCP KV (REPORT_META), the key is the **submission_id** (Flare contact_submissions.id); value is report metadata (report_url, generated_at, etc.).
+
+## Optional: PDF download
+
+The report is stored as HTML in Flare R2. To offer a **PDF download**:
+
+- Use a serverless PDF generator (e.g. a Cloudflare Pages Function with Puppeteer, or an external API that accepts HTML and returns PDF). Generate the PDF when the report is approved (or on-demand when the user clicks "Download PDF").
+- Store the PDF in R2 (e.g. `reports/{reportId}/v{version}.pdf`) and set **pdf_download_link** in the report-ready email, or add a "Download PDF" link in the report HTML (template var `{{pdf_download_link}}` – set in reportVars when you have a PDF URL).
 
 ## Optional: report_status in D1
 
