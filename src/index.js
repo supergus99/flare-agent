@@ -1869,7 +1869,26 @@ async function callClaudeForReport(apiKey, env, submission, data, reportVars) {
   const systemInstruction =
     (await getSetting(env.DB, "ai_report_instruction")) ||
     getDefaultAIReportInstruction();
-  const prompt = `Assessment submission:\nCompany: ${reportVars.company}\nContact: ${reportVars.name} (${reportVars.email})\nRole: ${reportVars.role}\nService: ${reportVars.service}\nNotes: ${reportVars.message}\n\nRaw assessment data (JSON):\n${typeof data === "string" ? data : JSON.stringify(data)}\n\nProduce the JSON object only.`;
+  let prompt = `Assessment submission:\nCompany: ${reportVars.company}\nContact: ${reportVars.name} (${reportVars.email})\nRole: ${reportVars.role}\nService: ${reportVars.service}\nNotes: ${reportVars.message}\n\nRaw assessment data (JSON):\n${typeof data === "string" ? data : JSON.stringify(data)}`;
+
+  const hasMCP =
+    (reportVars.mcp_domain_risk && reportVars.mcp_domain_risk !== "—") ||
+    (reportVars.mcp_vuln_summary && reportVars.mcp_vuln_summary !== "Enrichment unavailable.") ||
+    (reportVars.mcp_industry_context && reportVars.mcp_industry_context !== "—") ||
+    (reportVars.mcp_financial_exposure && reportVars.mcp_financial_exposure !== "—") ||
+    (reportVars.mcp_control_gaps && reportVars.mcp_control_gaps !== "—");
+  if (hasMCP) {
+    prompt += `\n\nMCP risk enrichment (use this to strengthen executive summary and findings; cite domain/vuln/industry/financial where relevant):\n`;
+    if (reportVars.mcp_domain_risk && reportVars.mcp_domain_risk !== "—") prompt += `- Domain / risk: ${reportVars.mcp_domain_risk}\n`;
+    if (reportVars.mcp_overall_risk && reportVars.mcp_overall_risk !== "—") prompt += `- Overall risk: ${reportVars.mcp_overall_risk}\n`;
+    if (reportVars.mcp_primary_drivers && reportVars.mcp_primary_drivers !== "—") prompt += `- Primary drivers: ${reportVars.mcp_primary_drivers}\n`;
+    if (reportVars.mcp_vuln_summary && reportVars.mcp_vuln_summary !== "Enrichment unavailable.") prompt += `- Vulnerability summary: ${String(reportVars.mcp_vuln_summary).slice(0, 800)}\n`;
+    if (reportVars.mcp_industry_context && reportVars.mcp_industry_context !== "—") prompt += `- Industry context: ${reportVars.mcp_industry_context}\n`;
+    if (reportVars.mcp_financial_exposure && reportVars.mcp_financial_exposure !== "—") prompt += `- Financial exposure: ${reportVars.mcp_financial_exposure}\n`;
+    if (reportVars.mcp_control_gaps && reportVars.mcp_control_gaps !== "—") prompt += `- Control gaps: ${reportVars.mcp_control_gaps}\n`;
+  }
+
+  prompt += `\n\nProduce the JSON object only.`;
   const model = env.CLAUDE_MODEL || "claude-sonnet-4-20250514";
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -1938,6 +1957,7 @@ Produce a JSON object with exactly these keys (you may use HTML in findings and 
 - Order recommendations by impact and ease: do the most important, quick wins first.
 - Base everything on the assessment data provided; do not invent answers they did not give. If something is "Not sure", say so and still give a simple next step (e.g. "Check whether MFA is on: [link]").
 - Keep tone supportive and practical: "Here is what to do" not "You should have done this."
+- When **MCP risk enrichment** is provided (domain risk, vulnerability summary, industry context, financial exposure, control gaps), weave it into the executive summary and findings: reference specific domain or email security issues, relevant CVEs if mentioned, industry risk level, and financial exposure so the report reads as one coherent narrative. Do not repeat the raw MCP block verbatim; use it to prioritise and add context.
 - Write the entire JSON (executive_summary, findings, recommendations) in the same language as the assessment. If the assessment is in English, write in English; if in Portuguese, Spanish, French, or German, write in that language.`;
 }
 

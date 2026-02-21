@@ -13,6 +13,16 @@ MCP enrichment is **merged into the single Flare report**. When **MCP_SERVICE_UR
 
 If the MCP sync call fails, the report is still generated with fallback text ("—" or "Enrichment unavailable") for the MCP section.
 
+## MCP and Claude (AI report content)
+
+When **Claude** is configured (API key in Admin → Automation or `CLAUDE_API_KEY` / `ANTHROPIC_API_KEY`), the Flare report’s AI-generated **executive summary**, **findings**, and **recommendations** are produced by **callClaudeForReport**. That call now receives **MCP enrichment data** in the prompt when present:
+
+- Domain/risk, overall risk, primary drivers  
+- Vulnerability summary (relevant CVEs)  
+- Industry context, financial exposure, control gaps  
+
+The default AI instruction tells Claude to **use this MCP context** to strengthen the narrative: reference domain or email security issues, relevant CVEs, industry risk level, and financial exposure so the report reads as one coherent story rather than two separate blocks. The raw MCP section (2.5) remains in the report for transparency; Claude’s summary and findings can cite and prioritise from that same data.
+
 ## Configuration
 
 - **Main app (flare-worker):** Set **MCP_SERVICE_URL** to your MCP Worker URL.
