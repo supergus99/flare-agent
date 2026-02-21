@@ -1,6 +1,8 @@
 # Full lifecycle: customer payment → report(s) received
 
-This document describes the end-to-end flow from payment to the customer receiving both the **Flare report** (after admin approval) and the **MCP report** (automatically).
+This document describes the end-to-end flow from payment to the customer receiving the **Flare report** (after admin approval), which includes **MCP enrichment** (domain, vuln, industry, financial) merged into a single report.
+
+**To run the full flow yourself:** see **[Full lifecycle test](FULL_LIFECYCLE_TEST.md)** for step-by-step instructions (Stripe test mode, assessment, approval, report link).
 
 ---
 

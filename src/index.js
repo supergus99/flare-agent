@@ -1264,6 +1264,40 @@ export default {
       }
     }
 
+    const adminReportViewMatch = url.pathname.match(/^\/api\/admin\/reports\/(\d+)\/view\/?$/);
+    if (adminReportViewMatch && request.method === "GET" && env.DB) {
+      const admin = await requireAdmin(request, env);
+      if (!admin) return json({ error: "Unauthorized" }, 401);
+      const reportId = parseInt(adminReportViewMatch[1], 10);
+      if (!reportId) return json({ error: "Invalid report id" }, 400);
+      try {
+        const report = await env.DB.prepare("SELECT id, status FROM reports WHERE id = ?").bind(reportId).first();
+        if (!report) return json({ error: "Report not found" }, 404);
+        const version = await env.DB.prepare(
+          "SELECT html_path FROM report_versions WHERE report_id = ? AND html_path IS NOT NULL AND html_path != '' ORDER BY version DESC LIMIT 1"
+        ).bind(reportId).first();
+        if (!version?.html_path || !env.REPORTS) {
+          return new Response(
+            "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Report not ready</title></head><body><h1>Report not ready</h1><p>No generated report file yet. Try again in a few minutes.</p></body></html>",
+            { status: 404, headers: { "Content-Type": "text/html; charset=utf-8" } }
+          );
+        }
+        const obj = await env.REPORTS.get(version.html_path);
+        if (!obj) {
+          return new Response(
+            "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Report error</title></head><body><h1>Report unavailable</h1><p>The report file could not be loaded.</p></body></html>",
+            { status: 500, headers: { "Content-Type": "text/html; charset=utf-8" } }
+          );
+        }
+        const html = await obj.text();
+        return new Response(html, {
+          headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "private, max-age=300" },
+        });
+      } catch (e) {
+        return json({ error: e.message }, 500);
+      }
+    }
+
     if (url.pathname === "/api/admin/stats" && request.method === "GET" && env.DB) {
       const admin = await requireAdmin(request, env);
       if (!admin) return json({ error: "Unauthorized" }, 401);

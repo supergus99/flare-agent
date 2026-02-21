@@ -364,15 +364,30 @@
           loadStats();
           const tbody = document.getElementById('reports-tbody');
           tbody.innerHTML = (data.data || []).map(function (r) {
-            const viewLink = r.view_hash
-              ? '<a href="' + WORKER_URL + '/report?hash=' + encodeURIComponent(r.view_hash) + '" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm me-1">View</a>'
+            const viewBtn = r.view_hash
+              ? '<button type="button" class="view-report-btn btn btn-outline-primary btn-sm me-1" data-id="' + r.id + '">View</button>'
               : '';
             const approveBtn = (r.status === 'pending_review' || r.status === 'approved') && r.status !== 'sent'
               ? '<button type="button" class="approve-btn btn btn-success btn-sm" data-id="' + r.id + '">Approve &amp; send email</button>'
               : '<span class="badge bg-secondary">' + escapeHtml(r.status || '') + '</span>';
             const statusClass = r.status === 'sent' ? 'bg-success' : r.status === 'approved' ? 'bg-info' : r.status === 'pending_review' ? 'bg-warning text-dark' : 'bg-secondary';
-            return '<tr><td>' + r.id + '</td><td>' + r.payment_id + '</td><td>' + escapeHtml(r.report_type || '') + '</td><td><span class="badge ' + statusClass + '">' + escapeHtml(r.status || '') + '</span></td><td>' + escapeHtml(r.created_at || '') + '</td><td>' + viewLink + approveBtn + '</td></tr>';
+            return '<tr><td>' + r.id + '</td><td>' + r.payment_id + '</td><td>' + escapeHtml(r.report_type || '') + '</td><td><span class="badge ' + statusClass + '">' + escapeHtml(r.status || '') + '</span></td><td>' + escapeHtml(r.created_at || '') + '</td><td>' + viewBtn + approveBtn + '</td></tr>';
           }).join('');
+          tbody.querySelectorAll('.view-report-btn').forEach(function (b) {
+            b.addEventListener('click', function () {
+              const id = b.getAttribute('data-id');
+              fetch(WORKER_URL + '/api/admin/reports/' + id + '/view', { headers: authHeaders() })
+                .then(function (res) {
+                  if (!res.ok) return res.json().then(function (d) { throw new Error(d.error || res.statusText); });
+                  return res.text();
+                })
+                .then(function (html) {
+                  const w = window.open('', '_blank');
+                  if (w) { w.document.write(html); w.document.close(); } else { alert('Allow pop-ups to view the report in a new tab.'); }
+                })
+                .catch(function (e) { alert(e.message || 'Could not load report'); });
+            });
+          });
           tbody.querySelectorAll('.approve-btn').forEach(function (b) {
             b.addEventListener('click', function () {
               const id = b.getAttribute('data-id');

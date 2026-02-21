@@ -74,6 +74,15 @@
     .assessment-hero .assessment-hero-logo .d { color: var(--logo-dot); }
     .assessment-hero h1 { font-size: 1.5rem; margin: 0 0 0.5rem; font-weight: 700; color: var(--text); }
     .assessment-hero .assessment-hero-tagline { margin: 0; font-size: 0.95rem; color: var(--text-muted); line-height: 1.5; }
+    /* Success modal (after submission) */
+    .assessment-success-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 1rem; opacity: 0; visibility: hidden; transition: opacity 0.25s ease, visibility 0.25s ease; }
+    .assessment-success-overlay[hidden] { display: none !important; }
+    .assessment-success-overlay.show { opacity: 1; visibility: visible; }
+    .assessment-success-modal { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 16px; max-width: 420px; width: 100%; padding: 2rem; text-align: center; box-shadow: 0 24px 48px rgba(0,0,0,0.4); }
+    .assessment-success-modal .success-icon { width: 56px; height: 56px; margin: 0 auto 1.25rem; background: linear-gradient(135deg, #10b981, #059669); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; color: #fff; }
+    .assessment-success-modal h2 { margin: 0 0 0.75rem; font-size: 1.35rem; font-weight: 600; color: var(--text); }
+    .assessment-success-modal p { margin: 0 0 1.5rem; font-size: 0.95rem; color: var(--text-muted); line-height: 1.6; }
+    .assessment-success-modal .btn { min-width: 120px; }
   </style>
 </head>
 <body>
@@ -1410,6 +1419,16 @@
     </div>
     </div>
 
+    <!-- Success modal: shown after assessment is submitted (same idea as checkout confirmation) -->
+    <div id="assessmentSuccessOverlay" class="assessment-success-overlay" role="dialog" aria-modal="true" aria-labelledby="assessmentSuccessTitle" hidden>
+        <div class="assessment-success-modal">
+            <div class="success-icon" aria-hidden="true">✓</div>
+            <h2 id="assessmentSuccessTitle">Assessment submitted successfully</h2>
+            <p>Your answers have been received. We’ll review them and prepare your Flare Compass report. You can expect an email with a link to your report within the next 24 hours.</p>
+            <button type="button" class="btn btn-primary" id="assessmentSuccessClose">Done</button>
+        </div>
+    </div>
+
     
 <script>
 (function() {
@@ -1546,12 +1565,33 @@
         .then(function(data) {
           if (data.ok) {
             submitBtn.textContent = 'Submitted';
-            alert(data.message || 'Assessment saved. Your report will be generated shortly.');
             var key = 'flare_assessment_progress_' + (hash || 'anon');
             try { localStorage.removeItem(key); } catch(e) {}
+            var overlay = document.getElementById('assessmentSuccessOverlay');
+            if (overlay) {
+              overlay.removeAttribute('hidden');
+              overlay.classList.add('show');
+              document.getElementById('assessmentSuccessClose').focus();
+            } else {
+              alert(data.message || 'Assessment saved. Your report will be generated shortly.');
+            }
           } else { alert(data.error || 'Submission failed'); submitBtn.disabled = false; submitBtn.textContent = 'Submit Assessment'; }
         })
         .catch(function(err) { alert(err.message || 'Network error'); submitBtn.disabled = false; submitBtn.textContent = 'Submit Assessment'; });
+    });
+  }
+  var successOverlay = document.getElementById('assessmentSuccessOverlay');
+  var successCloseBtn = document.getElementById('assessmentSuccessClose');
+  function closeSuccessModal() {
+    if (successOverlay) {
+      successOverlay.classList.remove('show');
+      successOverlay.setAttribute('hidden', '');
+    }
+  }
+  if (successCloseBtn) successCloseBtn.addEventListener('click', closeSuccessModal);
+  if (successOverlay) {
+    successOverlay.addEventListener('click', function(e) {
+      if (e.target === successOverlay) closeSuccessModal();
     });
   }
   updateProgress();
